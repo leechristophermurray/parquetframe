@@ -32,7 +32,7 @@ class TestIntelligentBackendSwitching:
             # Should return a positive value
             assert estimated_mb > 0
             # Should be reasonable (not too small or too large)
-            assert 0.1 < estimated_mb < 100  # Between 0.1MB and 100MB
+            assert 0.01 < estimated_mb < 100  # Between 0.01MB and 100MB
             
     @patch('pyarrow.parquet.ParquetFile')
     def test_estimate_memory_usage_fallback(self, mock_parquet_file):

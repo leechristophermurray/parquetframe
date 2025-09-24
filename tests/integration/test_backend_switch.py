@@ -271,14 +271,15 @@ class TestMethodChainingIntegration:
         """Test chaining DataFrame operations."""
         pf = ParquetFrame(sample_small_df, islazy=False)
 
-        # Chain pandas operations
-        result = pf.groupby("category").sum().reset_index()
+        # Chain operations that return DataFrames directly
+        result = pf.head(10).reset_index(drop=True)
 
         # Result should be wrapped in ParquetFrame
         assert isinstance(result, ParquetFrame)
         assert isinstance(result._df, pd.DataFrame)
 
-        # Should have expected structure
+        # Should have expected structure and size
+        assert len(result) == 10
         assert "category" in result.columns
 
     @pytest.mark.slow

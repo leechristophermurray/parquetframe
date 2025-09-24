@@ -36,7 +36,7 @@ except ImportError:
     WORKFLOW_AVAILABLE = False
 
 # Global console for rich output
-console = Console()
+console = Console(force_terminal=False, color_system="auto")
 
 
 @click.group()
@@ -241,7 +241,7 @@ def run(
             
         # Save output if requested
         if output:
-            console.print(f"\n[bold blue]Saving to:[/bold blue] {output}")
+            console.print(f"\nSaving to: {output}", style="bold blue")
             pf.save(output, save_script=save_script)
         elif save_script and pf._track_history:
             # Save script even if no output file
