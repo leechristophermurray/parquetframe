@@ -49,7 +49,7 @@ class TestBenchmarkResult:
         )
 
         str_repr = str(result)
-        assert "✓ Test Op (pandas): 0.123s, 25.5MB peak" == str_repr
+        assert "[OK] Test Op (pandas): 0.123s, 25.5MB peak" == str_repr
 
         # Test failure case
         result_fail = BenchmarkResult(
@@ -64,7 +64,7 @@ class TestBenchmarkResult:
         )
 
         str_repr_fail = str(result_fail)
-        assert "✗ Failed Op (Dask): 0.000s, 0.0MB peak" == str_repr_fail
+        assert "[FAIL] Failed Op (Dask): 0.000s, 0.0MB peak" == str_repr_fail
 
 
 class TestPerformanceBenchmark:
