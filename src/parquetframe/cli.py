@@ -623,9 +623,9 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
             example_workflow = create_example_workflow()
             with open(create_example, "w") as f:
                 yaml.dump(example_workflow, f, indent=2, default_flow_style=False)
-        console.print(
-            f"[SUCCESS] [bold green]Example workflow created at:[/bold green] {create_example}"
-        )
+            console.print(
+                f"[SUCCESS] [bold green]Example workflow created at:[/bold green] {create_example}"
+            )
             console.print("\n[TIP] Edit the workflow file and run with:")
             console.print(f"   pframe workflow {create_example}")
         except Exception as e:

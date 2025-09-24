@@ -224,8 +224,8 @@ class PerformanceBenchmark:
                 file_size_mb = test_file.stat().st_size / 1024 / 1024
 
                 # Benchmark pandas read
-                def read_pandas():
-                    return ParquetFrame.read(test_file, islazy=False)
+                def read_pandas(file=test_file):
+                    return ParquetFrame.read(file, islazy=False)
 
                 result = self.benchmark_operation(
                     f"Read {description}", read_pandas, "pandas", file_size_mb
@@ -233,8 +233,8 @@ class PerformanceBenchmark:
                 results.append(result)
 
                 # Benchmark Dask read
-                def read_dask():
-                    return ParquetFrame.read(test_file, islazy=True)
+                def read_dask(file=test_file):
+                    return ParquetFrame.read(file, islazy=True)
 
                 result = self.benchmark_operation(
                     f"Read {description}", read_dask, "Dask", file_size_mb
@@ -282,28 +282,28 @@ class PerformanceBenchmark:
                 for operation in operations:
                     if operation == "groupby":
 
-                        def op():
-                            result = pf1.groupby("category_0")["numeric_0"].mean()
+                        def op(pf=pf1):
+                            result = pf.groupby("category_0")["numeric_0"].mean()
                             if hasattr(result, "compute"):
                                 return result.compute()
                             return result
 
                     elif operation == "filter":
 
-                        def op():
-                            result = pf1.query("numeric_0 > 0")
+                        def op(pf=pf1):
+                            result = pf.query("numeric_0 > 0")
                             return result
 
                     elif operation == "sort":
 
-                        def op():
-                            result = pf1.sort_values("numeric_0")
+                        def op(pf=pf1):
+                            result = pf.sort_values("numeric_0")
                             return result
 
                     elif operation == "aggregation":
 
-                        def op():
-                            result = pf1.agg(
+                        def op(pf=pf1):
+                            result = pf.agg(
                                 {
                                     "numeric_0": ["mean", "std"],
                                     "integer_0": ["min", "max"],
@@ -315,10 +315,10 @@ class PerformanceBenchmark:
 
                     elif operation == "join":
 
-                        def op():
+                        def op(pf1_arg=pf1, pf2_arg=pf2):
                             # Simple index-based merge
-                            df1_sample = pf1.head(1000)
-                            df2_sample = pf2.head(100)
+                            df1_sample = pf1_arg.head(1000)
+                            df2_sample = pf2_arg.head(100)
 
                             if hasattr(df1_sample, "_df"):
                                 df1_sample = df1_sample._df
@@ -383,8 +383,8 @@ class PerformanceBenchmark:
             for threshold in thresholds:
                 for actual_mb, test_file in test_files.items():
 
-                    def read_with_threshold():
-                        return ParquetFrame.read(test_file, threshold_mb=threshold)
+                    def read_with_threshold(file=test_file, thresh=threshold):
+                        return ParquetFrame.read(file, threshold_mb=thresh)
 
                     expected_backend = "Dask" if actual_mb >= threshold else "pandas"
 
