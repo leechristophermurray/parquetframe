@@ -204,7 +204,7 @@ class PerformanceBenchmark:
 
         if self.verbose:
             self.console.print(
-                "\n🔍 [bold blue]Benchmarking Read Operations[/bold blue]"
+                "\n[READ BENCHMARK] [bold blue]Benchmarking Read Operations[/bold blue]"
             )
 
         results = []
@@ -214,7 +214,7 @@ class PerformanceBenchmark:
 
             for rows, description in file_sizes:
                 if self.verbose:
-                    self.console.print(f"\n📊 Testing with {description}")
+                    self.console.print(f"\n[TEST DATA] Testing with {description}")
 
                 # Create test data
                 test_df = self.create_test_data(rows=rows, cols=8)
@@ -252,7 +252,7 @@ class PerformanceBenchmark:
             operations = ["groupby", "filter", "sort", "aggregation", "join"]
 
         if self.verbose:
-            self.console.print("\n⚙️ [bold blue]Benchmarking Operations[/bold blue]")
+            self.console.print("\n[OPS BENCHMARK] [bold blue]Benchmarking Operations[/bold blue]")
 
         results = []
 
@@ -274,7 +274,7 @@ class PerformanceBenchmark:
 
             for backend in ["pandas", "Dask"]:
                 if self.verbose:
-                    self.console.print(f"\n🔧 Testing {backend} backend")
+                    self.console.print(f"\n[BACKEND] Testing {backend} backend")
 
                 pf1 = ParquetFrame.read(test_file1, islazy=(backend == "Dask"))
                 pf2 = ParquetFrame.read(test_file2, islazy=(backend == "Dask"))

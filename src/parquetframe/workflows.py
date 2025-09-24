@@ -443,7 +443,7 @@ class WorkflowEngine:
 
         if self.verbose and self.console:
             self.console.print(
-                f"\n🔄 [bold blue]Executing workflow with {len(steps)} steps[/bold blue]"
+                f"\n[EXECUTE] [bold blue]Executing workflow with {len(steps)} steps[/bold blue]"
             )
 
         # Execute steps
@@ -476,19 +476,19 @@ class WorkflowEngine:
                     context.outputs[step_name] = result
 
                     if self.verbose and self.console:
-                        self.console.print(f"  ✅ {step_name} completed")
+                        self.console.print(f"  [SUCCESS] {step_name} completed")
 
                 except Exception as e:
                     error_msg = f"Step '{step_name}' failed: {e}"
                     if self.verbose and self.console:
-                        self.console.print(f"  ❌ {error_msg}")
+                        self.console.print(f"  [ERROR] {error_msg}")
                     raise WorkflowExecutionError(error_msg) from e
 
                 progress.update(main_task, advance=1)
 
         if self.verbose and self.console:
             self.console.print(
-                "\n✅ [bold green]Workflow completed successfully![/bold green]"
+                "\n[SUCCESS] [bold green]Workflow completed successfully![/bold green]"
             )
 
             # Show summary
