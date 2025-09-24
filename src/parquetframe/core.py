@@ -59,6 +59,8 @@ class ParquetFrame:
     @islazy.setter
     def islazy(self, value: bool) -> None:
         """Set the backend type and convert the dataframe if necessary."""
+        if not isinstance(value, bool):
+            raise TypeError("islazy must be a boolean")
         if value != self._islazy:
             if value:
                 self.to_dask()
@@ -261,12 +263,28 @@ class ParquetFrame:
             >>> pf = ParquetFrame.read("data.parquet", threshold_mb=50)
             >>> pf = ParquetFrame.read("data", islazy=True)  # Force Dask
         """
-        file_path = cls._resolve_file_path(file)
-        file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        # Support URLs and fsspec-based paths without local existence checks
+        file_str = str(file)
+        is_url = file_str.startswith(("http://", "https://", "s3://", "gs://"))
 
-        # Determine backend using intelligent switching
+        if is_url:
+            file_path = file_str  # pass through to reader
+            file_size_mb = 0.0
+        else:
+            file_path = cls._resolve_file_path(file)
+            file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+
+        # Validate islazy parameter
+        if islazy is not None and not isinstance(islazy, bool):
+            raise TypeError("islazy parameter must be a boolean or None")
+        
+        # Determine backend using explicit override first
         threshold = threshold_mb if threshold_mb is not None else 10
-        use_dask = cls._should_use_dask(file_path, threshold, islazy)
+        if islazy is not None:
+            use_dask = bool(islazy)
+        else:
+            # Intelligent switching when not explicitly specified
+            use_dask = cls._should_use_dask(Path(file_path) if not is_url else Path("."), threshold, None)
 
         # Read the file
         if use_dask:
@@ -322,6 +340,9 @@ class ParquetFrame:
                 save_args.append(f"save_script='{save_script}'")
             self._history.append(f"pf.save({', '.join(save_args)})")
 
+        # Ensure parent directory exists
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
         if isinstance(self._df, dd.DataFrame):
             self._df.to_parquet(file_path, **kwargs)
             print(f"Dask DataFrame saved to '{file_path}'.")
@@ -344,6 +365,13 @@ class ParquetFrame:
         """
         if self.islazy and isinstance(self._df, dd.DataFrame):
             self._df = self._df.compute()
+            # Normalize string dtype back to object for consistency with tests
+            try:
+                string_cols = list(self._df.select_dtypes(include="string").columns)
+                if string_cols:
+                    self._df[string_cols] = self._df[string_cols].astype("object")
+            except Exception:
+                pass
             self._islazy = False
             print("Converted to pandas DataFrame.")
         else:
@@ -361,6 +389,8 @@ class ParquetFrame:
         Returns:
             Self for method chaining.
         """
+        if npartitions is not None and npartitions <= 0:
+            raise ValueError("npartitions must be a positive integer")
         if not self.islazy and isinstance(self._df, pd.DataFrame):
             npart = npartitions if npartitions is not None else os.cpu_count() or 1
             self._df = dd.from_pandas(self._df, npartitions=npart)

@@ -28,6 +28,13 @@ try:
 except ImportError:
     BENCHMARK_AVAILABLE = False
 
+try:
+    from .workflows import WorkflowEngine, WorkflowError, create_example_workflow
+    import yaml
+    WORKFLOW_AVAILABLE = True
+except ImportError:
+    WORKFLOW_AVAILABLE = False
+
 # Global console for rich output
 console = Console()
 
@@ -174,10 +181,11 @@ def run(
                 desc = desc.compute()
             _display_dataframe_as_table(desc, "Statistical Description")
             
-        # Display data samples
+        # Apply data limitation operations that affect final output
         if head:
+            pf = pf.head(head)
             console.print(f"\n[bold green]First {head} rows:[/bold green]")
-            sample_data = pf.head(head)
+            sample_data = pf
             # Check if sample_data is a ParquetFrame or DataFrame and handle accordingly
             if hasattr(sample_data, 'islazy') and sample_data.islazy:
                 sample_data = sample_data._df.compute()
@@ -190,8 +198,9 @@ def run(
             _display_dataframe_as_table(sample_data, f"First {head} Rows")
             
         elif tail:
+            pf = pf.tail(tail)
             console.print(f"\n[bold green]Last {tail} rows:[/bold green]")
-            sample_data = pf.tail(tail)
+            sample_data = pf
             if hasattr(sample_data, 'islazy') and sample_data.islazy:
                 sample_data = sample_data._df.compute()
             elif hasattr(sample_data, '_df') and hasattr(sample_data._df, 'compute'):
@@ -203,8 +212,9 @@ def run(
             _display_dataframe_as_table(sample_data, f"Last {tail} Rows")
             
         elif sample:
+            pf = pf.sample(sample)
             console.print(f"\n[bold green]Random sample of {sample} rows:[/bold green]")
-            sample_data = pf.sample(sample)
+            sample_data = pf
             if hasattr(sample_data, 'islazy') and sample_data.islazy:
                 sample_data = sample_data._df.compute()
             elif hasattr(sample_data, '_df') and hasattr(sample_data._df, 'compute'):
@@ -527,6 +537,171 @@ def benchmark(output, quiet, operations, file_sizes):
     except Exception as e:
         console.print(f"[bold red]Error during benchmark:[/bold red] {e}")
         if verbose:
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument("workflow_file", type=click.Path(exists=True), required=False)
+@click.option(
+    "--validate", "-v",
+    is_flag=True,
+    help="Validate workflow file without executing"
+)
+@click.option(
+    "--variables", "-V",
+    help="Set workflow variables as key=value pairs (e.g., 'input_dir=data,output_dir=results')"
+)
+@click.option(
+    "--list-steps",
+    is_flag=True,
+    help="List all available workflow step types"
+)
+@click.option(
+    "--create-example",
+    type=click.Path(),
+    help="Create an example workflow file at the specified path"
+)
+@click.option(
+    "--quiet", "-q",
+    is_flag=True,
+    help="Run in quiet mode (minimal output)"
+)
+def workflow(workflow_file, validate, variables, list_steps, create_example, quiet):
+    """
+    Execute or manage YAML workflow files.
+    
+    Workflows allow you to define complex data processing pipelines
+    in YAML format with multiple steps including reading, filtering,
+    transforming, aggregating, and saving data.
+    
+    Examples:
+        pframe workflow my_pipeline.yml
+        pframe workflow my_pipeline.yml --variables "input_dir=data,min_age=21"
+        pframe workflow --validate my_pipeline.yml
+        pframe workflow --create-example example.yml
+        pframe workflow --list-steps
+    """
+    if not WORKFLOW_AVAILABLE:
+        console.print("[bold red]Error:[/bold red] Workflow functionality requires additional dependencies.")
+        console.print("Please install with: pip install parquetframe[cli]")
+        sys.exit(1)
+    
+    # Handle list-steps option
+    if list_steps:
+        from .workflows import STEP_REGISTRY
+        console.print("\n📋 [bold blue]Available Workflow Steps[/bold blue]")
+        
+        step_descriptions = {
+            'read': 'Read data from parquet files',
+            'filter': 'Filter data using queries',
+            'select': 'Select specific columns',
+            'groupby': 'Perform group by operations and aggregations',
+            'save': 'Save data to parquet files',
+            'transform': 'Apply custom transformations',
+        }
+        
+        for step_type in sorted(STEP_REGISTRY.keys()):
+            desc = step_descriptions.get(step_type, 'Custom workflow step')
+            console.print(f"  • [cyan]{step_type:10}[/cyan] - {desc}")
+        return
+    
+    # Handle create-example option
+    if create_example:
+        try:
+            example_workflow = create_example_workflow()
+            with open(create_example, 'w') as f:
+                yaml.dump(example_workflow, f, indent=2, default_flow_style=False)
+            console.print(f"✅ [bold green]Example workflow created at:[/bold green] {create_example}")
+            console.print("\n💡 Edit the workflow file and run with:")
+            console.print(f"   pframe workflow {create_example}")
+        except Exception as e:
+            console.print(f"[bold red]Error creating example workflow:[/bold red] {e}")
+            sys.exit(1)
+        return
+    
+    # Workflow file is required for validation and execution
+    if not workflow_file:
+        console.print("[bold red]Error:[/bold red] Workflow file is required.")
+        console.print("\n💡 Try:")
+        console.print("  pframe workflow --create-example my_workflow.yml  # Create an example")
+        console.print("  pframe workflow --list-steps                     # List available steps")
+        sys.exit(1)
+    
+    # Parse variables
+    workflow_variables = {}
+    if variables:
+        try:
+            for pair in variables.split(','):
+                if '=' in pair:
+                    key, value = pair.split('=', 1)
+                    # Try to convert to appropriate type
+                    try:
+                        # Try int first
+                        workflow_variables[key.strip()] = int(value.strip())
+                    except ValueError:
+                        try:
+                            # Try float
+                            workflow_variables[key.strip()] = float(value.strip())
+                        except ValueError:
+                            # Keep as string
+                            workflow_variables[key.strip()] = value.strip()
+                else:
+                    console.print(f"[yellow]Warning:[/yellow] Invalid variable format: {pair}. Use key=value")
+        except Exception as e:
+            console.print(f"[bold red]Error parsing variables:[/bold red] {e}")
+            sys.exit(1)
+    
+    # Create workflow engine
+    engine = WorkflowEngine(verbose=not quiet)
+    
+    try:
+        if validate:
+            # Validate workflow
+            console.print(f"🔍 [bold blue]Validating workflow:[/bold blue] {workflow_file}")
+            workflow = engine.load_workflow(workflow_file)
+            errors = engine.validate_workflow(workflow)
+            
+            if errors:
+                console.print("\n❌ [bold red]Validation failed:[/bold red]")
+                for error in errors:
+                    console.print(f"  • {error}")
+                sys.exit(1)
+            else:
+                console.print("\n✅ [bold green]Workflow validation passed![/bold green]")
+                
+                # Show workflow summary
+                steps = workflow.get('steps', [])
+                console.print(f"\n📊 Workflow summary:")
+                console.print(f"  • Name: {workflow.get('name', 'Unnamed workflow')}")
+                console.print(f"  • Description: {workflow.get('description', 'No description')}")
+                console.print(f"  • Steps: {len(steps)}")
+                
+                if workflow_variables:
+                    console.print(f"  • Variables: {len(workflow_variables)}")
+                    
+        else:
+            # Execute workflow
+            if not quiet:
+                console.print(f"🚀 [bold blue]Executing workflow:[/bold blue] {workflow_file}")
+                if workflow_variables:
+                    console.print(f"📝 Variables: {workflow_variables}")
+            
+            context = engine.run_workflow_file(workflow_file, variables=workflow_variables)
+            
+            if not quiet:
+                console.print("\n🎉 [bold green]Workflow execution completed successfully![/bold green]")
+    
+    except WorkflowError as e:
+        console.print(f"[bold red]Workflow error:[/bold red] {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Workflow interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[bold red]Unexpected error:[/bold red] {e}")
+        if not quiet:
             import traceback
             console.print(f"[dim]{traceback.format_exc()}[/dim]")
         sys.exit(1)

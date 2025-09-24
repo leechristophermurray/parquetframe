@@ -99,7 +99,7 @@ class TestDataTypePreservation:
             {
                 "date_col": pd.date_range("2023-01-01", periods=10),
                 "timestamp_col": pd.date_range(
-                    "2023-01-01 12:00:00", periods=10, freq="H"
+                    "2023-01-01 12:00:00", periods=10, freq="h"
                 ),
                 "value": range(10),
             }

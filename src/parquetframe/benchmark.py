@@ -18,6 +18,7 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
 
+import numpy as np
 import pandas as pd
 import dask.dataframe as dd
 from rich.console import Console
@@ -77,30 +78,44 @@ class PerformanceBenchmark:
             self.console.print(f"Creating test dataset: {rows:,} rows × {cols} columns")
             
         data = {}
+        cols_used = 0
+        
+        # Calculate how many columns of each type to create
+        reserved_cols = 1 if include_dates else 0
+        available_cols = cols - reserved_cols
+        
+        if include_strings:
+            base_cols_per_type = available_cols // 3
+        else:
+            base_cols_per_type = available_cols // 2
         
         # Numeric columns
-        for i in range(cols // 3):
-            data[f'numeric_{i}'] = pd.np.random.randn(rows)
+        for i in range(base_cols_per_type):
+            data[f'numeric_{i}'] = np.random.randn(rows)
+            cols_used += 1
             
         # Integer columns
-        for i in range(cols // 3):
-            data[f'integer_{i}'] = pd.np.random.randint(0, 1000, rows)
+        for i in range(base_cols_per_type):
+            data[f'integer_{i}'] = np.random.randint(0, 1000, rows)
+            cols_used += 1
             
         # String columns
         if include_strings:
             categories = ['A', 'B', 'C', 'D', 'E']
-            for i in range(cols // 3):
-                data[f'category_{i}'] = pd.np.random.choice(categories, rows)
+            for i in range(base_cols_per_type):
+                data[f'category_{i}'] = np.random.choice(categories, rows)
+                cols_used += 1
                 
-        # Date columns
-        if include_dates:
+        # Date column
+        if include_dates and cols_used < cols:
             start_date = pd.Timestamp('2020-01-01')
-            data['date'] = pd.date_range(start_date, periods=rows, freq='H')
+            data['date'] = pd.date_range(start_date, periods=rows, freq='h')
+            cols_used += 1
             
-        # Fill remaining columns
-        remaining = cols - len(data)
-        for i in range(remaining):
-            data[f'extra_{i}'] = pd.np.random.randn(rows)
+        # Fill remaining columns with numeric data
+        while cols_used < cols:
+            data[f'extra_{len([k for k in data.keys() if k.startswith("extra_")])}'] = np.random.randn(rows)
+            cols_used += 1
             
         return pd.DataFrame(data)
         
@@ -559,8 +574,8 @@ def run_comprehensive_benchmark(
         'summary': {
             'total_benchmarks': len(benchmark.results),
             'successful_benchmarks': sum(1 for r in benchmark.results if r.success),
-            'average_execution_time': sum(r.execution_time for r in benchmark.results) / len(benchmark.results),
-            'average_memory_usage': sum(r.memory_peak for r in benchmark.results) / len(benchmark.results)
+            'average_execution_time': sum(r.execution_time for r in benchmark.results) / len(benchmark.results) if benchmark.results else 0.0,
+            'average_memory_usage': sum(r.memory_peak for r in benchmark.results) / len(benchmark.results) if benchmark.results else 0.0
         }
     }
     

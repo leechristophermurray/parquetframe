@@ -17,6 +17,7 @@ A universal wrapper for working with dataframes in Python, seamlessly switching 
 🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking  
 📝 **Script Generation**: Automatic Python script generation from CLI sessions  
 ⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
+📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax  
 🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
 ## Quick Start
@@ -34,7 +35,7 @@ pip install parquetframe[cli]
 ### Basic Usage
 
 ```python
-import parquetframe as pqf
+import parquetframe as pf
 
 # Read a file - automatically chooses pandas or Dask based on size
 df = pf.read("my_data")  # Handles .parquet/.pqt extensions automatically
@@ -56,17 +57,17 @@ df.to_pandas()  # Convert to pandas
 import parquetframe as pqf
 
 # Custom threshold
-df = pqf.pf.read("data", threshold_mb=50)  # Use Dask for files >50MB
+df = pf.read("data", threshold_mb=50)  # Use Dask for files >50MB
 
 # Force backend
-df = pqf.pf.read("data", islazy=True)   # Force Dask
-df = pqf.pf.read("data", islazy=False)  # Force pandas
+df = pf.read("data", islazy=True)   # Force Dask
+df = pf.read("data", islazy=False)  # Force pandas
 
 # Check current backend
 print(df.islazy)  # True for Dask, False for pandas
 
 # Chain operations
-result = (pqf.pf.read("input")
+result = (pf.read("input")
           .groupby("category")
           .sum()
           .save("result"))
@@ -137,6 +138,25 @@ pframe benchmark --file-sizes "1000,10000,100000"
 pframe benchmark --output results.json --quiet
 ```
 
+### YAML Workflows
+
+```bash
+# Create an example workflow
+pframe workflow --create-example my_pipeline.yml
+
+# List available workflow step types
+pframe workflow --list-steps
+
+# Execute a workflow
+pframe workflow my_pipeline.yml
+
+# Execute with custom variables
+pframe workflow my_pipeline.yml --variables "input_dir=data,min_age=21"
+
+# Validate workflow without executing
+pframe workflow --validate my_pipeline.yml
+```
+
 ## Key Benefits
 
 - **Intelligent Performance**: Memory-aware backend selection considering file size, system resources, and file characteristics
@@ -160,6 +180,7 @@ pframe benchmark --output results.json --quiet
 - click >= 8.0 (for CLI interface)
 - rich >= 13.0 (for enhanced terminal output)
 - psutil >= 5.8.0 (for performance monitoring and memory-aware backend selection)
+- pyyaml >= 6.0 (for YAML workflow support)
 
 ## CLI Reference
 
@@ -169,6 +190,7 @@ pframe benchmark --output results.json --quiet
 - `pframe run <file> [options]` - Process data with various options
 - `pframe interactive [file]` - Start interactive Python session
 - `pframe benchmark [options]` - Run performance benchmarks and analysis
+- `pframe workflow [file] [options]` - Execute or manage YAML workflow files
 
 ### Options for `pframe run`
 
@@ -191,6 +213,14 @@ pframe benchmark --output results.json --quiet
 - `--quiet, -q` - Run in quiet mode (minimal output)
 - `--operations` - Comma-separated operations to benchmark (groupby,filter,sort,aggregation,join)
 - `--file-sizes` - Comma-separated test file sizes in rows (e.g., '1000,10000,100000')
+
+### Options for `pframe workflow`
+
+- `--validate, -v` - Validate workflow file without executing
+- `--variables, -V` - Set workflow variables as key=value pairs
+- `--list-steps` - List all available workflow step types
+- `--create-example PATH` - Create an example workflow file
+- `--quiet, -q` - Run in quiet mode (minimal output)
 
 ## Documentation
 

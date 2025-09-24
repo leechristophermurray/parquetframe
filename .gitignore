@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 CONTEXT*.md
+IMPLEMENTATION*.md
 __pycache__/
 *.py[cod]
 *$py.class

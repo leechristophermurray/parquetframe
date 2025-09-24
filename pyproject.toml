@@ -58,6 +58,7 @@ cli = [
     "click>=8.0",
     "rich>=13.0",  # For enhanced terminal output
     "psutil>=5.8.0",  # For performance monitoring
+    "pyyaml>=6.0",  # For YAML workflow support
 ]
 
 [project.urls]
@@ -172,4 +173,9 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
+]
+
+[dependency-groups]
+dev = [
+    "psutil>=7.1.0",
 ]
