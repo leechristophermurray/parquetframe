@@ -18,16 +18,16 @@ def test_basic_functionality():
         print("1. Testing imports...")
         import pandas as pd
 
-        print("   ✓ pandas and dask imported successfully")
+        print("   [OK] pandas and dask imported successfully")
 
         import parquetframe as pqf
 
-        print("   ✓ parquetframe imported successfully")
+        print("   [OK] parquetframe imported successfully")
 
         # Test basic creation
         print("2. Testing basic creation...")
         empty_pf = pqf.create_empty()
-        print(f"   ✓ Created empty ParquetFrame: {empty_pf}")
+        print(f"   [OK] Created empty ParquetFrame: {empty_pf}")
 
         # Test with sample data
         print("3. Testing with sample data...")
@@ -40,12 +40,12 @@ def test_basic_functionality():
         )
 
         pf = pqf.ParquetFrame(sample_df)
-        print(f"   ✓ Created ParquetFrame with data: {pf.shape}")
+        print(f"   [OK] Created ParquetFrame with data: {pf.shape}")
 
         # Test basic operations
         print("4. Testing basic operations...")
         result = pf.groupby("category").sum()
-        print(f"   ✓ GroupBy operation result shape: {result.shape}")
+        print(f"   [OK] GroupBy operation result shape: {result.shape}")
 
         # Test file I/O (in temp directory)
         print("5. Testing file I/O...")
@@ -55,23 +55,23 @@ def test_basic_functionality():
             # Save
             pf.save(temp_path)
             expected_file = Path(temp_dir) / "test_data.parquet"
-            print(f"   ✓ Saved to {expected_file}")
+            print(f"   [OK] Saved to {expected_file}")
 
             # Read back
             pf_loaded = pqf.read(temp_path)
-            print(f"   ✓ Loaded from file: {pf_loaded.shape}")
+            print(f"   [OK] Loaded from file: {pf_loaded.shape}")
 
             # Verify data integrity
             pd.testing.assert_frame_equal(
                 pf._df.reset_index(drop=True), pf_loaded._df.reset_index(drop=True)
             )
-            print("   ✓ Data integrity verified")
+            print("   [OK] Data integrity verified")
 
-        print("🎉 All tests passed successfully!")
+        print("[SUCCESS] All tests passed successfully!")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"[FAILED] Test failed: {e}")
         import traceback
 
         traceback.print_exc()

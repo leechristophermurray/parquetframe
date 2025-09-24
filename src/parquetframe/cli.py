@@ -8,6 +8,7 @@ including batch processing and interactive modes.
 import code
 import sys
 from pathlib import Path
+from typing import Any
 
 try:
     import click

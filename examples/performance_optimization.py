@@ -11,7 +11,7 @@ This script demonstrates the enhanced performance features including:
 
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ except ImportError:
     exit(1)
 
 
-def create_sample_datasets() -> Tuple[Dict[str, Path], Path]:
+def create_sample_datasets() -> tuple[dict[str, Path], Path]:
     """Create sample datasets of different sizes for testing."""
     print("📊 Creating sample datasets for performance testing...")
 
@@ -82,7 +82,7 @@ def create_sample_datasets() -> Tuple[Dict[str, Path], Path]:
         return datasets, temp_path
 
 
-def demonstrate_intelligent_backend_switching(datasets: Dict[str, Path]) -> None:
+def demonstrate_intelligent_backend_switching(datasets: dict[str, Path]) -> None:
     """Demonstrate intelligent backend switching."""
     print("\n🧠 Intelligent Backend Switching Demonstration")
     print("=" * 60)
@@ -103,9 +103,9 @@ def demonstrate_intelligent_backend_switching(datasets: Dict[str, Path]) -> None
         _ = ParquetFrame.read(str(file_path), islazy=False)
         _ = ParquetFrame.read(str(file_path), islazy=True)
         print("  Explicit:      pandas (forced), Dask (forced)")
-
-
-def demonstrate_performance_benchmarking(datasets: Dict[str, Path], temp_path: Path) -> Any:
+def demonstrate_performance_benchmarking(
+    datasets: dict[str, Path], temp_path: Path
+) -> Any:
     """Demonstrate performance benchmarking capabilities."""
     print("\n⚡ Performance Benchmarking Demonstration")
     print("=" * 60)
@@ -146,7 +146,7 @@ def demonstrate_performance_benchmarking(datasets: Dict[str, Path], temp_path: P
     return benchmark
 
 
-def demonstrate_memory_aware_processing(datasets: Dict[str, Path]) -> None:
+def demonstrate_memory_aware_processing(datasets: dict[str, Path]) -> None:
     """Demonstrate memory-aware processing techniques."""
     print("\n💾 Memory-Aware Processing Demonstration")
     print("=" * 60)
@@ -185,7 +185,7 @@ def demonstrate_memory_aware_processing(datasets: Dict[str, Path]) -> None:
             print(f"  ⚠️  Processing error: {e}")
 
 
-def demonstrate_advanced_usage(datasets: Dict[str, Path]) -> None:
+def demonstrate_advanced_usage(datasets: dict[str, Path]) -> None:
     """Demonstrate advanced usage patterns."""
     print("\n🚀 Advanced Usage Patterns")
     print("=" * 60)
