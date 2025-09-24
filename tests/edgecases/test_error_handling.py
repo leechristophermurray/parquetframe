@@ -3,6 +3,7 @@ Edge case tests and error handling scenarios.
 """
 
 import os
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -38,6 +39,10 @@ class TestFileNotFoundErrors:
         with pytest.raises(FileNotFoundError):
             ParquetFrame.read(empty_dir)
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="POSIX permission semantics not fully supported on Windows",
+    )
     def test_read_with_permission_denied(self, temp_dir, sample_small_df):
         """Test reading file with permission issues."""
         file_path = temp_dir / "readonly.parquet"
@@ -70,6 +75,10 @@ class TestSaveErrors:
         with pytest.raises(TypeError, match="No dataframe loaded to save"):
             pf.save(temp_dir / "output")
 
+    @pytest.mark.skipif(
+        sys.platform.startswith("win"),
+        reason="POSIX permission semantics not fully supported on Windows",
+    )
     def test_save_to_readonly_directory(self, sample_small_df, temp_dir):
         """Test saving to readonly directory."""
         readonly_dir = temp_dir / "readonly"

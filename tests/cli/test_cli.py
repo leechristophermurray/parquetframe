@@ -2,9 +2,10 @@
 Tests for the ParquetFrame CLI module.
 """
 
+from typing import Any
+
 import pandas as pd
 import pytest
-from typing import Any
 from click.testing import CliRunner
 
 from parquetframe.cli import main
