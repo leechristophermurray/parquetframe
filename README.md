@@ -14,7 +14,9 @@ A universal wrapper for working with dataframes in Python, seamlessly switching 
 📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)  
 🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods  
 ⚡ **Full API Compatibility**: All pandas/Dask operations work transparently  
-🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking  
+🗃️ **SQL Support**: Execute SQL queries on DataFrames using DuckDB with automatic JOIN capabilities  
+🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations  
+🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing  
 📝 **Script Generation**: Automatic Python script generation from CLI sessions  
 ⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
 📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax  
@@ -28,11 +30,20 @@ A universal wrapper for working with dataframes in Python, seamlessly switching 
 # Basic installation
 pip install parquetframe
 
-# With CLI support (includes click, rich, psutil, and pyyaml for full functionality)
+# With CLI support
 pip install parquetframe[cli]
 
-# Development installation with all testing tools
-pip install parquetframe[dev,cli]
+# With SQL support (includes DuckDB)
+pip install parquetframe[sql]
+
+# With genomics support (includes bioframe)
+pip install parquetframe[bio]
+
+# All features
+pip install parquetframe[all]
+
+# Development installation
+pip install parquetframe[dev,all]
 ```
 
 ### Basic Usage
@@ -76,6 +87,48 @@ result = (pf.read("input")
           .save("result"))
 ```
 
+### SQL Operations
+
+```python
+import parquetframe as pf
+
+# Read data
+customers = pf.read("customers.parquet")
+orders = pf.read("orders.parquet")
+
+# Execute SQL queries with automatic JOIN
+result = customers.sql("""
+    SELECT c.name, c.age, SUM(o.amount) as total_spent
+    FROM df c
+    JOIN orders o ON c.customer_id = o.customer_id
+    WHERE c.age > 25
+    GROUP BY c.name, c.age
+    ORDER BY total_spent DESC
+""", orders=orders)
+
+# Works with both pandas and Dask backends
+print(result.head())
+```
+
+### Genomic Data Analysis
+
+```python
+import parquetframe as pf
+
+# Read genomic interval data
+genes = pf.read("genes.parquet")
+peaks = pf.read("chip_seq_peaks.parquet")
+
+# Find overlapping intervals with parallel processing
+overlaps = genes.bio.overlap(peaks, broadcast=True)
+
+# Cluster nearby genomic features
+clustered = genes.bio.cluster(min_dist=1000)
+
+# Works efficiently with both small and large datasets
+print(f"Found {len(overlaps)} gene-peak overlaps")
+```
+
 ## CLI Usage
 
 ParquetFrame includes a powerful command-line interface for data exploration and processing:
@@ -91,6 +144,10 @@ pframe run data.parquet
 
 # Interactive mode
 pframe interactive data.parquet
+
+# SQL queries on parquet files
+pframe sql "SELECT * FROM df WHERE age > 30" --file data.parquet
+pframe sql --interactive --file data.parquet
 ```
 
 ### Data Processing
@@ -111,6 +168,12 @@ pframe run data.parquet \
 # Force specific backends
 pframe run data.parquet --force-dask --describe
 pframe run data.parquet --force-pandas --info
+
+# SQL operations with JOINs
+pframe sql "SELECT * FROM df JOIN customers ON df.id = customers.id" \
+  --file orders.parquet \
+  --join "customers=customers.parquet" \
+  --output results.parquet
 ```
 
 ### Interactive Mode
@@ -178,12 +241,19 @@ pframe workflow --validate my_pipeline.yml
 - dask[dataframe] >= 2023.1.0
 - pyarrow >= 10.0.0
 
-### Optional CLI Dependencies
+### Optional Dependencies
 
+**CLI Features (`[cli]`)**
 - click >= 8.0 (for CLI interface)
 - rich >= 13.0 (for enhanced terminal output)
 - psutil >= 5.8.0 (for performance monitoring and memory-aware backend selection)
 - pyyaml >= 6.0 (for YAML workflow support)
+
+**SQL Features (`[sql]`)**
+- duckdb >= 0.9.0 (for SQL query functionality)
+
+**Genomics Features (`[bio]`)**
+- bioframe >= 0.4.0 (for genomic interval operations)
 
 ### Development Status
 
@@ -199,6 +269,7 @@ pframe workflow --validate my_pipeline.yml
 - `pframe info <file>` - Display file information and schema
 - `pframe run <file> [options]` - Process data with various options
 - `pframe interactive [file]` - Start interactive Python session
+- `pframe sql <query> [options]` - Execute SQL queries on parquet files
 - `pframe benchmark [options]` - Run performance benchmarks and analysis
 - `pframe workflow [file] [options]` - Execute or manage YAML workflow files
 
@@ -216,6 +287,15 @@ pframe workflow --validate my_pipeline.yml
 - `--threshold` - Size threshold for backend selection (MB)
 - `--force-pandas` - Force pandas backend
 - `--force-dask` - Force Dask backend
+
+### Options for `pframe sql`
+
+- `--file, -f` - Main parquet file to query (available as 'df')
+- `--join, -j` - Additional files for JOINs in format 'name=path'
+- `--output, -o` - Save query results to file
+- `--interactive, -i` - Start interactive SQL mode
+- `--explain` - Show query execution plan
+- `--validate` - Validate SQL query syntax
 
 ### Options for `pframe benchmark`
 

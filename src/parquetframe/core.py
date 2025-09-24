@@ -7,7 +7,7 @@ DataFrames for seamless operation.
 
 import os
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import dask.dataframe as dd
 import pandas as pd
@@ -399,6 +399,76 @@ class ParquetFrame:
         else:
             print("Already a Dask DataFrame.")
         return self
+
+    def sql(
+        self,
+        query: str,
+        **other_frames: "ParquetFrame"
+    ) -> "ParquetFrame":
+        """
+        Execute a SQL query on this ParquetFrame using DuckDB.
+        
+        The current ParquetFrame is available as 'df' in the query.
+        Additional ParquetFrames can be passed as keyword arguments.
+        
+        Args:
+            query: SQL query string to execute.
+            **other_frames: Additional ParquetFrames to use in JOINs.
+        
+        Returns:
+            New ParquetFrame with query results (always pandas backend).
+            
+        Raises:
+            ImportError: If DuckDB is not installed.
+            ValueError: If query execution fails.
+            
+        Examples:
+            >>> # Simple query
+            >>> result = pf.sql("SELECT * FROM df WHERE age > 25")
+            >>> 
+            >>> # JOIN with another ParquetFrame
+            >>> orders = pf.sql(
+            ...     "SELECT * FROM df JOIN customers ON df.cust_id = customers.id",
+            ...     customers=customers_pf
+            ... )
+        """
+        if self._df is None:
+            raise ValueError("No dataframe loaded for SQL query")
+            
+        from .sql import query_dataframes
+        
+        # Convert other ParquetFrames to their underlying DataFrames
+        other_dfs = {name: pf._df for name, pf in other_frames.items()}
+        
+        # Execute SQL query
+        result_df = query_dataframes(self._df, query, other_dfs)
+        
+        # Return as pandas-backed ParquetFrame (SQL results are always pandas)
+        return self.__class__(result_df, islazy=False)
+    
+    @property
+    def bio(self):
+        """
+        Access bioframe functions with intelligent parallel dispatching.
+        
+        Returns BioAccessor that automatically chooses between pandas (eager)
+        and Dask (parallel) implementations based on the current backend.
+        
+        Returns:
+            BioAccessor instance for genomic operations.
+            
+        Raises:
+            ImportError: If bioframe is not installed.
+            
+        Examples:
+            >>> # Cluster genomic intervals
+            >>> clustered = pf.bio.cluster(min_dist=1000)
+            >>> 
+            >>> # Find overlaps with another ParquetFrame
+            >>> overlaps = pf.bio.overlap(other_pf, broadcast=True)
+        """
+        from .bio import BioAccessor
+        return BioAccessor(self)
 
     @staticmethod
     def _resolve_file_path(file: Union[str, Path]) -> Path:

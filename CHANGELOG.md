@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- 🗃️ SQL support via DuckDB with `.sql()` method and `pframe sql` CLI command
+- 🧬 BioFrame integration with `.bio` accessor supporting cluster, overlap, merge, complement, closest
+- ➕ Optional extras: `[sql]`, `[bio]`, and `[all]` for easy installation of feature sets
+
+### Changed
+- CLI updated to include SQL commands and interactive SQL mode
+
+### Tests
+- Added comprehensive tests for SQL and bioframe functionality (unit and integration)
+
+### Enhanced
 - 🖥️ **Complete CLI Interface** with three main commands (`info`, `run`, `interactive`)
 - 🎨 **Rich Terminal Output** with beautiful tables and color formatting
 - 🐍 **Interactive Python REPL** mode with full ParquetFrame integration

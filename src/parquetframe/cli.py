@@ -35,6 +35,12 @@ try:
 except ImportError:
     WORKFLOW_AVAILABLE = False
 
+try:
+    from .sql import query_dataframes, validate_sql_query
+    SQL_AVAILABLE = True
+except ImportError:
+    SQL_AVAILABLE = False
+
 # Global console for rich output
 console = Console(force_terminal=False, color_system="auto")
 
@@ -704,6 +710,175 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
         if not quiet:
             import traceback
             console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument("query", required=False)
+@click.option(
+    "--file", "-f", "main_file",
+    type=click.Path(exists=True),
+    help="Main parquet file to query (available as 'df' in SQL)"
+)
+@click.option(
+    "--join", "-j", "join_files",
+    multiple=True,
+    help="Additional files for JOINs in format 'name=path' (e.g., 'customers=customers.parquet')"
+)
+@click.option(
+    "--output", "-o",
+    type=click.Path(),
+    help="Save query results to output file"
+)
+@click.option(
+    "--interactive", "-i",
+    is_flag=True,
+    help="Start interactive SQL mode"
+)
+@click.option(
+    "--explain",
+    is_flag=True,
+    help="Show query execution plan without running"
+)
+@click.option(
+    "--validate",
+    is_flag=True,
+    help="Validate SQL query syntax without executing"
+)
+def sql(query, main_file, join_files, output, interactive, explain, validate):
+    """
+    Execute SQL queries on parquet files using DuckDB.
+    
+    The main file is available as 'df' in queries. Additional files can be
+    joined using the --join option with name=path format.
+    
+    Examples:
+        pframe sql "SELECT * FROM df WHERE age > 25" --file data.parquet
+        pframe sql "SELECT * FROM df JOIN c ON df.id = c.id" -f orders.parquet -j "c=customers.parquet"
+        pframe sql --interactive --file data.parquet
+    """
+    if not SQL_AVAILABLE:
+        console.print("[bold red]Error:[/bold red] SQL functionality requires DuckDB.")
+        console.print("Please install with: pip install parquetframe[sql]")
+        sys.exit(1)
+    
+    # Interactive mode
+    if interactive:
+        if not main_file:
+            console.print("[bold red]Error:[/bold red] --file is required for interactive SQL mode")
+            sys.exit(1)
+            
+        try:
+            # Load main file
+            console.print(f"🗃️ [bold blue]Loading file:[/bold blue] {main_file}")
+            main_pf = ParquetFrame.read(main_file)
+            
+            # Load join files
+            join_pfs = {}
+            for join_spec in join_files:
+                if '=' not in join_spec:
+                    console.print(f"[bold red]Error:[/bold red] Invalid join format: {join_spec}. Use 'name=path'")
+                    sys.exit(1)
+                name, path = join_spec.split('=', 1)
+                console.print(f"🔗 Loading join file: {name} from {path}")
+                join_pfs[name.strip()] = ParquetFrame.read(path.strip())
+            
+            # Interactive SQL REPL
+            console.print("\n🔍 [bold green]Interactive SQL Mode[/bold green]")
+            console.print("Available tables:")
+            console.print("  • [cyan]df[/cyan] - Main dataset")
+            for name in join_pfs.keys():
+                console.print(f"  • [cyan]{name}[/cyan] - Join dataset")
+            console.print("\nType 'exit' or press Ctrl+D to quit.\n")
+            
+            while True:
+                try:
+                    sql_query = input("SQL> ").strip()
+                    if not sql_query:
+                        continue
+                    if sql_query.lower() in ('exit', 'quit'):
+                        break
+                    
+                    # Execute query
+                    result = main_pf.sql(sql_query, **join_pfs)
+                    _display_dataframe_as_table(result._df, "Query Results")
+                    
+                except (EOFError, KeyboardInterrupt):
+                    console.print("\n[bold blue]Goodbye![/bold blue]")
+                    break
+                except Exception as e:
+                    console.print(f"[bold red]SQL Error:[/bold red] {e}")
+                    
+        except Exception as e:
+            console.print(f"[bold red]Error:[/bold red] {e}")
+            sys.exit(1)
+        return
+    
+    # Non-interactive mode - query is required
+    if not query:
+        console.print("[bold red]Error:[/bold red] SQL query is required (or use --interactive)")
+        console.print("\n💡 Examples:")
+        console.print('  pframe sql "SELECT * FROM df LIMIT 10" --file data.parquet')
+        console.print('  pframe sql --interactive --file data.parquet')
+        sys.exit(1)
+    
+    if not main_file:
+        console.print("[bold red]Error:[/bold red] --file is required")
+        sys.exit(1)
+    
+    # Validate query if requested
+    if validate:
+        if not validate_sql_query(query):
+            console.print("[bold red]SQL Validation:[/bold red] Query appears invalid")
+            sys.exit(1)
+        else:
+            console.print("[bold green]✓ SQL query validation passed[/bold green]")
+            return
+    
+    try:
+        # Load main file
+        console.print(f"🗃️ [bold blue]Loading main file:[/bold blue] {main_file}")
+        main_pf = ParquetFrame.read(main_file)
+        
+        # Load join files
+        join_pfs = {}
+        for join_spec in join_files:
+            if '=' not in join_spec:
+                console.print(f"[bold red]Error:[/bold red] Invalid join format: {join_spec}. Use 'name=path'")
+                sys.exit(1)
+            name, path = join_spec.split('=', 1)
+            console.print(f"🔗 Loading join file: {name.strip()} from {path.strip()}")
+            join_pfs[name.strip()] = ParquetFrame.read(path.strip())
+        
+        # Show query execution plan if requested
+        if explain:
+            from .sql import explain_query
+            other_dfs = {name: pf._df for name, pf in join_pfs.items()}
+            plan = explain_query(main_pf._df, query, other_dfs)
+            console.print("\n[bold green]Query Execution Plan:[/bold green]")
+            console.print(plan)
+            return
+        
+        # Execute SQL query
+        console.print(f"\n🔍 [bold blue]Executing query:[/bold blue]")
+        console.print(f"[dim]{query}[/dim]")
+        
+        result = main_pf.sql(query, **join_pfs)
+        
+        # Display results
+        console.print(f"\n📊 [bold green]Query Results:[/bold green] {len(result)} rows")
+        _display_dataframe_as_table(result._df, "SQL Results")
+        
+        # Save results if requested
+        if output:
+            console.print(f"\n💾 Saving results to: {output}")
+            result.save(output)
+            console.print("[bold green]✓ Results saved successfully![/bold green]")
+            
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        import traceback
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
         sys.exit(1)
 
 

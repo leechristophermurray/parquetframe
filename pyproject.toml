@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "parquetframe"
-version = "0.1.1"
+version = "0.2.0"
 authors = [
     {name = "ParquetFrame Contributors", email = "parquetframe@example.com"},
 ]
@@ -59,6 +59,20 @@ cli = [
     "rich>=13.0",  # For enhanced terminal output
     "psutil>=5.8.0",  # For performance monitoring
     "pyyaml>=6.0",  # For YAML workflow support
+]
+sql = [
+    "duckdb>=0.9.0",  # For SQL query functionality
+]
+bio = [
+    "bioframe>=0.4.0",  # For genomic interval operations
+]
+all = [
+    "click>=8.0",
+    "rich>=13.0",
+    "psutil>=5.8.0",
+    "pyyaml>=6.0",
+    "duckdb>=0.9.0",
+    "bioframe>=0.4.0",
 ]
 
 [project.urls]
