@@ -340,8 +340,8 @@ class TestPerformanceIntegration:
         pf_dask = ParquetFrame(sample_small_df, islazy=True)
         start = time.time()
         result_dask = pf_dask.groupby("category").sum()
-        if hasattr(result_dask._df, "compute"):
-            result_dask = result_dask._df.compute()
+        if hasattr(result_dask, "compute"):
+            result_dask = result_dask.compute()
         dask_time = time.time() - start
 
         # For small operations, pandas should be faster
@@ -351,13 +351,14 @@ class TestPerformanceIntegration:
     def test_memory_usage_patterns(self, temp_dir):
         """Test memory usage patterns for different backends."""
         # Create moderately sized DataFrame
+        category_pattern = ["A", "B", "C"] * (50000 // 3) + ["A", "B"][:50000 % 3]
         df = pd.DataFrame(
             {
                 "id": range(50000),
                 "value": range(50000),
-                "category": ["A", "B", "C"] * (50000 // 3 + 1),
+                "category": category_pattern,
             }
-        )[:50000]
+        )
 
         file_path = temp_dir / "memory_test.parquet"
         df.to_parquet(file_path)

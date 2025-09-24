@@ -114,7 +114,9 @@ class TestCLIRun:
         ])
         
         assert result.exit_code == 0
-        assert f"Saving to: {output_file}" in result.output
+        # Check for either CLI message or core save message
+        assert (f"Saving to: {output_file}" in result.output or 
+                f"DataFrame saved to '{output_file}'." in result.output)
         assert output_file.exists()
         
     def test_run_command_with_script_generation(self, cli_runner, sample_parquet, tmp_path):
