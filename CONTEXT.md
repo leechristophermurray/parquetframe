@@ -1,6 +1,6 @@
 # ParquetFrame
 
-This is the context for a universal wrapper for working with dataframes in python. `parquetframe` wraps pandas and dask in a variable called parquet frame (`pf`), allowing switching from one to the other through inference (based on an optional threshold set during read which defaults to 10MB) or manually switching a flag `pf.islazy`. Also, `pf.read(<file>)` will read a parquet without the need for stating the extension (checks for `.pqt` and `.parquet`). `pf.save(<file>)` will save the dataframe to parquet, while still allowing all the `to_parquet()` options/arguments as it's just a front for simplifying using parquetframe without the need for stating the extension (saves as `<file>.parquet` by default unless stated otherwise). parquetframe should still allow for dask and pandas operations as it's just a convenient dataframe handler.
+This is the context for a universal wrapper for working with dataframes in python. `parquetframe` wraps pandas and dask in a variable called parquet frame (`pf`), allowing switching from one to the other through inference (based on an optional threshold set during read which defaults to 10MB) or manually switching a flag `pf.islazy`. Also, `pf.read(<file>)` will read a parquet without the need for stating the extension (checks for `.pqt` and `.parquet`). `pf.save(<file>)` will save the dataframe to parquet, while still allowing all the `to_parquet()` options/arguments as it's just a front for simplifying using parquetframe without the need for stating the extension (saves as `<file>.parquet` by default unless stated otherwise). parquetframe should still allow for dask and pandas operations as it's just a convenient dataframe handler.This library should be able to be used as a library in code, or in a terminal if installed with a `[cli]` option. so parquets could be queried and even transformed (have dask or pandas operations done) and saved to a new file- all in the terminal as if in a notebook. this cli feature would be implemented using the click python package.
 
 To wrap pandas and Dask in a variable called parquet_frame (pf), you can create a custom class that manages an internal dataframe instance, either pandas or Dask. This class can use Python's special methods, like `__getattribute__` and `__getattr__`, to delegate calls to the underlying dataframe object.
 
@@ -230,11 +230,22 @@ pf.save('output_large') # saves as output_large.parquet
 
 This implementation gives you the requested parquet_frame (pf) object, which handles dataframe type inference, file extension management, and delegation of all standard dataframe operations.
 
+## Additional Context for Specific Features
+
+### CLI
+
+This library should be able to be used as a library in code, or in a terminal if installed with a `[cli]` option. so parquets could be queried and even transformed (have dask or pandas operations done) and saved to a new file- all in the terminal as if in a notebook. This cli feature would be implemented using the click python package. The cli mode should also be able to run interactively, with a cli interface which will display results like a notebook
+
+### CLI - SAVE
+
+In cli mode, there's an additional flag when saving which not only saves the parquet, but also saves the instructions of the session  as a python file which imports parquetframe. This should help with portability of work.
+
 ## Notes
 
 - When developing this library/package, use git best practices (for branching, merges, etc), and conventional commits.
 - Ensure we have test coverage at 95% or highter.
 - LICENSE to use is an MIT liense.
 - we shall publish to PyPi. and esnure we have a ci/cd pipline which does so
-- We'll use uv for packaging and publishing
+- We'll use uv for packaging and publishing (on github and pypi)
 - Use tox to help with testing (across multiple python versions, distributions, etc).
+- tox should also be used in the CI/CD pipeline

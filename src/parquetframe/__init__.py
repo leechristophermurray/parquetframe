@@ -11,7 +11,7 @@ Examples:
         >>> df = pqf.read("data")  # Auto-detects backend and extension
         >>> result = df.groupby("column").sum()
         >>> result.save("output")  # Saves as output.parquet
-    
+
     Manual control:
         >>> df = pqf.read("large_data", islazy=True)  # Force Dask
         >>> df.to_pandas()  # Convert to pandas
@@ -28,22 +28,26 @@ pf = ParquetFrame
 
 
 # Convenience functions for more ergonomic usage
-def read(file: Union[str, Path], threshold_mb: Optional[float] = None, 
-         islazy: Optional[bool] = None, **kwargs) -> ParquetFrame:
+def read(
+    file: Union[str, Path],
+    threshold_mb: Optional[float] = None,
+    islazy: Optional[bool] = None,
+    **kwargs,
+) -> ParquetFrame:
     """
     Read a parquet file into a ParquetFrame.
-    
+
     This is a convenience function that wraps ParquetFrame.read().
-    
+
     Args:
         file: Path to the parquet file (extension optional).
         threshold_mb: Size threshold in MB for backend selection. Defaults to 10MB.
         islazy: Force backend selection (True=Dask, False=pandas, None=auto).
         **kwargs: Additional keyword arguments for read_parquet methods.
-        
+
     Returns:
         ParquetFrame instance with loaded data.
-        
+
     Examples:
         >>> import parquetframe as pqf
         >>> df = pqf.read("data")  # Auto-detect extension and backend
@@ -56,13 +60,13 @@ def read(file: Union[str, Path], threshold_mb: Optional[float] = None,
 def create_empty(islazy: bool = False) -> ParquetFrame:
     """
     Create an empty ParquetFrame.
-    
+
     Args:
         islazy: Whether to initialize as Dask (True) or pandas (False).
-        
+
     Returns:
         Empty ParquetFrame instance.
-        
+
     Examples:
         >>> import parquetframe as pqf
         >>> empty_pf = pqf.create_empty()
