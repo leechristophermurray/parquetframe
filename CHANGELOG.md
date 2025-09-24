@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 - Added comprehensive tests for SQL and bioframe functionality (unit and integration)
 
+## [0.2.1] - 2024-09-24
+
+### Improved
+- 📦 **Release Pipeline** - Enhanced GitHub Actions workflow with trusted PyPI publishing
+- 🔧 **Package Metadata** - Updated classifiers and keywords for better PyPI discovery
+- 📚 **Documentation** - Added comprehensive release process documentation
+
+### Fixed
+- 🛠️ Fixed PyPI trusted publishing configuration in release workflow
+- 📋 Updated package status to Beta (Development Status :: 4)
+
 ### Enhanced
 - 🖥️ **Complete CLI Interface** with three main commands (`info`, `run`, `interactive`)
 - 🎨 **Rich Terminal Output** with beautiful tables and color formatting

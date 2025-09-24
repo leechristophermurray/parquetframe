@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "parquetframe"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
     {name = "ParquetFrame Contributors", email = "parquetframe@example.com"},
 ]
@@ -12,7 +12,7 @@ description = "A universal wrapper for working with dataframes in Python, seamle
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
@@ -24,9 +24,17 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Database",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Environment :: Console",
+    "Typing :: Typed",
 ]
-keywords = ["pandas", "dask", "parquet", "dataframe", "big-data"]
+keywords = [
+    "pandas", "dask", "parquet", "dataframe", "big-data", 
+    "sql", "duckdb", "bioframe", "genomics", "cli", 
+    "data-science", "analytics", "bioinformatics"
+]
 dependencies = [
     "pandas>=2.0.0",
     "dask[dataframe]>=2023.1.0",
