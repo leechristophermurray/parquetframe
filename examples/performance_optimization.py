@@ -11,6 +11,7 @@ This script demonstrates the enhanced performance features including:
 
 import tempfile
 from pathlib import Path
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ except ImportError:
     exit(1)
 
 
-def create_sample_datasets():
+def create_sample_datasets() -> Tuple[Dict[str, Path], Path]:
     """Create sample datasets of different sizes for testing."""
     print("📊 Creating sample datasets for performance testing...")
 
@@ -81,7 +82,7 @@ def create_sample_datasets():
         return datasets, temp_path
 
 
-def demonstrate_intelligent_backend_switching(datasets):
+def demonstrate_intelligent_backend_switching(datasets: Dict[str, Path]) -> None:
     """Demonstrate intelligent backend switching."""
     print("\n🧠 Intelligent Backend Switching Demonstration")
     print("=" * 60)
@@ -104,7 +105,7 @@ def demonstrate_intelligent_backend_switching(datasets):
         print("  Explicit:      pandas (forced), Dask (forced)")
 
 
-def demonstrate_performance_benchmarking(datasets, temp_path):
+def demonstrate_performance_benchmarking(datasets: Dict[str, Path], temp_path: Path) -> Any:
     """Demonstrate performance benchmarking capabilities."""
     print("\n⚡ Performance Benchmarking Demonstration")
     print("=" * 60)
@@ -145,7 +146,7 @@ def demonstrate_performance_benchmarking(datasets, temp_path):
     return benchmark
 
 
-def demonstrate_memory_aware_processing(datasets):
+def demonstrate_memory_aware_processing(datasets: Dict[str, Path]) -> None:
     """Demonstrate memory-aware processing techniques."""
     print("\n💾 Memory-Aware Processing Demonstration")
     print("=" * 60)
@@ -184,7 +185,7 @@ def demonstrate_memory_aware_processing(datasets):
             print(f"  ⚠️  Processing error: {e}")
 
 
-def demonstrate_advanced_usage(datasets):
+def demonstrate_advanced_usage(datasets: Dict[str, Path]) -> None:
     """Demonstrate advanced usage patterns."""
     print("\n🚀 Advanced Usage Patterns")
     print("=" * 60)
@@ -224,7 +225,7 @@ def demonstrate_advanced_usage(datasets):
             print(f"    ⚠️  Operation error: {e}")
 
 
-def save_benchmark_results(benchmark, temp_path):
+def save_benchmark_results(benchmark: Any, temp_path: Path) -> None:
     """Save benchmark results for analysis."""
     print("\n💾 Saving Performance Analysis")
     print("=" * 60)
@@ -267,7 +268,7 @@ def save_benchmark_results(benchmark, temp_path):
             print(f"  • {rec}")
 
 
-def main():
+def main() -> None:
     """Main demonstration function."""
     print("🔥 ParquetFrame Performance Optimization Demo")
     print("=" * 60)

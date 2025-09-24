@@ -910,7 +910,7 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
         sys.exit(1)
 
 
-def _display_dataframe_as_table(df, title="DataFrame"):
+def _display_dataframe_as_table(df: Any, title: str = "DataFrame") -> None:
     """Display a pandas DataFrame as a rich table."""
     if df.empty:
         console.print(f"[yellow]{title} is empty[/yellow]")

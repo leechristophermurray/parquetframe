@@ -37,67 +37,125 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v2
 
-    - name: Create virtual environment and install dependencies (Windows)
+    - name: Create virtual environment (Windows)
       if: runner.os == 'Windows'
       run: |
-        uv venv
-        echo "$env:PWD\.venv\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "VIRTUAL_ENV=$env:PWD\.venv" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        uv venv .venv
+        .venv\Scripts\Activate.ps1
+        uv pip install -e ".[dev,test,cli]"
       shell: pwsh
-        
+
     - name: Create virtual environment and install dependencies (Unix)
       if: runner.os != 'Windows'
       run: |
-        uv venv
+        uv venv .venv
         echo "$PWD/.venv/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-      shell: bash
-        
-    - name: Install package
-      run: |
+        source .venv/bin/activate
         uv pip install -e ".[dev,test,cli]"
+      shell: bash
+
+    - name: Install package (already done above)
+      if: false
+      run: echo "Package installation is done in venv creation step"
         
-    - name: Verify installation
+    - name: Verify installation (Windows)
+      if: runner.os == 'Windows'
       run: |
+        .venv\Scripts\Activate.ps1
         python -c "import parquetframe; print('ParquetFrame imported successfully')"
+      shell: pwsh
 
-    - name: Run basic functionality test
+    - name: Verify installation (Unix)
+      if: runner.os != 'Windows'
       run: |
+        source .venv/bin/activate
+        python -c "import parquetframe; print('ParquetFrame imported successfully')"
+      shell: bash
+
+    - name: Run basic functionality test (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\Activate.ps1
         python test_basic.py
+      shell: pwsh
 
-    - name: Test CLI functionality
+    - name: Run basic functionality test (Unix)
+      if: runner.os != 'Windows'
       run: |
-        # Create test data
-        python -c "
-        import pandas as pd
-        df = pd.DataFrame({
-            'id': range(50),
-            'name': [f'user_{i}' for i in range(50)],
-            'age': [20 + (i % 50) for i in range(50)]
-        })
-        df.to_parquet('cli_test_data.parquet')
-        "
+        source .venv/bin/activate
+        python test_basic.py
+      shell: bash
 
-        # Test CLI commands
+    - name: Test CLI functionality (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\Activate.ps1
+        python -c "import pandas as pd; df = pd.DataFrame({'id': range(50), 'name': [f'user_{i}' for i in range(50)], 'age': [20 + (i % 50) for i in range(50)]}); df.to_parquet('cli_test_data.parquet')"
         pframe --help
         pframe info cli_test_data.parquet
         pframe run cli_test_data.parquet --head 3
         pframe run cli_test_data.parquet --query "age > 30" --columns "name,age" --head 2
+      shell: pwsh
 
-    - name: Run linting
+    - name: Test CLI functionality (Unix)
+      if: runner.os != 'Windows'
       run: |
+        source .venv/bin/activate
+        python -c "import pandas as pd; df = pd.DataFrame({'id': range(50), 'name': [f'user_{i}' for i in range(50)], 'age': [20 + (i % 50) for i in range(50)]}); df.to_parquet('cli_test_data.parquet')"
+        pframe --help
+        pframe info cli_test_data.parquet
+        pframe run cli_test_data.parquet --head 3
+        pframe run cli_test_data.parquet --query "age > 30" --columns "name,age" --head 2
+      shell: bash
+
+    - name: Run linting (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\Activate.ps1
         ruff check src/ tests/
         black --check --diff src/ tests/
-      continue-on-error: true  # Don't fail CI for linting issues initially
+      continue-on-error: true
+      shell: pwsh
 
-    - name: Run type checking
+    - name: Run linting (Unix)
+      if: runner.os != 'Windows'
       run: |
+        source .venv/bin/activate
+        ruff check src/ tests/
+        black --check --diff src/ tests/
+      continue-on-error: true
+      shell: bash
+
+    - name: Run type checking (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\Activate.ps1
         mypy src/parquetframe
-      continue-on-error: true  # Don't fail CI for type checking issues initially
+      continue-on-error: true
+      shell: pwsh
 
-    - name: Run tests
+    - name: Run type checking (Unix)
+      if: runner.os != 'Windows'
       run: |
+        source .venv/bin/activate
+        mypy src/parquetframe
+      continue-on-error: true
+      shell: bash
+
+    - name: Run tests (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        .venv\Scripts\Activate.ps1
         python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=50
+      shell: pwsh
+
+    - name: Run tests (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        source .venv/bin/activate
+        python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=50
+      shell: bash
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

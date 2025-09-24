@@ -4,19 +4,20 @@ Tests for the ParquetFrame CLI module.
 
 import pandas as pd
 import pytest
+from typing import Any
 from click.testing import CliRunner
 
 from parquetframe.cli import main
 
 
 @pytest.fixture
-def cli_runner():
+def cli_runner() -> CliRunner:
     """Create a CLI runner for testing."""
     return CliRunner()
 
 
 @pytest.fixture
-def sample_parquet(tmp_path):
+def sample_parquet(tmp_path: Any) -> Any:
     """Create a sample parquet file for testing."""
     df = pd.DataFrame(
         {

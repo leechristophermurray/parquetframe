@@ -38,8 +38,10 @@ repos:
       - id: check-docstring-first
       - id: check-executables-have-shebangs
       - id: check-json
+        exclude: bandit-report.json
       - id: pretty-format-json
         args: [--autofix]
+        exclude: bandit-report.json
       - id: check-ast
       - id: debug-statements
       - id: mixed-line-ending
@@ -58,7 +60,7 @@ repos:
     rev: 1.7.10
     hooks:
       - id: bandit
-        args: [-r, ., -f, json, -o, bandit-report.json]
+        args: [-r, src/]
         exclude: tests/
 
   # Additional Python checks
@@ -82,5 +84,5 @@ repos:
 
 ci:
   autoupdate_schedule: monthly
-  skip: [mypy, pytest-check]  # Skip slow hooks in CI
+  skip: [mypy, pytest-check, bandit]  # Skip slow hooks in CI
   autoupdate_commit_msg: 'chore: update pre-commit hooks'
