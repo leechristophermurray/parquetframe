@@ -1,6 +1,6 @@
 # Byte-compiled / optimized / DLL files
-CONTEXT*.md
-IMPLEMENTATION*.md
+CONTEXT*
+IMPLEMENTATION*
 __pycache__/
 *.py[cod]
 *$py.class
