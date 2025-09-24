@@ -237,4 +237,4 @@ This implementation gives you the requested parquet_frame (pf) object, which han
 - LICENSE to use is an MIT liense.
 - we shall publish to PyPi. and esnure we have a ci/cd pipline which does so
 - We'll use uv for packaging and publishing
-- Use tox to help woth testing.
+- Use tox to help with testing (across multiple python versions, distributions, etc).

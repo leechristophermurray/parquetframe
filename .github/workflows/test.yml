@@ -1,0 +1,142 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run tests weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        exclude:
+          # Reduce matrix size by excluding some combinations
+          - os: windows-latest
+            python-version: "3.9"
+          - os: macos-latest
+            python-version: "3.10"
+    
+    steps:
+    - uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+      
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e ".[dev,test]"
+        
+    - name: Run linting
+      run: |
+        ruff check src/ tests/
+        black --check --diff src/ tests/
+        
+    - name: Run type checking
+      run: |
+        mypy src/parquetframe
+        
+    - name: Run tests
+      run: |
+        pytest --cov=parquetframe --cov-report=xml --cov-report=html -v
+        
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        
+    - name: Upload coverage artifacts
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: htmlcov/
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - uses: pre-commit/action@v3.0.1
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install uv and dependencies
+      run: |
+        pip install uv
+        uv pip install --system bandit[toml]
+    - name: Run security checks
+      run: bandit -r src/ -f json -o bandit-report.json || true
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report
+        path: bandit-report.json
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+    - name: Install build dependencies
+      run: |
+        uv pip install --system build twine
+    - name: Build package
+      run: |
+        python -m build
+    - name: Check package
+      run: |
+        twine check dist/*
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+  minimum-requirements:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'  # Test minimum supported version
+    - name: Install minimum requirements
+      run: |
+        pip install uv
+        # Install minimum versions specified in pyproject.toml
+        uv pip install --system pandas==2.0.0 "dask[dataframe]==2023.1.0" pyarrow==10.0.0
+        uv pip install --system pytest pytest-cov
+        uv pip install --system -e . --no-deps
+    - name: Test with minimum requirements
+      run: |
+        pytest tests/unit/ -x -v
