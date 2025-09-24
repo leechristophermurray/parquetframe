@@ -351,7 +351,7 @@ class TestPerformanceIntegration:
     def test_memory_usage_patterns(self, temp_dir):
         """Test memory usage patterns for different backends."""
         # Create moderately sized DataFrame
-        category_pattern = ["A", "B", "C"] * (50000 // 3) + ["A", "B"][:50000 % 3]
+        category_pattern = ["A", "B", "C"] * (50000 // 3) + ["A", "B"][: 50000 % 3]
         df = pd.DataFrame(
             {
                 "id": range(50000),

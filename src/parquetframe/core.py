@@ -7,7 +7,7 @@ DataFrames for seamless operation.
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import dask.dataframe as dd
 import pandas as pd
@@ -80,9 +80,9 @@ class ParquetFrame:
         """
         if self._df is None:
             raise ValueError("No dataframe loaded")
-            
+
         result = self._df[key]
-        
+
         # Track operation in history if enabled
         if self._track_history:
             if isinstance(key, list):
@@ -90,20 +90,20 @@ class ParquetFrame:
             else:
                 key_repr = repr(key)
             self._history.append(f"pf = pf[{key_repr}]")
-            
+
         # If result is a dataframe, wrap it
         if isinstance(result, (pd.DataFrame, dd.DataFrame)):
             new_pf = ParquetFrame(
-                result, 
-                isinstance(result, dd.DataFrame), 
-                track_history=self._track_history
+                result,
+                isinstance(result, dd.DataFrame),
+                track_history=self._track_history,
             )
             # Inherit history from parent if tracking
             if self._track_history:
                 new_pf._history = self._history.copy()
             return new_pf
         return result
-        
+
     def __len__(self) -> int:
         """
         Return the length of the dataframe.
@@ -130,14 +130,14 @@ class ParquetFrame:
                         kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
                         call_repr = f".{name}({', '.join(args_repr + kwargs_repr)})"
                         self._history.append(f"pf = pf{call_repr}")
-                    
+
                     result = attr(*args, **kwargs)
                     # If the result is a dataframe, wrap it in a new ParquetFrame
                     if isinstance(result, (pd.DataFrame, dd.DataFrame)):
                         new_pf = ParquetFrame(
-                            result, 
-                            isinstance(result, dd.DataFrame), 
-                            track_history=self._track_history
+                            result,
+                            isinstance(result, dd.DataFrame),
+                            track_history=self._track_history,
                         )
                         # Inherit history from parent if tracking
                         if self._track_history:
@@ -156,82 +156,81 @@ class ParquetFrame:
         """Estimate memory usage for loading file based on file size and compression."""
         try:
             import pyarrow.parquet as pq
-            
+
             # Get file metadata without loading full file
             metadata = pq.ParquetFile(file_path).metadata
-            
+
             # Estimate memory usage based on:
             # 1. Uncompressed size (compressed size * expansion factor)
             # 2. Data types (strings use more memory than numbers)
             # 3. Null values (can reduce memory usage)
-            
+
             compressed_size = file_path.stat().st_size / 1024 / 1024  # MB
-            
+
             # Estimate compression ratio (typical parquet compression is 3-10x)
             # Use conservative estimate of 4x expansion
             expansion_factor = 4.0
-            
+
             # Additional overhead for pandas DataFrame structure
             pandas_overhead = 1.5
-            
+
             estimated_memory = compressed_size * expansion_factor * pandas_overhead
-            
+
             return estimated_memory
-            
+
         except Exception:
             # Fallback to simple file size estimation
             file_size_mb = file_path.stat().st_size / 1024 / 1024
             return file_size_mb * 5  # Conservative estimate
-    
+
     @classmethod
     def _get_system_memory(cls) -> float:
         """Get available system memory in MB."""
         try:
             import psutil
+
             # Get available memory (not just free, but actually available)
             available_mb = psutil.virtual_memory().available / 1024 / 1024
             return available_mb
         except (ImportError, Exception):
             # Conservative fallback if psutil not available or fails
             return 2048  # Assume 2GB available
-    
+
     @classmethod
     def _should_use_dask(
-        cls, 
-        file_path: Path, 
-        threshold_mb: float,
-        islazy: Optional[bool] = None
+        cls, file_path: Path, threshold_mb: float, islazy: Optional[bool] = None
     ) -> bool:
         """Intelligently determine whether to use Dask based on multiple factors."""
         if islazy is not None:
             return islazy
-            
+
         file_size_mb = file_path.stat().st_size / 1024 / 1024
-        
+
         # Basic threshold check
         if file_size_mb >= threshold_mb:
             return True
-            
+
         # Advanced checks if file is close to threshold
         if file_size_mb >= threshold_mb * 0.7:  # Within 70% of threshold
             estimated_memory = cls._estimate_memory_usage(file_path)
             available_memory = cls._get_system_memory()
-            
+
             # Use Dask if estimated memory usage > 50% of available memory
             if estimated_memory > available_memory * 0.5:
                 return True
-                
+
             # Use Dask if file has many partitions (suggests it's meant for parallel processing)
             try:
                 import pyarrow.parquet as pq
+
                 metadata = pq.ParquetFile(file_path).metadata
                 if metadata.num_row_groups > 10:  # Many row groups suggest chunked data
                     return True
             except Exception:
                 pass
-                
+
         return False
-    
+
     @classmethod
     def read(
         cls,
@@ -277,14 +276,16 @@ class ParquetFrame:
         # Validate islazy parameter
         if islazy is not None and not isinstance(islazy, bool):
             raise TypeError("islazy parameter must be a boolean or None")
-        
+
         # Determine backend using explicit override first
         threshold = threshold_mb if threshold_mb is not None else 10
         if islazy is not None:
             use_dask = bool(islazy)
         else:
             # Intelligent switching when not explicitly specified
-            use_dask = cls._should_use_dask(Path(file_path) if not is_url else Path("."), threshold, None)
+            use_dask = cls._should_use_dask(
+                Path(file_path) if not is_url else Path("."), threshold, None
+            )
 
         # Read the file
         if use_dask:
@@ -300,12 +301,16 @@ class ParquetFrame:
 
         instance = cls(df, use_dask)
         # Track read operation in history if needed
-        if hasattr(cls, '_current_session_tracking') and cls._current_session_tracking:
+        if hasattr(cls, "_current_session_tracking") and cls._current_session_tracking:
             instance._track_history = True
-            instance._history = [f"pf = ParquetFrame.read('{file}', threshold_mb={threshold_mb}, islazy={islazy})"]
+            instance._history = [
+                f"pf = ParquetFrame.read('{file}', threshold_mb={threshold_mb}, islazy={islazy})"
+            ]
         return instance
 
-    def save(self, file: Union[str, Path], save_script: Optional[str] = None, **kwargs) -> "ParquetFrame":
+    def save(
+        self, file: Union[str, Path], save_script: Optional[str] = None, **kwargs
+    ) -> "ParquetFrame":
         """
         Save the dataframe to a parquet file.
 
@@ -332,7 +337,7 @@ class ParquetFrame:
             raise TypeError("No dataframe loaded to save.")
 
         file_path = self._ensure_parquet_extension(file)
-        
+
         # Track save operation in history
         if self._track_history:
             save_args = [f"'{file}'"] + [f"{k}={v!r}" for k, v in kwargs.items()]
@@ -349,7 +354,7 @@ class ParquetFrame:
         elif isinstance(self._df, pd.DataFrame):
             self._df.to_parquet(file_path, **kwargs)
             print(f"pandas DataFrame saved to '{file_path}'.")
-            
+
         # Save script if requested
         if save_script and self._track_history:
             self._save_history_script(save_script)
@@ -400,32 +405,28 @@ class ParquetFrame:
             print("Already a Dask DataFrame.")
         return self
 
-    def sql(
-        self,
-        query: str,
-        **other_frames: "ParquetFrame"
-    ) -> "ParquetFrame":
+    def sql(self, query: str, **other_frames: "ParquetFrame") -> "ParquetFrame":
         """
         Execute a SQL query on this ParquetFrame using DuckDB.
-        
+
         The current ParquetFrame is available as 'df' in the query.
         Additional ParquetFrames can be passed as keyword arguments.
-        
+
         Args:
             query: SQL query string to execute.
             **other_frames: Additional ParquetFrames to use in JOINs.
-        
+
         Returns:
             New ParquetFrame with query results (always pandas backend).
-            
+
         Raises:
             ImportError: If DuckDB is not installed.
             ValueError: If query execution fails.
-            
+
         Examples:
             >>> # Simple query
             >>> result = pf.sql("SELECT * FROM df WHERE age > 25")
-            >>> 
+            >>>
             >>> # JOIN with another ParquetFrame
             >>> orders = pf.sql(
             ...     "SELECT * FROM df JOIN customers ON df.cust_id = customers.id",
@@ -434,40 +435,41 @@ class ParquetFrame:
         """
         if self._df is None:
             raise ValueError("No dataframe loaded for SQL query")
-            
+
         from .sql import query_dataframes
-        
+
         # Convert other ParquetFrames to their underlying DataFrames
         other_dfs = {name: pf._df for name, pf in other_frames.items()}
-        
+
         # Execute SQL query
         result_df = query_dataframes(self._df, query, other_dfs)
-        
+
         # Return as pandas-backed ParquetFrame (SQL results are always pandas)
         return self.__class__(result_df, islazy=False)
-    
+
     @property
     def bio(self):
         """
         Access bioframe functions with intelligent parallel dispatching.
-        
+
         Returns BioAccessor that automatically chooses between pandas (eager)
         and Dask (parallel) implementations based on the current backend.
-        
+
         Returns:
             BioAccessor instance for genomic operations.
-            
+
         Raises:
             ImportError: If bioframe is not installed.
-            
+
         Examples:
             >>> # Cluster genomic intervals
             >>> clustered = pf.bio.cluster(min_dist=1000)
-            >>> 
+            >>>
             >>> # Find overlaps with another ParquetFrame
             >>> overlaps = pf.bio.overlap(other_pf, broadcast=True)
         """
         from .bio import BioAccessor
+
         return BioAccessor(self)
 
     @staticmethod
@@ -506,37 +508,39 @@ class ParquetFrame:
     def _save_history_script(self, script_path: Union[str, Path]) -> None:
         """
         Save the session history to a Python script.
-        
+
         Args:
             script_path: Path to save the script to.
         """
         if not self._track_history or not self._history:
             print("No history to save (history tracking not enabled or empty).")
             return
-            
+
         script_path = Path(script_path)
         if script_path.suffix != ".py":
             script_path = script_path.with_suffix(".py")
-            
+
         header = "# Auto-generated script from ParquetFrame CLI session\n"
-        header += "from parquetframe import ParquetFrame\nimport parquetframe as pqf\n\n"
-        
-        with open(script_path, 'w') as f:
+        header += (
+            "from parquetframe import ParquetFrame\nimport parquetframe as pqf\n\n"
+        )
+
+        with open(script_path, "w") as f:
             f.write(header)
             for line in self._history:
                 f.write(line + "\n")
-        
+
         print(f"Session history saved to '{script_path}'")
-        
+
     def get_history(self) -> Optional[list]:
         """
         Get the current session history.
-        
+
         Returns:
             List of command strings if history tracking is enabled, None otherwise.
         """
         return self._history.copy() if self._track_history else None
-        
+
     def clear_history(self) -> None:
         """
         Clear the session history.
