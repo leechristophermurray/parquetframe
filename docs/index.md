@@ -10,18 +10,24 @@
 
 ## ✨ Features
 
-🚀 **Automatic Backend Selection**: Automatically chooses pandas for small files (<10MB) and Dask for larger files  
+🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics  
 📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)  
 🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods  
 ⚡ **Full API Compatibility**: All pandas/Dask operations work transparently  
-🎯 **Zero Configuration**: Works out of the box with sensible defaults  
+🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking  
+📊 **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
+🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
 ## 🚀 Quick Start
 
 === "Installation"
 
     ```bash
+    # Basic installation
     pip install parquetframe
+    
+    # With CLI support (recommended)
+    pip install parquetframe[cli]
     ```
 
 === "Basic Usage"
@@ -61,6 +67,22 @@
               .save("result"))
     ```
 
+=== "CLI Usage"
+
+    ```bash
+    # Quick file info
+    pframe info data.parquet
+    
+    # Data processing
+    pframe run data.parquet --query "age > 30" --head 10
+    
+    # Interactive mode
+    pframe interactive data.parquet
+    
+    # Performance benchmarking
+    pframe benchmark --operations "groupby,filter"
+    ```
+
 ## 🎯 Why ParquetFrame?
 
 ### The Problem
@@ -77,9 +99,11 @@ ParquetFrame automatically chooses the right backend based on your data size, wh
 
 ## 📊 Performance Benefits
 
-- **Automatic optimization**: Use pandas for speed on small data, Dask for memory efficiency on large data
+- **Intelligent optimization**: Memory-aware backend selection considering file size, system resources, and file characteristics
+- **Built-in benchmarking**: Comprehensive performance analysis tools to optimize your workflows
 - **Memory efficiency**: Never load more data than your system can handle
 - **Speed optimization**: Fast pandas operations for small datasets, scalable Dask for large ones
+- **CLI performance tools**: Built-in benchmarking and analysis from the command line
 - **Zero overhead**: Direct delegation to underlying libraries without performance penalty
 
 ## 🛠️ Key Concepts
@@ -139,7 +163,9 @@ df.save("output.pqt")     # Saves as "output.pqt"
 - [Installation Guide](installation.md) - Detailed installation instructions
 - [Quick Start](quickstart.md) - Get up and running in minutes
 - [User Guide](usage.md) - Comprehensive usage examples
-- [API Reference](api.md) - Complete API documentation
+- [CLI Guide](cli/index.md) - Complete command-line interface documentation
+- [Performance Optimization](tutorials/performance.md) - Advanced performance features and benchmarking
+- [API Reference](api/core.md) - Complete API documentation
 - [Performance Tips](performance.md) - Optimize your workflows
 
 ## 🤝 Contributing

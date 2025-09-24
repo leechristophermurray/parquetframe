@@ -10,13 +10,14 @@ A universal wrapper for working with dataframes in Python, seamlessly switching 
 
 ## Features
 
-🚀 **Automatic Backend Selection**: Automatically chooses pandas for small files (<10MB) and Dask for larger files  
+🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics  
 📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)  
 🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods  
 ⚡ **Full API Compatibility**: All pandas/Dask operations work transparently  
-🖥️ **Powerful CLI**: Command-line interface for data exploration and batch processing  
+🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking  
 📝 **Script Generation**: Automatic Python script generation from CLI sessions  
-🎯 **Zero Configuration**: Works out of the box with sensible defaults  
+⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
+🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
 ## Quick Start
 
@@ -120,14 +121,32 @@ pframe interactive data.parquet
 >>> exit()
 ```
 
+### Performance Benchmarking
+
+```bash
+# Run comprehensive performance benchmarks
+pframe benchmark
+
+# Benchmark specific operations
+pframe benchmark --operations "groupby,filter,sort"
+
+# Test with custom file sizes
+pframe benchmark --file-sizes "1000,10000,100000"
+
+# Save benchmark results
+pframe benchmark --output results.json --quiet
+```
+
 ## Key Benefits
 
-- **Performance**: Automatically optimizes for file size - use pandas for speed on small data, Dask for memory efficiency on large data
+- **Intelligent Performance**: Memory-aware backend selection considering file size, system resources, and file characteristics
+- **Built-in Benchmarking**: Comprehensive performance analysis tools to optimize your data processing workflows
 - **Simplicity**: One consistent API regardless of backend
 - **Flexibility**: Override automatic decisions when needed
 - **Compatibility**: Drop-in replacement for pandas.read_parquet()
-- **CLI Power**: Full command-line interface for data exploration and batch processing
+- **CLI Power**: Full command-line interface for data exploration, batch processing, and performance benchmarking
 - **Reproducibility**: Automatic Python script generation from CLI sessions
+- **Zero-Configuration Optimization**: Automatic performance improvements with intelligent defaults
 
 ## Requirements
 
@@ -140,6 +159,7 @@ pframe interactive data.parquet
 
 - click >= 8.0 (for CLI interface)
 - rich >= 13.0 (for enhanced terminal output)
+- psutil >= 5.8.0 (for performance monitoring and memory-aware backend selection)
 
 ## CLI Reference
 
@@ -148,6 +168,7 @@ pframe interactive data.parquet
 - `pframe info <file>` - Display file information and schema
 - `pframe run <file> [options]` - Process data with various options
 - `pframe interactive [file]` - Start interactive Python session
+- `pframe benchmark [options]` - Run performance benchmarks and analysis
 
 ### Options for `pframe run`
 
@@ -163,6 +184,13 @@ pframe interactive data.parquet
 - `--threshold` - Size threshold for backend selection (MB)
 - `--force-pandas` - Force pandas backend
 - `--force-dask` - Force Dask backend
+
+### Options for `pframe benchmark`
+
+- `--output, -o` - Save benchmark results to JSON file
+- `--quiet, -q` - Run in quiet mode (minimal output)
+- `--operations` - Comma-separated operations to benchmark (groupby,filter,sort,aggregation,join)
+- `--file-sizes` - Comma-separated test file sizes in rows (e.g., '1000,10000,100000')
 
 ## Documentation
 
