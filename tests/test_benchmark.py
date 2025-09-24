@@ -346,7 +346,8 @@ class TestComprehensiveBenchmark:
         mock_benchmark.benchmark_read_operations.assert_called_once()
         mock_benchmark.benchmark_operations.assert_called_once()
         mock_benchmark.benchmark_threshold_sensitivity.assert_called_once()
-        mock_benchmark.generate_report.assert_called_once()
+        # generate_report should NOT be called when verbose=False
+        mock_benchmark.generate_report.assert_not_called()
         
     @patch('parquetframe.benchmark.PerformanceBenchmark')
     def test_run_comprehensive_benchmark_with_output(self, mock_benchmark_class):
