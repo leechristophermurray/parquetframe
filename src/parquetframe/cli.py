@@ -236,7 +236,9 @@ def run(
             # Save script even if no output file
             pf._save_history_script(save_script)
 
-        console.print("\n[bold green][SUCCESS] Operation completed successfully![/bold green]")
+        console.print(
+            "\n[bold green][SUCCESS] Operation completed successfully![/bold green]"
+        )
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
@@ -537,7 +539,9 @@ def benchmark(output, quiet, operations, file_sizes):
             with open(output, "w") as f:
                 json.dump(all_results, f, indent=2, default=str)
             if verbose:
-                console.print(f"\n[RESULTS] [bold blue]Results saved to:[/bold blue] {output}")
+                console.print(
+                    f"\n[RESULTS] [bold blue]Results saved to:[/bold blue] {output}"
+                )
 
         if verbose:
             console.print(
@@ -805,7 +809,9 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
                 join_pfs[name.strip()] = ParquetFrame.read(path.strip())
 
             # Interactive SQL REPL
-            console.print("\n[INTERACTIVE] [bold green]Interactive SQL Mode[/bold green]")
+            console.print(
+                "\n[INTERACTIVE] [bold green]Interactive SQL Mode[/bold green]"
+            )
             console.print("Available tables:")
             console.print("  • [cyan]df[/cyan] - Main dataset")
             for name in join_pfs.keys():
@@ -855,12 +861,16 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
             console.print("[bold red]SQL Validation:[/bold red] Query appears invalid")
             sys.exit(1)
         else:
-            console.print("[bold green][SUCCESS] SQL query validation passed[/bold green]")
+            console.print(
+                "[bold green][SUCCESS] SQL query validation passed[/bold green]"
+            )
             return
 
     try:
         # Load main file
-        console.print(f"[LOADING] [bold blue]Loading main file:[/bold blue] {main_file}")
+        console.print(
+            f"[LOADING] [bold blue]Loading main file:[/bold blue] {main_file}"
+        )
         main_pf = ParquetFrame.read(main_file)
 
         # Load join files
@@ -872,7 +882,9 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
                 )
                 sys.exit(1)
             name, path = join_spec.split("=", 1)
-            console.print(f"[JOIN] Loading join file: {name.strip()} from {path.strip()}")
+            console.print(
+                f"[JOIN] Loading join file: {name.strip()} from {path.strip()}"
+            )
             join_pfs[name.strip()] = ParquetFrame.read(path.strip())
 
         # Show query execution plan if requested
@@ -901,7 +913,9 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
         if output:
             console.print(f"\n[SAVING] Saving results to: {output}")
             result.save(output)
-            console.print("[bold green][SUCCESS] Results saved successfully![/bold green]")
+            console.print(
+                "[bold green][SUCCESS] Results saved successfully![/bold green]"
+            )
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")

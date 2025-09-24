@@ -58,7 +58,7 @@ jobs:
     - name: Install package (already done above)
       if: false
       run: echo "Package installation is done in venv creation step"
-        
+
     - name: Verify installation (Windows)
       if: runner.os == 'Windows'
       run: |

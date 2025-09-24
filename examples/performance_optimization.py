@@ -103,6 +103,8 @@ def demonstrate_intelligent_backend_switching(datasets: dict[str, Path]) -> None
         _ = ParquetFrame.read(str(file_path), islazy=False)
         _ = ParquetFrame.read(str(file_path), islazy=True)
         print("  Explicit:      pandas (forced), Dask (forced)")
+
+
 def demonstrate_performance_benchmarking(
     datasets: dict[str, Path], temp_path: Path
 ) -> Any:

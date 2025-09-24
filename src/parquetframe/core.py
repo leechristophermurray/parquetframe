@@ -226,7 +226,9 @@ class ParquetFrame:
                 metadata = pq.ParquetFile(file_path).metadata
                 if metadata.num_row_groups > 10:  # Many row groups suggest chunked data
                     return True
-            except Exception:
+            except Exception:  # nosec B110
+                # Intentional broad exception handling for metadata parsing robustness
+                # Failure to determine row groups should not crash file read operation
                 pass
 
         return False
@@ -375,7 +377,9 @@ class ParquetFrame:
                 string_cols = list(self._df.select_dtypes(include="string").columns)
                 if string_cols:
                     self._df[string_cols] = self._df[string_cols].astype("object")
-            except Exception:
+            except Exception:  # nosec B110
+                # Intentional broad exception handling for dtype conversion robustness
+                # Failure to normalize string dtypes should not crash pandas conversion
                 pass
             self._islazy = False
             print("Converted to pandas DataFrame.")

@@ -41,7 +41,7 @@ class TestFileNotFoundErrors:
 
     @pytest.mark.skipif(
         sys.platform.startswith("win"),
-        reason="POSIX permission semantics not fully supported on Windows"
+        reason="POSIX permission semantics not fully supported on Windows",
     )
     def test_read_with_permission_denied(self, temp_dir, sample_small_df):
         """Test reading file with permission issues."""
@@ -77,7 +77,7 @@ class TestSaveErrors:
 
     @pytest.mark.skipif(
         sys.platform.startswith("win"),
-        reason="POSIX permission semantics not fully supported on Windows"
+        reason="POSIX permission semantics not fully supported on Windows",
     )
     def test_save_to_readonly_directory(self, sample_small_df, temp_dir):
         """Test saving to readonly directory."""

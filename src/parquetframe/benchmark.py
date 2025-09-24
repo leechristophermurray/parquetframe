@@ -252,7 +252,9 @@ class PerformanceBenchmark:
             operations = ["groupby", "filter", "sort", "aggregation", "join"]
 
         if self.verbose:
-            self.console.print("\n[OPS BENCHMARK] [bold blue]Benchmarking Operations[/bold blue]")
+            self.console.print(
+                "\n[OPS BENCHMARK] [bold blue]Benchmarking Operations[/bold blue]"
+            )
 
         results = []
 
@@ -488,7 +490,9 @@ class PerformanceBenchmark:
                 # Score based on execution time and memory efficiency
                 score = 1 / (result.execution_time + result.memory_peak / 100)
                 threshold_performance[threshold].append(score)
-            except Exception:
+            except Exception:  # nosec B112
+                # Broad exception handling intentional for benchmark robustness
+                # Individual threshold parsing failures should not stop analysis
                 continue
 
         if not threshold_performance:
