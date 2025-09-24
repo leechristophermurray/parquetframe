@@ -54,7 +54,7 @@ class BenchmarkResult:
         self.error = error
 
     def __str__(self) -> str:
-        status = "✓" if self.success else "✗"
+        status = "[OK]" if self.success else "[FAIL]"
         return f"{status} {self.operation} ({self.backend}): {self.execution_time:.3f}s, {self.memory_peak:.1f}MB peak"
 
 

@@ -236,7 +236,7 @@ def run(
             # Save script even if no output file
             pf._save_history_script(save_script)
 
-        console.print("\n[bold green]✓ Operation completed successfully![/bold green]")
+        console.print("\n[bold green][SUCCESS] Operation completed successfully![/bold green]")
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
@@ -474,7 +474,7 @@ def benchmark(output, quiet, operations, file_sizes):
 
         if verbose:
             console.print(
-                "🔥 [bold green]Starting ParquetFrame Performance Benchmark[/bold green]"
+                "[BENCHMARK] [bold green]Starting ParquetFrame Performance Benchmark[/bold green]"
             )
             console.print("This may take several minutes...\n")
 
@@ -537,11 +537,11 @@ def benchmark(output, quiet, operations, file_sizes):
             with open(output, "w") as f:
                 json.dump(all_results, f, indent=2, default=str)
             if verbose:
-                console.print(f"\n📊 [bold blue]Results saved to:[/bold blue] {output}")
+                console.print(f"\n[RESULTS] [bold blue]Results saved to:[/bold blue] {output}")
 
         if verbose:
             console.print(
-                "\n[bold green]✓ Benchmark completed successfully![/bold green]"
+                "\n[bold green][SUCCESS] Benchmark completed successfully![/bold green]"
             )
 
     except KeyboardInterrupt:
@@ -601,7 +601,7 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
     if list_steps:
         from .workflows import STEP_REGISTRY
 
-        console.print("\n📋 [bold blue]Available Workflow Steps[/bold blue]")
+        console.print("\n[STEPS] [bold blue]Available Workflow Steps[/bold blue]")
 
         step_descriptions = {
             "read": "Read data from parquet files",
@@ -623,10 +623,10 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
             example_workflow = create_example_workflow()
             with open(create_example, "w") as f:
                 yaml.dump(example_workflow, f, indent=2, default_flow_style=False)
-            console.print(
-                f"✅ [bold green]Example workflow created at:[/bold green] {create_example}"
-            )
-            console.print("\n💡 Edit the workflow file and run with:")
+        console.print(
+            f"[SUCCESS] [bold green]Example workflow created at:[/bold green] {create_example}"
+        )
+            console.print("\n[TIP] Edit the workflow file and run with:")
             console.print(f"   pframe workflow {create_example}")
         except Exception as e:
             console.print(f"[bold red]Error creating example workflow:[/bold red] {e}")
@@ -636,7 +636,7 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
     # Workflow file is required for validation and execution
     if not workflow_file:
         console.print("[bold red]Error:[/bold red] Workflow file is required.")
-        console.print("\n💡 Try:")
+        console.print("\n[TIP] Try:")
         console.print(
             "  pframe workflow --create-example my_workflow.yml  # Create an example"
         )
@@ -678,24 +678,24 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
         if validate:
             # Validate workflow
             console.print(
-                f"🔍 [bold blue]Validating workflow:[/bold blue] {workflow_file}"
+                f"[VALIDATING] [bold blue]Validating workflow:[/bold blue] {workflow_file}"
             )
             workflow = engine.load_workflow(workflow_file)
             errors = engine.validate_workflow(workflow)
 
             if errors:
-                console.print("\n❌ [bold red]Validation failed:[/bold red]")
+                console.print("\n[FAILED] [bold red]Validation failed:[/bold red]")
                 for error in errors:
                     console.print(f"  • {error}")
                 sys.exit(1)
             else:
                 console.print(
-                    "\n✅ [bold green]Workflow validation passed![/bold green]"
+                    "\n[SUCCESS] [bold green]Workflow validation passed![/bold green]"
                 )
 
                 # Show workflow summary
                 steps = workflow.get("steps", [])
-                console.print("\n📊 Workflow summary:")
+                console.print("\n[SUMMARY] Workflow summary:")
                 console.print(f"  • Name: {workflow.get('name', 'Unnamed workflow')}")
                 console.print(
                     f"  • Description: {workflow.get('description', 'No description')}"
@@ -709,16 +709,16 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
             # Execute workflow
             if not quiet:
                 console.print(
-                    f"🚀 [bold blue]Executing workflow:[/bold blue] {workflow_file}"
+                    f"[EXECUTING] [bold blue]Executing workflow:[/bold blue] {workflow_file}"
                 )
                 if workflow_variables:
-                    console.print(f"📝 Variables: {workflow_variables}")
+                    console.print(f"[VARIABLES] Variables: {workflow_variables}")
 
             engine.run_workflow_file(workflow_file, variables=workflow_variables)
 
             if not quiet:
                 console.print(
-                    "\n🎉 [bold green]Workflow execution completed successfully![/bold green]"
+                    "\n[SUCCESS] [bold green]Workflow execution completed successfully![/bold green]"
                 )
 
     except WorkflowError as e:
@@ -789,7 +789,7 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
 
         try:
             # Load main file
-            console.print(f"🗃️ [bold blue]Loading file:[/bold blue] {main_file}")
+            console.print(f"[LOADING] [bold blue]Loading file:[/bold blue] {main_file}")
             main_pf = ParquetFrame.read(main_file)
 
             # Load join files
@@ -801,11 +801,11 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
                     )
                     sys.exit(1)
                 name, path = join_spec.split("=", 1)
-                console.print(f"🔗 Loading join file: {name} from {path}")
+                console.print(f"[JOIN] Loading join file: {name} from {path}")
                 join_pfs[name.strip()] = ParquetFrame.read(path.strip())
 
             # Interactive SQL REPL
-            console.print("\n🔍 [bold green]Interactive SQL Mode[/bold green]")
+            console.print("\n[INTERACTIVE] [bold green]Interactive SQL Mode[/bold green]")
             console.print("Available tables:")
             console.print("  • [cyan]df[/cyan] - Main dataset")
             for name in join_pfs.keys():
@@ -840,7 +840,7 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
         console.print(
             "[bold red]Error:[/bold red] SQL query is required (or use --interactive)"
         )
-        console.print("\n💡 Examples:")
+        console.print("\n[EXAMPLES] Examples:")
         console.print('  pframe sql "SELECT * FROM df LIMIT 10" --file data.parquet')
         console.print("  pframe sql --interactive --file data.parquet")
         sys.exit(1)
@@ -855,12 +855,12 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
             console.print("[bold red]SQL Validation:[/bold red] Query appears invalid")
             sys.exit(1)
         else:
-            console.print("[bold green]✓ SQL query validation passed[/bold green]")
+            console.print("[bold green][SUCCESS] SQL query validation passed[/bold green]")
             return
 
     try:
         # Load main file
-        console.print(f"🗃️ [bold blue]Loading main file:[/bold blue] {main_file}")
+        console.print(f"[LOADING] [bold blue]Loading main file:[/bold blue] {main_file}")
         main_pf = ParquetFrame.read(main_file)
 
         # Load join files
@@ -872,7 +872,7 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
                 )
                 sys.exit(1)
             name, path = join_spec.split("=", 1)
-            console.print(f"🔗 Loading join file: {name.strip()} from {path.strip()}")
+            console.print(f"[JOIN] Loading join file: {name.strip()} from {path.strip()}")
             join_pfs[name.strip()] = ParquetFrame.read(path.strip())
 
         # Show query execution plan if requested
@@ -886,22 +886,22 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
             return
 
         # Execute SQL query
-        console.print("\n🔍 [bold blue]Executing query:[/bold blue]")
+        console.print("\n[EXECUTING] [bold blue]Executing query:[/bold blue]")
         console.print(f"[dim]{query}[/dim]")
 
         result = main_pf.sql(query, **join_pfs)
 
         # Display results
         console.print(
-            f"\n📊 [bold green]Query Results:[/bold green] {len(result)} rows"
+            f"\n[RESULTS] [bold green]Query Results:[/bold green] {len(result)} rows"
         )
         _display_dataframe_as_table(result._df, "SQL Results")
 
         # Save results if requested
         if output:
-            console.print(f"\n💾 Saving results to: {output}")
+            console.print(f"\n[SAVING] Saving results to: {output}")
             result.save(output)
-            console.print("[bold green]✓ Results saved successfully![/bold green]")
+            console.print("[bold green][SUCCESS] Results saved successfully![/bold green]")
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
