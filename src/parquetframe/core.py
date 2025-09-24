@@ -35,6 +35,7 @@ class ParquetFrame:
         self,
         df: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
         islazy: bool = False,
+        track_history: bool = False,
     ) -> None:
         """
         Initialize the ParquetFrame.
@@ -42,10 +43,13 @@ class ParquetFrame:
         Args:
             df: An initial dataframe (pandas or Dask).
             islazy: If True, forces a Dask DataFrame.
+            track_history: If True, enables history tracking for CLI sessions.
         """
         self._df = df
         self._islazy = islazy
         self.DEFAULT_THRESHOLD_MB = 10
+        self._track_history = track_history
+        self._history = [] if track_history else None
 
     @property
     def islazy(self) -> bool:
@@ -68,6 +72,44 @@ class ParquetFrame:
             return f"ParquetFrame(type={df_type}, df=None)"
         return f"ParquetFrame(type={df_type}, df={self._df.__repr__()})"
 
+    def __getitem__(self, key):
+        """
+        Support indexing operations (df[column] or df[columns]).
+        """
+        if self._df is None:
+            raise ValueError("No dataframe loaded")
+            
+        result = self._df[key]
+        
+        # Track operation in history if enabled
+        if self._track_history:
+            if isinstance(key, list):
+                key_repr = repr(key)
+            else:
+                key_repr = repr(key)
+            self._history.append(f"pf = pf[{key_repr}]")
+            
+        # If result is a dataframe, wrap it
+        if isinstance(result, (pd.DataFrame, dd.DataFrame)):
+            new_pf = ParquetFrame(
+                result, 
+                isinstance(result, dd.DataFrame), 
+                track_history=self._track_history
+            )
+            # Inherit history from parent if tracking
+            if self._track_history:
+                new_pf._history = self._history.copy()
+            return new_pf
+        return result
+        
+    def __len__(self) -> int:
+        """
+        Return the length of the dataframe.
+        """
+        if self._df is None:
+            return 0
+        return len(self._df)
+
     def __getattr__(self, name: str) -> Any:
         """
         Delegate attribute access to the underlying dataframe.
@@ -80,10 +122,25 @@ class ParquetFrame:
             if callable(attr):
 
                 def wrapper(*args, **kwargs):
+                    # Track operation in history if enabled
+                    if self._track_history:
+                        args_repr = [repr(arg) for arg in args]
+                        kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+                        call_repr = f".{name}({', '.join(args_repr + kwargs_repr)})"
+                        self._history.append(f"pf = pf{call_repr}")
+                    
                     result = attr(*args, **kwargs)
                     # If the result is a dataframe, wrap it in a new ParquetFrame
                     if isinstance(result, (pd.DataFrame, dd.DataFrame)):
-                        return ParquetFrame(result, isinstance(result, dd.DataFrame))
+                        new_pf = ParquetFrame(
+                            result, 
+                            isinstance(result, dd.DataFrame), 
+                            track_history=self._track_history
+                        )
+                        # Inherit history from parent if tracking
+                        if self._track_history:
+                            new_pf._history = self._history.copy()
+                        return new_pf
                     return result
 
                 return wrapper
@@ -145,9 +202,14 @@ class ParquetFrame:
                 f"Reading '{file_path}' as pandas DataFrame (size: {file_size_mb:.2f} MB)"
             )
 
-        return cls(df, use_dask)
+        instance = cls(df, use_dask)
+        # Track read operation in history if needed
+        if hasattr(cls, '_current_session_tracking') and cls._current_session_tracking:
+            instance._track_history = True
+            instance._history = [f"pf = ParquetFrame.read('{file}', threshold_mb={threshold_mb}, islazy={islazy})"]
+        return instance
 
-    def save(self, file: Union[str, Path], **kwargs) -> "ParquetFrame":
+    def save(self, file: Union[str, Path], save_script: Optional[str] = None, **kwargs) -> "ParquetFrame":
         """
         Save the dataframe to a parquet file.
 
@@ -156,6 +218,7 @@ class ParquetFrame:
 
         Args:
             file: Base name for the output file.
+            save_script: If provided, saves session history to this Python script.
             **kwargs: Additional keyword arguments for to_parquet methods.
 
         Returns:
@@ -167,11 +230,19 @@ class ParquetFrame:
         Examples:
             >>> pf.save("output")  # Saves as output.parquet
             >>> pf.save("data.parquet", compression='snappy')
+            >>> pf.save("output", save_script="session.py")  # Also saves session history
         """
         if self._df is None:
             raise TypeError("No dataframe loaded to save.")
 
         file_path = self._ensure_parquet_extension(file)
+        
+        # Track save operation in history
+        if self._track_history:
+            save_args = [f"'{file}'"] + [f"{k}={v!r}" for k, v in kwargs.items()]
+            if save_script:
+                save_args.append(f"save_script='{save_script}'")
+            self._history.append(f"pf.save({', '.join(save_args)})")
 
         if isinstance(self._df, dd.DataFrame):
             self._df.to_parquet(file_path, **kwargs)
@@ -179,6 +250,10 @@ class ParquetFrame:
         elif isinstance(self._df, pd.DataFrame):
             self._df.to_parquet(file_path, **kwargs)
             print(f"pandas DataFrame saved to '{file_path}'.")
+            
+        # Save script if requested
+        if save_script and self._track_history:
+            self._save_history_script(save_script)
 
         return self
 
@@ -249,6 +324,50 @@ class ParquetFrame:
         raise FileNotFoundError(
             f"No parquet file found for '{file}' (tried .parquet, .pqt)"
         )
+
+    def _save_history_script(self, script_path: Union[str, Path]) -> None:
+        """
+        Save the session history to a Python script.
+        
+        Args:
+            script_path: Path to save the script to.
+        """
+        if not self._track_history or not self._history:
+            print("No history to save (history tracking not enabled or empty).")
+            return
+            
+        script_path = Path(script_path)
+        if script_path.suffix != ".py":
+            script_path = script_path.with_suffix(".py")
+            
+        header = "# Auto-generated script from ParquetFrame CLI session\n"
+        header += "from parquetframe import ParquetFrame\nimport parquetframe as pqf\n\n"
+        
+        with open(script_path, 'w') as f:
+            f.write(header)
+            for line in self._history:
+                f.write(line + "\n")
+        
+        print(f"Session history saved to '{script_path}'")
+        
+    def get_history(self) -> Optional[list]:
+        """
+        Get the current session history.
+        
+        Returns:
+            List of command strings if history tracking is enabled, None otherwise.
+        """
+        return self._history.copy() if self._track_history else None
+        
+    def clear_history(self) -> None:
+        """
+        Clear the session history.
+        """
+        if self._track_history:
+            self._history.clear()
+            print("Session history cleared.")
+        else:
+            print("History tracking not enabled.")
 
     @staticmethod
     def _ensure_parquet_extension(file: Union[str, Path]) -> Path:

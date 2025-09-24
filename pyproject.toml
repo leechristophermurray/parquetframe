@@ -54,6 +54,10 @@ test = [
     "pytest-cov>=4.0",
     "pytest-mock>=3.10",
 ]
+cli = [
+    "click>=8.0",
+    "rich>=13.0",  # For enhanced terminal output
+]
 
 [project.urls]
 Homepage = "https://github.com/leechristophermurray/parquetframe"
@@ -61,6 +65,9 @@ Documentation = "https://leechristophermurray.github.io/parquetframe/"
 Repository = "https://github.com/leechristophermurray/parquetframe.git"
 "Bug Tracker" = "https://github.com/leechristophermurray/parquetframe/issues"
 Changelog = "https://github.com/leechristophermurray/parquetframe/blob/main/CHANGELOG.md"
+
+[project.scripts]
+pframe = "parquetframe.cli:main [cli]"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/parquetframe"]

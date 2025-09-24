@@ -234,7 +234,7 @@ This implementation gives you the requested parquet_frame (pf) object, which han
 
 ### CLI
 
-This library should be able to be used as a library in code, or in a terminal if installed with a `[cli]` option. so parquets could be queried and even transformed (have dask or pandas operations done) and saved to a new file- all in the terminal as if in a notebook. This cli feature would be implemented using the click python package. The cli mode should also be able to run interactively, with a cli interface which will display results like a notebook
+This library should be able to be used as a library in code, or in a terminal if installed with a `[cli]` option. so parquets could be queried and even transformed (have dask or pandas operations done) and saved to a new file- all in the terminal as if in a notebook. This cli feature would be implemented using the click python package. The cli mode should also be able to run interactively, with a cli interface which will display results like a notebook additional context around the idea of the CLI can be found in CONTEXT_CLI.md
 
 ### CLI - SAVE
 
@@ -242,6 +242,7 @@ In cli mode, there's an additional flag when saving which not only saves the par
 
 ## Notes
 
+- we MUST use dependincy injection
 - When developing this library/package, use git best practices (for branching, merges, etc), and conventional commits.
 - Ensure we have test coverage at 95% or highter.
 - LICENSE to use is an MIT liense.

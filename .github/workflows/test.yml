@@ -43,7 +43,7 @@ jobs:
         echo "$PWD/.venv/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
-        uv pip install -e ".[dev,test]"
+        uv pip install -e ".[dev,test,cli]"
         
     - name: Verify installation
       run: |
@@ -52,6 +52,25 @@ jobs:
     - name: Run basic functionality test
       run: |
         python test_basic.py
+        
+    - name: Test CLI functionality
+      run: |
+        # Create test data
+        python -c "
+        import pandas as pd
+        df = pd.DataFrame({
+            'id': range(50),
+            'name': [f'user_{i}' for i in range(50)],
+            'age': [20 + (i % 50) for i in range(50)]
+        })
+        df.to_parquet('cli_test_data.parquet')
+        "
+        
+        # Test CLI commands
+        pframe --help
+        pframe info cli_test_data.parquet
+        pframe run cli_test_data.parquet --head 3
+        pframe run cli_test_data.parquet --query "age > 30" --columns "name,age" --head 2
         
     - name: Run linting
       run: |
@@ -147,6 +166,66 @@ jobs:
         name: dist
         path: dist/
 
+  cli-specific-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+    - name: Install CLI dependencies only
+      run: |
+        uv venv
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+        source .venv/bin/activate
+        uv pip install -e ".[cli]"
+    - name: Test CLI functionality
+      run: |
+        # Create test data
+        python -c "
+        import pandas as pd
+        df = pd.DataFrame({
+            'id': range(100),
+            'name': [f'test_user_{i}' for i in range(100)],
+            'age': [18 + (i % 60) for i in range(100)],
+            'city': ['NYC', 'LA', 'Chicago', 'Boston'] * 25,
+            'score': [i * 0.7 for i in range(100)]
+        })
+        df.to_parquet('cli_integration_test.parquet')
+        "
+        
+        # Comprehensive CLI testing
+        pframe --version
+        pframe --help
+        
+        # Info command
+        pframe info cli_integration_test.parquet
+        
+        # Basic run command
+        pframe run cli_integration_test.parquet --head 5
+        
+        # Complex operations
+        pframe run cli_integration_test.parquet --query "age > 30 and city == 'NYC'" --columns "name,age,score" --head 3
+        pframe run cli_integration_test.parquet --describe
+        pframe run cli_integration_test.parquet --info
+        
+        # Test with output and script generation
+        pframe run cli_integration_test.parquet --query "age < 25" --output "young_users.parquet" --save-script "young_analysis.py"
+        
+        # Verify outputs were created
+        ls -la young_users.parquet young_analysis.py
+        
+        # Test backend forcing
+        pframe run cli_integration_test.parquet --force-pandas --sample 3
+    - name: Run CLI-specific tests
+      run: |
+        uv pip install pytest pytest-mock
+        pytest tests/cli/ -v
+        
   minimum-requirements:
     runs-on: ubuntu-latest
     steps:
