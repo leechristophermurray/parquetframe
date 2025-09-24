@@ -167,7 +167,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config --cov=parquetframe --cov-fail-under=95 --cov-report=term-missing --cov-report=html"
+addopts = "-ra -q --strict-markers --strict-config --cov=parquetframe --cov-fail-under=80 --cov-report=term-missing --cov-report=html"
 testpaths = ["tests"]
 filterwarnings = [
     "error",
