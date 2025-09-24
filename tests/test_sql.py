@@ -9,11 +9,7 @@ import pandas as pd
 import pytest
 
 from parquetframe.core import ParquetFrame
-from parquetframe.sql import (
-    explain_query,
-    query_dataframes,
-    validate_sql_query,
-)
+from parquetframe.sql import explain_query, query_dataframes, validate_sql_query
 
 
 class TestSQLModule:
@@ -41,7 +37,7 @@ class TestSQLModule:
     def test_sql_availability_check(self):
         """Test that SQL availability is properly checked."""
         try:
-            import duckdb
+            import duckdb  # noqa: F401
 
             from parquetframe.sql import DUCKDB_AVAILABLE
 

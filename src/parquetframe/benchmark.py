@@ -488,7 +488,7 @@ class PerformanceBenchmark:
                 # Score based on execution time and memory efficiency
                 score = 1 / (result.execution_time + result.memory_peak / 100)
                 threshold_performance[threshold].append(score)
-            except:
+            except Exception:
                 continue
 
         if not threshold_performance:

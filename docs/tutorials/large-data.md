@@ -61,7 +61,7 @@ if sample.islazy:
     sample_df = sample._df.compute()
 else:
     sample_df = sample._df
-    
+
 print(sample_df.head())
 ```
 
@@ -106,17 +106,17 @@ In the interactive session:
 ```python
 >>> # Check current backend
 >>> print(f"Using {'Dask' if pf.islazy else 'pandas'}")
->>> 
+>>>
 >>> # Get data overview without loading everything
 >>> print(f"Total partitions: {pf._df.npartitions}")
->>> 
+>>>
 >>> # Quick statistical overview
 >>> pf.describe().compute()
->>> 
+>>>
 >>> # Sample exploration
 >>> sample = pf.sample(10000)
 >>> sample_pd = sample.to_pandas()  # Convert to pandas for fast exploration
->>> 
+>>>
 >>> # Analyze sample
 >>> sample_pd.groupby('category')['price'].agg(['mean', 'count'])
 ```
@@ -161,7 +161,7 @@ pf = pqf.ParquetFrame.read('wide_dataset.parquet')
 
 # Better: select during read
 pf_optimized = pqf.ParquetFrame.read(
-    'wide_dataset.parquet', 
+    'wide_dataset.parquet',
     columns=['col1', 'col2', 'col3']
 )
 ```
@@ -251,11 +251,11 @@ try:
 except MemoryError:
     print("File too large for pandas, forcing Dask...")
     pf = pqf.ParquetFrame.read('problematic_large_file.parquet', islazy=True)
-    
+
 except FileNotFoundError:
     print("File not found, checking alternative locations...")
     # Handle missing files
-    
+
 except Exception as e:
     print(f"Unexpected error: {e}")
     # Fallback processing

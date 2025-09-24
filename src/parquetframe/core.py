@@ -158,7 +158,7 @@ class ParquetFrame:
             import pyarrow.parquet as pq
 
             # Get file metadata without loading full file
-            pq.ParquetFile(file_path).metadata
+            _ = pq.ParquetFile(file_path).metadata
 
             # Estimate memory usage based on:
             # 1. Uncompressed size (compressed size * expansion factor)

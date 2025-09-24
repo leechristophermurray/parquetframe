@@ -10,12 +10,12 @@
 
 ## ✨ Features
 
-🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics  
-📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)  
-🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods  
-⚡ **Full API Compatibility**: All pandas/Dask operations work transparently  
-🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking  
-📊 **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
+🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics
+📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)
+🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods
+⚡ **Full API Compatibility**: All pandas/Dask operations work transparently
+🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking
+📊 **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection
 🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
 ## 🚀 Quick Start
@@ -25,7 +25,7 @@
     ```bash
     # Basic installation
     pip install parquetframe
-    
+
     # With CLI support (recommended)
     pip install parquetframe[cli]
     ```
@@ -34,13 +34,13 @@
 
     ```python
     import parquetframe as pqf
-    
+
     # Read a file - automatically chooses pandas or Dask based on size
     df = pqf.read("my_data")  # Handles .parquet/.pqt extensions automatically
-    
+
     # All standard DataFrame operations work
     result = df.groupby("column").sum()
-    
+
     # Save without worrying about extensions
     df.save("output")  # Saves as output.parquet
     ```
@@ -49,17 +49,17 @@
 
     ```python
     import parquetframe as pqf
-    
+
     # Custom threshold
     df = pqf.read("data", threshold_mb=50)  # Use Dask for files >50MB
-    
+
     # Force backend
     df = pqf.read("data", islazy=True)   # Force Dask
     df = pqf.read("data", islazy=False)  # Force pandas
-    
+
     # Check current backend
     print(df.islazy)  # True for Dask, False for pandas
-    
+
     # Chain operations
     result = (pqf.read("input")
               .groupby("category")
@@ -72,13 +72,13 @@
     ```bash
     # Quick file info
     pframe info data.parquet
-    
+
     # Data processing
     pframe run data.parquet --query "age > 30" --head 10
-    
+
     # Interactive mode
     pframe interactive data.parquet
-    
+
     # Performance benchmarking
     pframe benchmark --operations "groupby,filter"
     ```

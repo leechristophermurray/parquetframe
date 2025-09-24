@@ -34,7 +34,7 @@ For detailed release notes, breaking changes, and migration guides, see the comp
 We follow [Semantic Versioning](https://semver.org/) for releases:
 
 - **Major versions** (1.0, 2.0): Breaking changes
-- **Minor versions** (0.1, 0.2): New features, backwards compatible  
+- **Minor versions** (0.1, 0.2): New features, backwards compatible
 - **Patch versions** (0.1.1, 0.1.2): Bug fixes, backwards compatible
 
 ## Stay Updated

@@ -31,8 +31,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 keywords = [
-    "pandas", "dask", "parquet", "dataframe", "big-data", 
-    "sql", "duckdb", "bioframe", "genomics", "cli", 
+    "pandas", "dask", "parquet", "dataframe", "big-data",
+    "sql", "duckdb", "bioframe", "genomics", "cli",
     "data-science", "analytics", "bioinformatics"
 ]
 dependencies = [

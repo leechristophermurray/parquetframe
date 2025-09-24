@@ -205,14 +205,14 @@ from pathlib import Path
 def process_directory(input_dir: Path, output_dir: Path):
     """Process all parquet files in a directory."""
     output_dir.mkdir(exist_ok=True)
-    
+
     for file_path in input_dir.glob("*.parquet"):
         # Automatic backend selection for each file
         df = pqf.read(file_path)
-        
+
         # Process data
         processed = df.groupby("category").sum()
-        
+
         # Save with same name
         processed.save(output_dir / file_path.stem)
 

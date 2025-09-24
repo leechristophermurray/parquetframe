@@ -5,8 +5,13 @@ This module provides bioframe functionality with intelligent dispatching
 to parallel Dask implementations when operating on lazy DataFrames.
 """
 
+from __future__ import annotations
+
 import warnings
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from parquetframe.core import ParquetFrame
 
 try:
     import bioframe as bf
@@ -46,11 +51,11 @@ class BioAccessor:
 
     def cluster(
         self,
-        by: Optional[str] = None,
+        by: str | None = None,
         min_dist: int = 0,
-        max_dist: Optional[int] = None,
+        max_dist: int | None = None,
         **kwargs: Any,
-    ) -> "ParquetFrame":
+    ) -> ParquetFrame:
         """
         Cluster overlapping genomic intervals.
 
@@ -84,7 +89,11 @@ class BioAccessor:
                         df_part, by=by, min_dist=min_dist, max_dist=max_dist, **kwargs
                     )
                 except Exception as e:
-                    warnings.warn(f"Clustering failed on partition: {e}", UserWarning, stacklevel=2)
+                    warnings.warn(
+                        f"Clustering failed on partition: {e}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
                     return df_part
 
             # Get metadata by running on a small sample
@@ -110,12 +119,12 @@ class BioAccessor:
 
     def overlap(
         self,
-        other: "ParquetFrame",
+        other: ParquetFrame,
         how: str = "inner",
-        on: Optional[Union[str, list]] = None,
+        on: str | list | None = None,
         broadcast: bool = False,
         **kwargs: Any,
-    ) -> "ParquetFrame":
+    ) -> ParquetFrame:
         """
         Perform genomic interval overlap operations.
 
@@ -165,7 +174,11 @@ class BioAccessor:
                                 small_df, df_part, how=how, on=on, **kwargs
                             )
                     except Exception as e:
-                        warnings.warn(f"Overlap failed on partition: {e}", UserWarning, stacklevel=2)
+                        warnings.warn(
+                            f"Overlap failed on partition: {e}",
+                            UserWarning,
+                            stacklevel=2,
+                        )
                         return df_part[:0]  # Return empty DataFrame with same structure
 
                 # Get metadata structure
@@ -204,8 +217,8 @@ class BioAccessor:
                 raise ValueError(f"Bioframe overlap failed: {e}") from e
 
     def complement(
-        self, genome: Optional[Union[pd.DataFrame, dict]] = None, **kwargs: Any
-    ) -> "ParquetFrame":
+        self, genome: pd.DataFrame | dict | None = None, **kwargs: Any
+    ) -> ParquetFrame:
         """
         Find complement intervals for genomic regions.
 
@@ -235,8 +248,8 @@ class BioAccessor:
             raise ValueError(f"Bioframe complement failed: {e}") from e
 
     def merge(
-        self, by: Optional[str] = None, min_dist: int = 0, **kwargs: Any
-    ) -> "ParquetFrame":
+        self, by: str | None = None, min_dist: int = 0, **kwargs: Any
+    ) -> ParquetFrame:
         """
         Merge overlapping genomic intervals.
 
@@ -260,7 +273,9 @@ class BioAccessor:
                 try:
                     return bf.merge(df_part, by=by, min_dist=min_dist, **kwargs)
                 except Exception as e:
-                    warnings.warn(f"Merge failed on partition: {e}", UserWarning, stacklevel=2)
+                    warnings.warn(
+                        f"Merge failed on partition: {e}", UserWarning, stacklevel=2
+                    )
                     return df_part
 
             # Get metadata structure
@@ -282,7 +297,7 @@ class BioAccessor:
             except Exception as e:
                 raise ValueError(f"Bioframe merge failed: {e}") from e
 
-    def closest(self, other: "ParquetFrame", **kwargs: Any) -> "ParquetFrame":
+    def closest(self, other: ParquetFrame, **kwargs: Any) -> ParquetFrame:
         """
         Find closest genomic intervals between two DataFrames.
 

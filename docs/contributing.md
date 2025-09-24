@@ -7,7 +7,7 @@ For detailed contribution guidelines, please see our [CONTRIBUTING.md](https://g
 ## Quick Links
 
 - [Development Setup](https://github.com/leechristophermurray/parquetframe/blob/main/CONTRIBUTING.md#development-setup)
-- [Code Style Guidelines](https://github.com/leechristophermurray/parquetframe/blob/main/CONTRIBUTING.md#development-workflow)  
+- [Code Style Guidelines](https://github.com/leechristophermurray/parquetframe/blob/main/CONTRIBUTING.md#development-workflow)
 - [Testing Requirements](https://github.com/leechristophermurray/parquetframe/blob/main/CONTRIBUTING.md#testing)
 - [Pull Request Process](https://github.com/leechristophermurray/parquetframe/blob/main/CONTRIBUTING.md#pull-request-process)
 

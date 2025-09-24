@@ -38,7 +38,7 @@ except ImportError:
     WORKFLOW_AVAILABLE = False
 
 try:
-    from .sql import query_dataframes, validate_sql_query
+    from .sql import validate_sql_query
 
     SQL_AVAILABLE = True
 except ImportError:
@@ -713,9 +713,7 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
                 if workflow_variables:
                     console.print(f"📝 Variables: {workflow_variables}")
 
-            engine.run_workflow_file(
-                workflow_file, variables=workflow_variables
-            )
+            engine.run_workflow_file(workflow_file, variables=workflow_variables)
 
             if not quiet:
                 console.print(

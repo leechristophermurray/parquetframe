@@ -145,7 +145,7 @@ Include:
 
 1. **Consider the API**: Keep it simple and consistent
 2. **Support both backends**: Ensure features work with pandas and Dask
-3. **Add comprehensive tests**: Cover edge cases and both backends  
+3. **Add comprehensive tests**: Cover edge cases and both backends
 4. **Document thoroughly**: Include docstrings and examples
 5. **Update the changelog**: Follow the established format
 

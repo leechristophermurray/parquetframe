@@ -25,29 +25,33 @@ jobs:
             python-version: "3.10"
           - os: windows-latest
             python-version: "3.13"
-    
+
     steps:
     - uses: actions/checkout@v4
-      
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        
+
     - name: Install uv
       uses: astral-sh/setup-uv@v2
-      
-    - name: Create virtual environment and install dependencies
-      shell: bash
+
+    - name: Create virtual environment and install dependencies (Windows)
+      if: runner.os == 'Windows'
       run: |
         uv venv
-        if [[ "$RUNNER_OS" == "Windows" ]]; then
-          echo "$PWD/.venv/Scripts" >> $GITHUB_PATH
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-        else
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
-        fi
+        echo "$env:PWD\.venv\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "VIRTUAL_ENV=$env:PWD\.venv" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      shell: pwsh
+        
+    - name: Create virtual environment and install dependencies (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        uv venv
+        echo "$PWD/.venv/bin" >> $GITHUB_PATH
+        echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+      shell: bash
         
     - name: Install package
       run: |
@@ -56,11 +60,11 @@ jobs:
     - name: Verify installation
       run: |
         python -c "import parquetframe; print('ParquetFrame imported successfully')"
-        
+
     - name: Run basic functionality test
       run: |
         python test_basic.py
-        
+
     - name: Test CLI functionality
       run: |
         # Create test data
@@ -73,28 +77,28 @@ jobs:
         })
         df.to_parquet('cli_test_data.parquet')
         "
-        
+
         # Test CLI commands
         pframe --help
         pframe info cli_test_data.parquet
         pframe run cli_test_data.parquet --head 3
         pframe run cli_test_data.parquet --query "age > 30" --columns "name,age" --head 2
-        
+
     - name: Run linting
       run: |
         ruff check src/ tests/
         black --check --diff src/ tests/
       continue-on-error: true  # Don't fail CI for linting issues initially
-        
+
     - name: Run type checking
       run: |
         mypy src/parquetframe
       continue-on-error: true  # Don't fail CI for type checking issues initially
-        
+
     - name: Run tests
       run: |
         python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=50
-        
+
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: codecov/codecov-action@v4
@@ -103,7 +107,7 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-        
+
     - name: Upload coverage artifacts
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       uses: actions/upload-artifact@v4
@@ -205,35 +209,35 @@ jobs:
         })
         df.to_parquet('cli_integration_test.parquet')
         "
-        
+
         # Comprehensive CLI testing
         pframe --version
         pframe --help
-        
+
         # Info command
         pframe info cli_integration_test.parquet
-        
+
         # Basic run command
         pframe run cli_integration_test.parquet --head 5
-        
+
         # Complex operations
         pframe run cli_integration_test.parquet --query "age > 30 and city == 'NYC'" --columns "name,age,score" --head 3
         pframe run cli_integration_test.parquet --describe
         pframe run cli_integration_test.parquet --info
-        
+
         # Test with output and script generation
         pframe run cli_integration_test.parquet --query "age < 25" --output "young_users.parquet" --save-script "young_analysis.py"
-        
+
         # Verify outputs were created
         ls -la young_users.parquet young_analysis.py
-        
+
         # Test backend forcing
         pframe run cli_integration_test.parquet --force-pandas --sample 3
     - name: Run CLI-specific tests
       run: |
         uv pip install pytest pytest-mock pytest-cov
         python -m pytest tests/cli/ -v --tb=short || echo "CLI tests completed (some may have failed)"
-        
+
   minimum-requirements:
     runs-on: ubuntu-latest
     steps:

@@ -20,7 +20,6 @@ except ImportError:
     YAML_AVAILABLE = False
 
 try:
-    from rich import print as rprint
     from rich.console import Console
     from rich.progress import (
         BarColumn,
@@ -329,7 +328,8 @@ class TransformStep(WorkflowStep):
                     # For more complex operations, we'd need to access the underlying DataFrame
                     # This is a simplified implementation
                     warnings.warn(
-                        f"Transform operation '{operation}' not fully supported yet", stacklevel=2
+                        f"Transform operation '{operation}' not fully supported yet",
+                        stacklevel=2,
                     )
 
         output_name = self.config.get("output", input_name)
@@ -382,7 +382,7 @@ class WorkflowEngine:
 
             return workflow
         except yaml.YAMLError as e:
-            raise WorkflowValidationError(f"Invalid YAML in workflow file: {e}")
+            raise WorkflowValidationError(f"Invalid YAML in workflow file: {e}") from e
 
     def validate_workflow(self, workflow: dict[str, Any]) -> list[str]:
         """Validate a workflow configuration."""

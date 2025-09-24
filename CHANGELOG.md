@@ -87,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - Fixed `psutil` import issues in benchmarking module
-- Resolved pandas `pd.np` deprecation across multiple modules 
+- Resolved pandas `pd.np` deprecation across multiple modules
 - Enhanced `ParquetFrame.save()` with automatic directory creation
 - Improved `islazy` parameter validation and override logic
 - Fixed CLI test assertions to match actual output messages

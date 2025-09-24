@@ -31,11 +31,11 @@ steps:
       - column: "usr_id"
         operation: "rename"
         to: "user_id"
-      
+
       # Remove unnecessary columns
       - column: "internal_tracking_id"
         operation: "drop"
-      
+
       # Additional transformations can be added here
     output: "cleaned_data"
 
@@ -45,7 +45,7 @@ steps:
     input: "cleaned_data"
     columns: [
       "user_id",
-      "username", 
+      "username",
       "email",
       "session_count",
       "total_time_spent",

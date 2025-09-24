@@ -23,7 +23,7 @@ ParquetFrame automatically detects file extensions and chooses the optimal backe
 ```python
 # These all work the same way:
 df = pqf.read("data.parquet")    # Explicit .parquet extension
-df = pqf.read("data.pqt")        # Alternative .pqt extension  
+df = pqf.read("data.pqt")        # Alternative .pqt extension
 df = pqf.read("data")            # Auto-detect extension
 ```
 
@@ -74,7 +74,7 @@ result.save("compressed_output", compression='snappy')
 small_df = pqf.read("small_dataset.parquet")  # < 10MB
 print(f"Small file: {type(small_df._df)}")    # pandas.DataFrame
 
-# Large file → Dask (memory efficient)  
+# Large file → Dask (memory efficient)
 large_df = pqf.read("large_dataset.parquet")  # > 10MB
 print(f"Large file: {type(large_df._df)}")    # dask.dataframe.DataFrame
 ```
@@ -150,17 +150,17 @@ output_dir.mkdir(exist_ok=True)
 
 for file_path in input_dir.glob("*.parquet"):
     print(f"Processing {file_path.name}...")
-    
+
     # Automatic backend selection for each file
     df = pqf.read(file_path)
-    
+
     # Apply transformations
     processed = (df
         .dropna()
         .query("amount > 0")
         .groupby('category')
         .sum())
-    
+
     # Save with same base name
     processed.save(output_dir / file_path.stem)
 
@@ -261,7 +261,7 @@ model.fit(X_train, y_train)
 Now that you've got the basics down:
 
 1. **[Basic Usage](usage.md)** - Dive deeper into core functionality
-2. **[Advanced Features](advanced.md)** - Learn about advanced patterns and optimizations  
+2. **[Advanced Features](advanced.md)** - Learn about advanced patterns and optimizations
 3. **[API Reference](api.md)** - Complete documentation of all methods
 4. **[Performance Tips](performance.md)** - Optimize your workflows
 

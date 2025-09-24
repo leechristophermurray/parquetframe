@@ -170,7 +170,7 @@ result.save("compressed_output", compression='snappy')
 result.save("gzip_output", compression='gzip')
 
 # Other parquet options
-result.save("custom_output", 
+result.save("custom_output",
            compression='snappy',
            index=False,
            partition_cols=['region'])
@@ -263,16 +263,16 @@ def validate_dataframe(pf):
     """Validate ParquetFrame data quality."""
     if pf._df is None:
         raise ValueError("ParquetFrame is empty")
-    
+
     if len(pf) == 0:
         raise ValueError("DataFrame has no rows")
-    
+
     # Check for required columns
     required_cols = ['id', 'amount', 'date']
     missing_cols = set(required_cols) - set(pf.columns)
     if missing_cols:
         raise ValueError(f"Missing columns: {missing_cols}")
-    
+
     print("✅ Data validation passed")
 
 # Usage
@@ -290,7 +290,7 @@ import os
 def choose_backend_strategy(file_path):
     """Demonstrate backend selection strategy."""
     file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-    
+
     if file_size_mb < 5:
         # Very small files - always use pandas for speed
         return pqf.read(file_path, islazy=False)
@@ -338,8 +338,8 @@ if df.islazy:
 # Now use pandas-specific features
 correlation_matrix = df._df.corr()
 pivot_table = df._df.pivot_table(
-    values='sales', 
-    index='region', 
+    values='sales',
+    index='region',
     columns='product',
     aggfunc='sum'
 )

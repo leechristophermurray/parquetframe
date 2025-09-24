@@ -10,16 +10,16 @@ A universal wrapper for working with dataframes in Python, seamlessly switching 
 
 ## Features
 
-🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics  
-📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)  
-🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods  
-⚡ **Full API Compatibility**: All pandas/Dask operations work transparently  
-🗃️ **SQL Support**: Execute SQL queries on DataFrames using DuckDB with automatic JOIN capabilities  
-🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations  
-🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing  
-📝 **Script Generation**: Automatic Python script generation from CLI sessions  
-⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection  
-📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax  
+🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics
+📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)
+🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods
+⚡ **Full API Compatibility**: All pandas/Dask operations work transparently
+🗃️ **SQL Support**: Execute SQL queries on DataFrames using DuckDB with automatic JOIN capabilities
+🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations
+🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing
+📝 **Script Generation**: Automatic Python script generation from CLI sessions
+⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection
+📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax
 🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
 ## Quick Start
@@ -257,9 +257,9 @@ pframe workflow --validate my_pipeline.yml
 
 ### Development Status
 
-✅ **Stable & Production Ready**: All 203 tests passing with 65% test coverage  
-🔄 **Active Development**: Regular updates and improvements  
-🐛 **Bug-Free Core**: Recently resolved all critical issues and test failures  
+✅ **Stable & Production Ready**: All 203 tests passing with 65% test coverage
+🔄 **Active Development**: Regular updates and improvements
+🐛 **Bug-Free Core**: Recently resolved all critical issues and test failures
 📦 **Latest Release**: v0.1.1 with enhanced stability and bug fixes
 
 ## CLI Reference

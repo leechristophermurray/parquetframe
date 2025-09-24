@@ -18,7 +18,7 @@ pip install parquetframe
 
 This installs ParquetFrame with all required dependencies:
 - `pandas >= 2.0.0`
-- `dask[dataframe] >= 2023.1.0` 
+- `dask[dataframe] >= 2023.1.0`
 - `pyarrow >= 10.0.0`
 
 ### Development Installation
@@ -66,7 +66,7 @@ print("✅ ParquetFrame is working correctly!")
 ### Optional Dependencies
 For development:
 - **pytest >= 7.0**: Testing framework
-- **pytest-cov >= 4.0**: Coverage reporting  
+- **pytest-cov >= 4.0**: Coverage reporting
 - **ruff >= 0.1.0**: Code linting
 - **black >= 23.0**: Code formatting
 - **mypy >= 1.0**: Type checking
@@ -158,7 +158,7 @@ import parquetframe as pqf
 
 Recommended minimum system requirements:
 - **4GB RAM**: Basic usage with small datasets
-- **8GB RAM**: Comfortable usage with medium datasets  
+- **8GB RAM**: Comfortable usage with medium datasets
 - **16GB+ RAM**: Large dataset processing
 
 ### Storage Requirements

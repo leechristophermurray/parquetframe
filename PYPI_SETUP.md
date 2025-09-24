@@ -24,7 +24,7 @@ Trusted publishing allows GitHub Actions to publish to PyPI without storing API 
    ```
    PyPI Project Name: parquetframe
    Owner: leechristophermurray
-   Repository name: parquetframe  
+   Repository name: parquetframe
    Workflow filename: release.yml
    Environment name: release
    ```
@@ -39,7 +39,7 @@ Trusted publishing allows GitHub Actions to publish to PyPI without storing API 
    - Navigate to `https://github.com/leechristophermurray/parquetframe/settings/environments`
 
 2. **Create Release Environment**
-   - Click "New environment"  
+   - Click "New environment"
    - Name it `release`
    - Add protection rules if desired:
      - Required reviewers
@@ -94,10 +94,10 @@ If you encounter issues:
 
 ## Security Benefits
 
-✅ **No API Keys**: No secrets stored in GitHub repository  
-✅ **Automatic Rotation**: Tokens are short-lived and auto-generated  
-✅ **Audit Trail**: All publishing actions are logged and traceable  
-✅ **Fine-grained Control**: Restrict publishing to specific workflows and branches  
+✅ **No API Keys**: No secrets stored in GitHub repository
+✅ **Automatic Rotation**: Tokens are short-lived and auto-generated
+✅ **Audit Trail**: All publishing actions are logged and traceable
+✅ **Fine-grained Control**: Restrict publishing to specific workflows and branches
 
 ## Next Steps
 

@@ -41,7 +41,7 @@ class TestBioAccessor:
     def test_bio_availability_check(self):
         """Test that bioframe availability is properly checked."""
         try:
-            import bioframe as bf
+            import bioframe  # noqa: F401
 
             from parquetframe.bio import BIOFRAME_AVAILABLE
 

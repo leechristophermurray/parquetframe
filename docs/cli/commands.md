@@ -17,7 +17,7 @@ pframe info <file>
 The `info` command provides:
 
 - **File metadata**: Size, path, recommended backend
-- **Schema information**: Column names, types, nullability  
+- **Schema information**: Column names, types, nullability
 - **Parquet metadata**: Row groups, total rows/columns
 - **Storage details**: Compression, encoding information
 
@@ -214,7 +214,7 @@ pframe interactive large_data.parquet --threshold 50
 
 - **Tab completion** for all ParquetFrame methods
 - **Command history** saved between sessions
-- **Rich formatting** for DataFrames and tables  
+- **Rich formatting** for DataFrames and tables
 - **Error handling** with helpful messages
 - **Script generation** from session commands
 
