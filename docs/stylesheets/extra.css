@@ -1,0 +1,106 @@
+/* Custom styles for ParquetFrame documentation */
+
+/* Code blocks with better contrast */
+.highlight pre {
+    background-color: var(--md-code-bg-color);
+    border-radius: 0.2rem;
+    padding: 1rem;
+}
+
+/* Improve inline code visibility */
+code:not(.highlight code) {
+    background-color: var(--md-code-bg-color);
+    color: var(--md-code-fg-color);
+    padding: 0.1em 0.3em;
+    border-radius: 0.2rem;
+    font-size: 0.85em;
+}
+
+/* Better spacing for admonitions */
+.admonition {
+    margin: 1.5rem 0;
+}
+
+/* Improve table styling */
+.md-typeset table:not([class]) {
+    border-radius: 0.2rem;
+    overflow: hidden;
+    box-shadow: 0 0.2rem 0.5rem rgba(0,0,0,0.05);
+}
+
+/* Feature icons in homepage */
+.feature-icon {
+    font-size: 1.2em;
+    margin-right: 0.5em;
+    color: var(--md-primary-fg-color);
+}
+
+/* Better spacing for navigation */
+.md-nav__item {
+    margin: 0.2rem 0;
+}
+
+/* Improved code tab styling */
+.tabbed-set {
+    border-radius: 0.2rem;
+    overflow: hidden;
+}
+
+/* API documentation improvements */
+.doc-heading {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Custom badge styling */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    margin: 0 0.25rem;
+}
+
+.badge-success {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.badge-info {
+    color: #fff;
+    background-color: #17a2b8;
+}
+
+.badge-warning {
+    color: #212529;
+    background-color: #ffc107;
+}
+
+/* Responsive improvements */
+@media screen and (max-width: 76.1875em) {
+    .md-typeset pre {
+        margin: 1em -0.8rem;
+        border-radius: 0;
+    }
+}
+
+/* Print styles */
+@media print {
+    .md-header,
+    .md-footer,
+    .md-nav,
+    .md-sidebar {
+        display: none !important;
+    }
+    
+    .md-content {
+        max-width: none !important;
+        margin: 0 !important;
+    }
+}
