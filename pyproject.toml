@@ -57,6 +57,7 @@ test = [
 cli = [
     "click>=8.0",
     "rich>=13.0",  # For enhanced terminal output
+    "psutil>=5.8.0",  # For performance monitoring
 ]
 
 [project.urls]

@@ -22,6 +22,12 @@ except ImportError as e:
 
 from .core import ParquetFrame
 
+try:
+    from .benchmark import run_comprehensive_benchmark, PerformanceBenchmark
+    BENCHMARK_AVAILABLE = True
+except ImportError:
+    BENCHMARK_AVAILABLE = False
+
 # Global console for rich output
 console = Console()
 
@@ -392,6 +398,137 @@ def info(filepath):
             
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
+        sys.exit(1)
+
+
+@main.command()
+@click.option(
+    "--output", "-o",
+    type=click.Path(),
+    help="Save benchmark results to JSON file"
+)
+@click.option(
+    "--quiet", "-q",
+    is_flag=True,
+    help="Run benchmark in quiet mode (less output)"
+)
+@click.option(
+    "--operations",
+    help="Comma-separated list of operations to benchmark (groupby,filter,sort,aggregation,join)"
+)
+@click.option(
+    "--file-sizes",
+    help="Comma-separated list of test file sizes in rows (e.g., '1000,10000,100000')"
+)
+def benchmark(output, quiet, operations, file_sizes):
+    """
+    Run performance benchmarks for ParquetFrame operations.
+    
+    This command runs comprehensive performance tests comparing pandas
+    and Dask backends across different file sizes and operations.
+    
+    Examples:
+        pframe benchmark
+        pframe benchmark --output results.json --quiet
+        pframe benchmark --operations "groupby,filter,sort"
+        pframe benchmark --file-sizes "1000,50000,200000"
+    """
+    if not BENCHMARK_AVAILABLE:
+        console.print("[bold red]Error:[/bold red] Benchmark functionality requires additional dependencies.")
+        console.print("Please install with: pip install parquetframe[cli] psutil")
+        sys.exit(1)
+    
+    # Parse operations if provided
+    ops_list = None
+    if operations:
+        ops_list = [op.strip() for op in operations.split(",")]
+        valid_ops = {"groupby", "filter", "sort", "aggregation", "join"}
+        invalid_ops = set(ops_list) - valid_ops
+        if invalid_ops:
+            console.print(f"[bold red]Error:[/bold red] Invalid operations: {', '.join(invalid_ops)}")
+            console.print(f"Valid operations: {', '.join(sorted(valid_ops))}")
+            sys.exit(1)
+    
+    # Parse file sizes if provided
+    file_sizes_list = None
+    if file_sizes:
+        try:
+            sizes = [int(size.strip()) for size in file_sizes.split(",")]
+            file_sizes_list = [(size, f"{size:,} rows") for size in sizes]
+        except ValueError:
+            console.print("[bold red]Error:[/bold red] Invalid file sizes. Use comma-separated integers.")
+            sys.exit(1)
+    
+    try:
+        verbose = not quiet
+        
+        if verbose:
+            console.print("🔥 [bold green]Starting ParquetFrame Performance Benchmark[/bold green]")
+            console.print("This may take several minutes...\n")
+        
+        # Create custom benchmark if needed
+        if ops_list or file_sizes_list:
+            benchmark_obj = PerformanceBenchmark(verbose=verbose)
+            results = []
+            
+            # Run read operations benchmark
+            if file_sizes_list:
+                read_results = benchmark_obj.benchmark_read_operations(file_sizes_list)
+                results.extend(read_results)
+            else:
+                read_results = benchmark_obj.benchmark_read_operations()
+                results.extend(read_results)
+            
+            # Run operations benchmark
+            if ops_list:
+                op_results = benchmark_obj.benchmark_operations(ops_list)
+                results.extend(op_results)
+            else:
+                op_results = benchmark_obj.benchmark_operations()
+                results.extend(op_results)
+            
+            # Run threshold analysis
+            threshold_results = benchmark_obj.benchmark_threshold_sensitivity()
+            results.extend(threshold_results)
+            
+            if verbose:
+                benchmark_obj.generate_report()
+            
+            # Compile custom results
+            all_results = {
+                'read_operations': [r.__dict__ for r in read_results],
+                'data_operations': [r.__dict__ for r in op_results],
+                'threshold_analysis': [r.__dict__ for r in threshold_results],
+                'summary': {
+                    'total_benchmarks': len(results),
+                    'successful_benchmarks': sum(1 for r in results if r.success),
+                    'average_execution_time': sum(r.execution_time for r in results) / len(results) if results else 0,
+                    'average_memory_usage': sum(r.memory_peak for r in results) / len(results) if results else 0
+                }
+            }
+        else:
+            # Run comprehensive benchmark
+            all_results = run_comprehensive_benchmark(output_file=None, verbose=verbose)
+        
+        # Save results if requested
+        if output:
+            import json
+            with open(output, 'w') as f:
+                json.dump(all_results, f, indent=2, default=str)
+            if verbose:
+                console.print(f"\n📊 [bold blue]Results saved to:[/bold blue] {output}")
+        
+        if verbose:
+            console.print("\n[bold green]✓ Benchmark completed successfully![/bold green]")
+        
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Benchmark interrupted by user[/yellow]")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[bold red]Error during benchmark:[/bold red] {e}")
+        if verbose:
+            import traceback
+            console.print(f"[dim]{traceback.format_exc()}[/dim]")
         sys.exit(1)
 
 

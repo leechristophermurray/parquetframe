@@ -150,6 +150,87 @@ class ParquetFrame:
         )
 
     @classmethod
+    def _estimate_memory_usage(cls, file_path: Path) -> float:
+        """Estimate memory usage for loading file based on file size and compression."""
+        try:
+            import pyarrow.parquet as pq
+            
+            # Get file metadata without loading full file
+            metadata = pq.ParquetFile(file_path).metadata
+            
+            # Estimate memory usage based on:
+            # 1. Uncompressed size (compressed size * expansion factor)
+            # 2. Data types (strings use more memory than numbers)
+            # 3. Null values (can reduce memory usage)
+            
+            compressed_size = file_path.stat().st_size / 1024 / 1024  # MB
+            
+            # Estimate compression ratio (typical parquet compression is 3-10x)
+            # Use conservative estimate of 4x expansion
+            expansion_factor = 4.0
+            
+            # Additional overhead for pandas DataFrame structure
+            pandas_overhead = 1.5
+            
+            estimated_memory = compressed_size * expansion_factor * pandas_overhead
+            
+            return estimated_memory
+            
+        except Exception:
+            # Fallback to simple file size estimation
+            file_size_mb = file_path.stat().st_size / 1024 / 1024
+            return file_size_mb * 5  # Conservative estimate
+    
+    @classmethod
+    def _get_system_memory(cls) -> float:
+        """Get available system memory in MB."""
+        try:
+            import psutil
+            # Get available memory (not just free, but actually available)
+            available_mb = psutil.virtual_memory().available / 1024 / 1024
+            return available_mb
+        except (ImportError, Exception):
+            # Conservative fallback if psutil not available or fails
+            return 2048  # Assume 2GB available
+    
+    @classmethod
+    def _should_use_dask(
+        cls, 
+        file_path: Path, 
+        threshold_mb: float,
+        islazy: Optional[bool] = None
+    ) -> bool:
+        """Intelligently determine whether to use Dask based on multiple factors."""
+        if islazy is not None:
+            return islazy
+            
+        file_size_mb = file_path.stat().st_size / 1024 / 1024
+        
+        # Basic threshold check
+        if file_size_mb >= threshold_mb:
+            return True
+            
+        # Advanced checks if file is close to threshold
+        if file_size_mb >= threshold_mb * 0.7:  # Within 70% of threshold
+            estimated_memory = cls._estimate_memory_usage(file_path)
+            available_memory = cls._get_system_memory()
+            
+            # Use Dask if estimated memory usage > 50% of available memory
+            if estimated_memory > available_memory * 0.5:
+                return True
+                
+            # Use Dask if file has many partitions (suggests it's meant for parallel processing)
+            try:
+                import pyarrow.parquet as pq
+                metadata = pq.ParquetFile(file_path).metadata
+                if metadata.num_row_groups > 10:  # Many row groups suggest chunked data
+                    return True
+            except Exception:
+                pass
+                
+        return False
+    
+    @classmethod
     def read(
         cls,
         file: Union[str, Path],
@@ -183,12 +264,9 @@ class ParquetFrame:
         file_path = cls._resolve_file_path(file)
         file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
 
-        # Determine backend
-        if islazy is not None:
-            use_dask = islazy
-        else:
-            threshold = threshold_mb if threshold_mb is not None else 10
-            use_dask = file_size_mb >= threshold
+        # Determine backend using intelligent switching
+        threshold = threshold_mb if threshold_mb is not None else 10
+        use_dask = cls._should_use_dask(file_path, threshold, islazy)
 
         # Read the file
         if use_dask:

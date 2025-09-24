@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- 🖥️ **Complete CLI Interface** with three main commands (`info`, `run`, `interactive`)
+- 🎨 **Rich Terminal Output** with beautiful tables and color formatting
+- 🐍 **Interactive Python REPL** mode with full ParquetFrame integration
+- 📝 **Automatic Script Generation** from CLI sessions for reproducibility
+- 🔍 **Advanced Data Exploration** with query filters, column selection, and previews
+- 📊 **Statistical Operations** directly from command line (describe, info, sampling)
+- ⚙️ **Backend Control** with force pandas/Dask options in CLI
+- 📁 **File Metadata Display** with schema information and recommendations
+- 🔄 **Session History Tracking** with persistent readline support
+- 🎯 **Batch Data Processing** with output file generation
+
+### Enhanced
+- ✨ **ParquetFrame Core** with indexing support (`__getitem__`, `__len__`)
+- 🔧 **Attribute Delegation** with session history recording
+- 📋 **CI/CD Pipeline** with dedicated CLI testing jobs
+- 📖 **Documentation** with comprehensive CLI usage examples
+- 🧪 **Test Coverage** expanded to include CLI functionality
+
+### CLI Commands
+- `pframe info <file>` - Display file information and schema
+- `pframe run <file> [options]` - Batch data processing with extensive options
+- `pframe interactive [file]` - Start interactive Python session with ParquetFrame
+
+### CLI Options
+- Data filtering with `--query` pandas/Dask expressions
+- Column selection with `--columns` for focused analysis
+- Preview options: `--head`, `--tail`, `--sample` for data exploration
+- Statistical analysis: `--describe`, `--info` for data profiling
+- Output control: `--output`, `--save-script` for results and reproducibility
+- Backend control: `--force-pandas`, `--force-dask`, `--threshold`
+
 ## [0.1.0] - 2024-09-24
 
 ### Added

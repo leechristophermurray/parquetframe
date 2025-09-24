@@ -66,16 +66,35 @@ nav:
   - Getting Started:
     - Installation: installation.md
     - Quick Start: quickstart.md
+    - First Steps: first-steps.md
   - User Guide:
     - Basic Usage: usage.md
     - Advanced Features: advanced.md
     - Performance Tips: performance.md
+    - Backend Selection: backends.md
+    - File Formats: formats.md
+  - CLI Guide:
+    - CLI Overview: cli/index.md
+    - CLI Installation: cli/installation.md
+    - Basic Commands: cli/commands.md
+    - Interactive Mode: cli/interactive.md
+    - Batch Processing: cli/batch.md
+    - Script Generation: cli/scripts.md
+    - CLI Examples: cli/examples.md
+  - Tutorials:
+    - Data Exploration: tutorials/exploration.md
+    - Large Dataset Processing: tutorials/large-data.md
+    - Integration Guide: tutorials/integration.md
+    - Performance Optimization: tutorials/performance.md
+    - ML Pipeline Integration: tutorials/ml-pipeline.md
   - API Reference:
-    - Core API: api.md
+    - Core API: api/core.md
+    - CLI API: api/cli.md
     - Examples: examples.md
   - Development:
     - Contributing: contributing.md
-    - Changelog: changelog.md
+    - Release Notes: changelog.md
+    - Benchmarks: benchmarks.md
 
 markdown_extensions:
   - abbr
