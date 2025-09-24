@@ -572,7 +572,7 @@ class TestStepRegistry:
         assert set(STEP_REGISTRY.keys()) == expected_steps
 
         # Verify all registered classes are proper step classes
-        for step_name, step_class in STEP_REGISTRY.items():
+        for _step_name, step_class in STEP_REGISTRY.items():
             # Should be able to instantiate
             instance = step_class("test", {"dummy": "config"})
 

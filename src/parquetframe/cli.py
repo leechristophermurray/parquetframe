@@ -378,7 +378,7 @@ def info(filepath):
             schema_table.add_column("Type", style="yellow")
             schema_table.add_column("Nullable", style="white")
 
-            for i, field in enumerate(parquet_file.schema.to_arrow_schema()):
+            for _i, field in enumerate(parquet_file.schema.to_arrow_schema()):
                 nullable = "Yes" if field.nullable else "No"
                 schema_table.add_row(field.name, str(field.type), nullable)
 
@@ -713,7 +713,7 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
                 if workflow_variables:
                     console.print(f"📝 Variables: {workflow_variables}")
 
-            context = engine.run_workflow_file(
+            engine.run_workflow_file(
                 workflow_file, variables=workflow_variables
             )
 

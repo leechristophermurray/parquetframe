@@ -84,7 +84,7 @@ class BioAccessor:
                         df_part, by=by, min_dist=min_dist, max_dist=max_dist, **kwargs
                     )
                 except Exception as e:
-                    warnings.warn(f"Clustering failed on partition: {e}", UserWarning)
+                    warnings.warn(f"Clustering failed on partition: {e}", UserWarning, stacklevel=2)
                     return df_part
 
             # Get metadata by running on a small sample
@@ -165,7 +165,7 @@ class BioAccessor:
                                 small_df, df_part, how=how, on=on, **kwargs
                             )
                     except Exception as e:
-                        warnings.warn(f"Overlap failed on partition: {e}", UserWarning)
+                        warnings.warn(f"Overlap failed on partition: {e}", UserWarning, stacklevel=2)
                         return df_part[:0]  # Return empty DataFrame with same structure
 
                 # Get metadata structure
@@ -260,7 +260,7 @@ class BioAccessor:
                 try:
                     return bf.merge(df_part, by=by, min_dist=min_dist, **kwargs)
                 except Exception as e:
-                    warnings.warn(f"Merge failed on partition: {e}", UserWarning)
+                    warnings.warn(f"Merge failed on partition: {e}", UserWarning, stacklevel=2)
                     return df_part
 
             # Get metadata structure

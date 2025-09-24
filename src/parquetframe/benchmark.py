@@ -10,7 +10,7 @@ import tempfile
 import time
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 try:
     import psutil
@@ -64,7 +64,7 @@ class PerformanceBenchmark:
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
         self.console = Console() if verbose else None
-        self.results: List[BenchmarkResult] = []
+        self.results: list[BenchmarkResult] = []
 
     def create_test_data(
         self,
@@ -151,7 +151,7 @@ class PerformanceBenchmark:
             # Monitor memory during execution
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                result = operation_func(*args, **kwargs)
+                operation_func(*args, **kwargs)
 
                 # Update peak memory
                 if PSUTIL_AVAILABLE:
@@ -161,7 +161,6 @@ class PerformanceBenchmark:
         except Exception as e:
             success = False
             error = str(e)
-            result = None
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
@@ -191,8 +190,8 @@ class PerformanceBenchmark:
         return benchmark_result
 
     def benchmark_read_operations(
-        self, file_sizes: List[Tuple[int, str]] = None
-    ) -> List[BenchmarkResult]:
+        self, file_sizes: list[tuple[int, str]] = None
+    ) -> list[BenchmarkResult]:
         """Benchmark read operations across different file sizes."""
 
         if file_sizes is None:
@@ -245,8 +244,8 @@ class PerformanceBenchmark:
         return results
 
     def benchmark_operations(
-        self, operations: List[str] = None, data_size: int = 100000
-    ) -> List[BenchmarkResult]:
+        self, operations: list[str] = None, data_size: int = 100000
+    ) -> list[BenchmarkResult]:
         """Benchmark various operations on both backends."""
 
         if operations is None:
@@ -347,8 +346,8 @@ class PerformanceBenchmark:
         return results
 
     def benchmark_threshold_sensitivity(
-        self, thresholds: List[float] = None, file_sizes_mb: List[float] = None
-    ) -> List[BenchmarkResult]:
+        self, thresholds: list[float] = None, file_sizes_mb: list[float] = None
+    ) -> list[BenchmarkResult]:
         """Benchmark sensitivity to threshold settings."""
 
         if thresholds is None:
@@ -471,7 +470,7 @@ class PerformanceBenchmark:
             self.console.print(f"• {recommendation}")
 
     def _analyze_optimal_threshold(
-        self, results: List[BenchmarkResult]
+        self, results: list[BenchmarkResult]
     ) -> Optional[float]:
         """Analyze threshold results to find optimal value."""
         # This is a simplified analysis - in practice, you'd want more sophisticated optimization
@@ -502,7 +501,7 @@ class PerformanceBenchmark:
 
         return max(avg_scores, key=avg_scores.get)
 
-    def _compare_backends(self) -> List[str]:
+    def _compare_backends(self) -> list[str]:
         """Compare backend performance and generate recommendations."""
         recommendations = []
 
@@ -549,7 +548,7 @@ class PerformanceBenchmark:
 
 def run_comprehensive_benchmark(
     output_file: Optional[str] = None, verbose: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run a comprehensive performance benchmark suite."""
 
     benchmark = PerformanceBenchmark(verbose=verbose)

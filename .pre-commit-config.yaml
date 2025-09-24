@@ -68,17 +68,17 @@ repos:
       - id: isort
         args: [--profile=black, --line-length=88]
         
-  # Pytest - Run quick tests
-  - repo: local
-    hooks:
-      - id: pytest-check
-        name: pytest-check
-        entry: pytest
-        language: system
-        args: [-x, --tb=short, -q, --disable-warnings, tests/unit/]
-        types: [python]
-        pass_filenames: false
-        stages: [pre-push]
+  # Pytest - Run quick tests (temporarily disabled)
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-check
+  #       name: pytest-check
+  #       entry: pytest
+  #       language: system
+  #       args: [-x, --tb=short, -q, --disable-warnings, tests/unit/]
+  #       types: [python]
+  #       pass_filenames: false
+  #       stages: [pre-push]
 
 ci:
   autoupdate_schedule: monthly

@@ -76,8 +76,8 @@ class TestSQLModule:
         df1, df2 = sample_data
 
         query = """
-        SELECT df.name, df.age, other.city 
-        FROM df 
+        SELECT df.name, df.age, other.city
+        FROM df
         JOIN other ON df.id = other.id
         """
 
@@ -315,7 +315,7 @@ class TestSQLIntegration:
 
         # Complex aggregation with JOIN
         query = """
-        SELECT 
+        SELECT
             p.product_name,
             p.category,
             COUNT(*) as num_sales,
@@ -352,7 +352,7 @@ class TestSQLIntegration:
         pf = ParquetFrame(df)
 
         query = """
-        SELECT 
+        SELECT
             employee,
             department,
             salary,

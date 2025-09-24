@@ -10,7 +10,7 @@ import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 try:
     import yaml
@@ -61,9 +61,9 @@ class WorkflowExecutionError(WorkflowError):
 class WorkflowContext:
     """Context for workflow execution containing variables and intermediate results."""
 
-    variables: Dict[str, Any] = field(default_factory=dict)
-    datasets: Dict[str, ParquetFrame] = field(default_factory=dict)
-    outputs: Dict[str, Any] = field(default_factory=dict)
+    variables: dict[str, Any] = field(default_factory=dict)
+    datasets: dict[str, ParquetFrame] = field(default_factory=dict)
+    outputs: dict[str, Any] = field(default_factory=dict)
     working_dir: Path = field(default_factory=lambda: Path.cwd())
 
     def get_variable(self, name: str, default: Any = None) -> Any:
@@ -93,7 +93,7 @@ class WorkflowContext:
 class WorkflowStep(ABC):
     """Abstract base class for workflow steps."""
 
-    def __init__(self, name: str, config: Dict[str, Any]):
+    def __init__(self, name: str, config: dict[str, Any]):
         self.name = name
         self.config = config
 
@@ -103,7 +103,7 @@ class WorkflowStep(ABC):
         pass
 
     @abstractmethod
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Validate the step configuration. Returns list of error messages."""
         pass
 
@@ -148,7 +148,7 @@ class ReadStep(WorkflowStep):
 
         return pf
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "input" not in self.config:
             errors.append(f"Step '{self.name}': 'input' is required")
@@ -177,7 +177,7 @@ class FilterStep(WorkflowStep):
 
         return filtered_pf
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "query" not in self.config:
             errors.append(f"Step '{self.name}': 'query' is required")
@@ -206,7 +206,7 @@ class SelectStep(WorkflowStep):
 
         return selected_pf
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "columns" not in self.config:
             errors.append(f"Step '{self.name}': 'columns' is required")
@@ -261,7 +261,7 @@ class GroupByStep(WorkflowStep):
 
         return result_pf
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "by" not in self.config:
             errors.append(f"Step '{self.name}': 'by' is required")
@@ -290,7 +290,7 @@ class SaveStep(WorkflowStep):
 
         return full_path
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "output" not in self.config:
             errors.append(f"Step '{self.name}': 'output' is required")
@@ -329,7 +329,7 @@ class TransformStep(WorkflowStep):
                     # For more complex operations, we'd need to access the underlying DataFrame
                     # This is a simplified implementation
                     warnings.warn(
-                        f"Transform operation '{operation}' not fully supported yet"
+                        f"Transform operation '{operation}' not fully supported yet", stacklevel=2
                     )
 
         output_name = self.config.get("output", input_name)
@@ -337,7 +337,7 @@ class TransformStep(WorkflowStep):
 
         return result_pf
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         errors = []
         if "transforms" not in self.config:
             errors.append(f"Step '{self.name}': 'transforms' is required")
@@ -362,7 +362,7 @@ class WorkflowEngine:
         self.verbose = verbose
         self.console = Console() if RICH_AVAILABLE and verbose else None
 
-    def load_workflow(self, workflow_path: Union[str, Path]) -> Dict[str, Any]:
+    def load_workflow(self, workflow_path: Union[str, Path]) -> dict[str, Any]:
         """Load a workflow from a YAML file."""
         if not YAML_AVAILABLE:
             raise WorkflowError(
@@ -384,7 +384,7 @@ class WorkflowEngine:
         except yaml.YAMLError as e:
             raise WorkflowValidationError(f"Invalid YAML in workflow file: {e}")
 
-    def validate_workflow(self, workflow: Dict[str, Any]) -> List[str]:
+    def validate_workflow(self, workflow: dict[str, Any]) -> list[str]:
         """Validate a workflow configuration."""
         errors = []
 
@@ -424,9 +424,9 @@ class WorkflowEngine:
 
     def execute_workflow(
         self,
-        workflow: Dict[str, Any],
+        workflow: dict[str, Any],
         working_dir: Optional[Path] = None,
-        variables: Optional[Dict[str, Any]] = None,
+        variables: Optional[dict[str, Any]] = None,
     ) -> WorkflowContext:
         """Execute a workflow."""
 
@@ -512,7 +512,7 @@ class WorkflowEngine:
     def run_workflow_file(
         self,
         workflow_path: Union[str, Path],
-        variables: Optional[Dict[str, Any]] = None,
+        variables: Optional[dict[str, Any]] = None,
     ) -> WorkflowContext:
         """Load and execute a workflow from a file."""
 
@@ -536,7 +536,7 @@ class WorkflowEngine:
         )
 
 
-def create_example_workflow() -> Dict[str, Any]:
+def create_example_workflow() -> dict[str, Any]:
     """Create an example workflow for documentation and testing."""
     return {
         "name": "Example Data Processing Workflow",

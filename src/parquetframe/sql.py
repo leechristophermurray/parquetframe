@@ -6,7 +6,7 @@ supporting both pandas and Dask DataFrames with automatic JOIN operations.
 """
 
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 try:
     import duckdb
@@ -22,7 +22,7 @@ import pandas as pd
 def query_dataframes(
     main_df: Union[pd.DataFrame, dd.DataFrame],
     query: str,
-    other_dfs: Optional[Dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
+    other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
     """
@@ -136,7 +136,7 @@ def validate_sql_query(query: str) -> bool:
 def explain_query(
     main_df: Union[pd.DataFrame, dd.DataFrame],
     query: str,
-    other_dfs: Optional[Dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
+    other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
 ) -> str:
     """
     Get the execution plan for a SQL query without executing it.
