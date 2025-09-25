@@ -262,12 +262,12 @@ Now that you've got the basics down:
 
 1. **[Basic Usage](usage.md)** - Dive deeper into core functionality
 2. **[Advanced Features](advanced.md)** - Learn about advanced patterns and optimizations
-3. **[API Reference](api.md)** - Complete documentation of all methods
+3. **[API Reference](api/core.md)** - Complete documentation of all methods
 4. **[Performance Tips](performance.md)** - Optimize your workflows
 
 ## Need Help?
 
-- Check the [API Reference](api.md) for detailed method documentation
+- Check the [API Reference](api/core.md) for detailed method documentation
 - Browse [examples](examples.md) for common use cases
 - Report issues on [GitHub](https://github.com/leechristophermurray/parquetframe/issues)
 
