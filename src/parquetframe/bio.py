@@ -51,9 +51,8 @@ class BioAccessor:
 
     def cluster(
         self,
-        by: str | None = None,
         min_dist: int = 0,
-        max_dist: int | None = None,
+        on: str | list | None = None,
         **kwargs: Any,
     ) -> ParquetFrame:
         """
@@ -64,9 +63,8 @@ class BioAccessor:
         boundaries. For pandas DataFrames, uses standard bioframe clustering.
 
         Args:
-            by: Column to group by before clustering (optional).
             min_dist: Minimum distance between intervals to merge.
-            max_dist: Maximum distance between intervals to merge.
+            on: Columns to use for grouping (default: None for standard chrom, start, end).
             **kwargs: Additional arguments passed to bioframe.cluster.
 
         Returns:
@@ -75,7 +73,7 @@ class BioAccessor:
         Examples:
             >>> pf = ParquetFrame.read('regions.parquet')
             >>> clustered = pf.bio.cluster(min_dist=1000)
-            >>> clustered = pf.bio.cluster(by='chrom', min_dist=0)
+            >>> clustered = pf.bio.cluster(on='chrom', min_dist=0)
         """
         if self._is_lazy:
             print("🧬 Running parallelized genomic clustering (partition-local)...")
@@ -85,9 +83,9 @@ class BioAccessor:
                 if len(df_part) == 0:
                     return df_part
                 try:
-                    return bf.cluster(
-                        df_part, by=by, min_dist=min_dist, max_dist=max_dist, **kwargs
-                    )
+                    # Convert on parameter to list if it's a string
+                    on_param = [on] if isinstance(on, str) else on
+                    return bf.cluster(df_part, min_dist=min_dist, on=on_param, **kwargs)
                 except Exception as e:
                     warnings.warn(
                         f"Clustering failed on partition: {e}",
@@ -97,7 +95,7 @@ class BioAccessor:
                     return df_part
 
             # Get metadata by running on a small sample
-            sample = self._df.head(1).compute()
+            sample = self._df.head(1)  # head() on Dask already returns pandas
             if len(sample) > 0:
                 meta_df = cluster_partition(sample)
             else:
@@ -109,9 +107,16 @@ class BioAccessor:
 
         else:
             print("🧬 Running standard bioframe clustering...")
+
+            # Handle empty DataFrames
+            if len(self._df) == 0:
+                return self._pf.__class__(self._df.copy(), islazy=False)
+
             try:
+                # Convert on parameter to list if it's a string
+                on_param = [on] if isinstance(on, str) else on
                 result_df = bf.cluster(
-                    self._df, by=by, min_dist=min_dist, max_dist=max_dist, **kwargs
+                    self._df, min_dist=min_dist, on=on_param, **kwargs
                 )
                 return self._pf.__class__(result_df, islazy=False)
             except Exception as e:
@@ -120,7 +125,7 @@ class BioAccessor:
     def overlap(
         self,
         other: ParquetFrame,
-        how: str = "inner",
+        how: str = "left",
         on: str | list | None = None,
         broadcast: bool = False,
         **kwargs: Any,
@@ -130,8 +135,8 @@ class BioAccessor:
 
         Args:
             other: Another ParquetFrame to overlap with.
-            how: Type of overlap ('inner', 'left', 'right', 'outer').
-            on: Columns to use for overlap (default: ['chrom', 'start', 'end']).
+            how: Type of overlap ('left', 'inner', 'outer').
+            on: Columns to use for overlap (default: None for standard chrom, start, end).
             broadcast: If True, broadcast the smaller DataFrame for parallel join.
             **kwargs: Additional arguments passed to bioframe.overlap.
 
@@ -182,7 +187,7 @@ class BioAccessor:
                         return df_part[:0]  # Return empty DataFrame with same structure
 
                 # Get metadata structure
-                sample = large_ddf.head(1).compute()
+                sample = large_ddf.head(1)  # head() on Dask already returns pandas
                 if len(sample) > 0 and len(small_pdf) > 0:
                     meta_df = overlap_partition(sample, small_pdf.head(1))
                 else:
@@ -217,13 +222,13 @@ class BioAccessor:
                 raise ValueError(f"Bioframe overlap failed: {e}") from e
 
     def complement(
-        self, genome: pd.DataFrame | dict | None = None, **kwargs: Any
+        self, view_df: pd.DataFrame | None = None, **kwargs: Any
     ) -> ParquetFrame:
         """
         Find complement intervals for genomic regions.
 
         Args:
-            genome: Genome information (chromosome sizes). Can be DataFrame or dict.
+            view_df: View DataFrame defining the genomic space (chromosome sizes).
             **kwargs: Additional arguments passed to bioframe.complement.
 
         Returns:
@@ -242,13 +247,13 @@ class BioAccessor:
 
         print("🧬 Computing genomic complement...")
         try:
-            result_df = bf.complement(df_pandas, genome=genome, **kwargs)
+            result_df = bf.complement(df_pandas, view_df=view_df, **kwargs)
             return self._pf.__class__(result_df, islazy=False)
         except Exception as e:
             raise ValueError(f"Bioframe complement failed: {e}") from e
 
     def merge(
-        self, by: str | None = None, min_dist: int = 0, **kwargs: Any
+        self, min_dist: int = 0, on: str | list | None = None, **kwargs: Any
     ) -> ParquetFrame:
         """
         Merge overlapping genomic intervals.
@@ -256,8 +261,8 @@ class BioAccessor:
         This is similar to cluster but specifically for merging intervals.
 
         Args:
-            by: Column to group by before merging.
             min_dist: Minimum distance between intervals to merge.
+            on: Columns to use for grouping (default: None for standard chrom, start, end).
             **kwargs: Additional arguments passed to bioframe.merge.
 
         Returns:
@@ -271,7 +276,9 @@ class BioAccessor:
                 if len(df_part) == 0:
                     return df_part
                 try:
-                    return bf.merge(df_part, by=by, min_dist=min_dist, **kwargs)
+                    # Convert on parameter to list if it's a string
+                    on_param = [on] if isinstance(on, str) else on
+                    return bf.merge(df_part, min_dist=min_dist, on=on_param, **kwargs)
                 except Exception as e:
                     warnings.warn(
                         f"Merge failed on partition: {e}", UserWarning, stacklevel=2
@@ -279,7 +286,7 @@ class BioAccessor:
                     return df_part
 
             # Get metadata structure
-            sample = self._df.head(1).compute()
+            sample = self._df.head(1)  # head() on Dask already returns pandas
             if len(sample) > 0:
                 meta_df = merge_partition(sample)
             else:
@@ -291,8 +298,15 @@ class BioAccessor:
 
         else:
             print("🧬 Running standard bioframe merge...")
+
+            # Handle empty DataFrames
+            if len(self._df) == 0:
+                return self._pf.__class__(self._df.copy(), islazy=False)
+
             try:
-                result_df = bf.merge(self._df, by=by, min_dist=min_dist, **kwargs)
+                # Convert on parameter to list if it's a string
+                on_param = [on] if isinstance(on, str) else on
+                result_df = bf.merge(self._df, min_dist=min_dist, on=on_param, **kwargs)
                 return self._pf.__class__(result_df, islazy=False)
             except Exception as e:
                 raise ValueError(f"Bioframe merge failed: {e}") from e

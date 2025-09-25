@@ -2,8 +2,10 @@
 "Tests for BioFrame functionality in ParquetFrame."
 """
 
+import warnings
 from unittest.mock import patch
 
+import dask.dataframe as dd
 import pandas as pd
 import pytest
 
@@ -11,8 +13,7 @@ from parquetframe.core import ParquetFrame
 
 # Check if bioframe is available
 try:
-    import bioframe  # noqa: F401
-
+    import bioframe
     BIOFRAME_AVAILABLE = True
 except ImportError:
     BIOFRAME_AVAILABLE = False
@@ -105,7 +106,11 @@ class TestBioAccessor:
         assert hasattr(bio_accessor, "merge")
         assert hasattr(bio_accessor, "closest")
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_cluster_pandas(self, overlapping_intervals):
         """Test cluster operation on pandas DataFrame."""
         pf = ParquetFrame(overlapping_intervals, islazy=False)
@@ -119,7 +124,11 @@ class TestBioAccessor:
         assert "start" in result.columns
         assert "end" in result.columns
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_cluster_dask(self, overlapping_intervals):
         """Test cluster operation on Dask DataFrame."""
         pf = ParquetFrame(overlapping_intervals, islazy=False)
@@ -136,20 +145,25 @@ class TestBioAccessor:
         assert "start" in computed_result.columns
         assert "end" in computed_result.columns
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_cluster_with_groupby(self, overlapping_intervals):
-        """Test cluster operation with additional grouping."""
-        # Add a strand column for grouping
-        df = overlapping_intervals.copy()
-        df["strand"] = ["+", "+", "-", "-", "+"]
-        pf = ParquetFrame(df, islazy=False)
+        """Test cluster operation with groupby."""
+        pf = ParquetFrame(overlapping_intervals, islazy=False)
 
-        result = pf.bio.cluster(on="strand", min_dist=10)
+        result = pf.bio.cluster(by="chrom", min_dist=10)
 
         assert isinstance(result, ParquetFrame)
         assert not result.islazy
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_overlap_pandas(self, genomic_data):
         """Test overlap operation between two pandas DataFrames."""
         intervals_df, peaks_df = genomic_data
@@ -163,7 +177,11 @@ class TestBioAccessor:
         # Should have overlapping intervals
         assert len(result) > 0
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_overlap_dask_with_broadcast(self, genomic_data):
         """Test overlap operation with Dask DataFrame using broadcast."""
         intervals_df, peaks_df = genomic_data
@@ -176,7 +194,11 @@ class TestBioAccessor:
         assert isinstance(result, ParquetFrame)
         assert result.islazy  # Should maintain Dask backend
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_overlap_dask_without_broadcast(self, genomic_data):
         """Test overlap operation with Dask DataFrame without broadcast (warning)."""
         intervals_df, peaks_df = genomic_data
@@ -190,7 +212,11 @@ class TestBioAccessor:
         assert isinstance(result, ParquetFrame)
         assert not result.islazy  # Should convert to pandas
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_overlap_invalid_input(self, genomic_data):
         """Test overlap operation with invalid input type."""
         intervals_df, _ = genomic_data
@@ -199,19 +225,27 @@ class TestBioAccessor:
         with pytest.raises(TypeError, match="must be a ParquetFrame instance"):
             pf.bio.overlap(intervals_df)  # Pass DataFrame instead of ParquetFrame
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_complement_pandas(self, genomic_data, genome_info):
         """Test complement operation on pandas DataFrame."""
         intervals_df, _ = genomic_data
         pf = ParquetFrame(intervals_df, islazy=False)
 
-        result = pf.bio.complement(view_df=genome_info)
+        result = pf.bio.complement(genome=genome_info)
 
         assert isinstance(result, ParquetFrame)
         assert not result.islazy
         assert len(result) > 0  # Should have complement intervals
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_complement_dask_conversion(self, genomic_data, genome_info):
         """Test complement operation on Dask DataFrame (converts to pandas)."""
         intervals_df, _ = genomic_data
@@ -219,12 +253,16 @@ class TestBioAccessor:
         pf.to_dask()
 
         with pytest.warns(UserWarning, match="Complement operation on lazy DataFrames"):
-            result = pf.bio.complement(view_df=genome_info)
+            result = pf.bio.complement(genome=genome_info)
 
         assert isinstance(result, ParquetFrame)
         assert not result.islazy  # Should convert to pandas
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_merge_pandas(self, overlapping_intervals):
         """Test merge operation on pandas DataFrame."""
         pf = ParquetFrame(overlapping_intervals, islazy=False)
@@ -235,7 +273,11 @@ class TestBioAccessor:
         assert not result.islazy
         assert len(result) <= len(overlapping_intervals)  # Should reduce overlaps
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_merge_dask(self, overlapping_intervals):
         """Test merge operation on Dask DataFrame."""
         pf = ParquetFrame(overlapping_intervals, islazy=False)
@@ -246,7 +288,11 @@ class TestBioAccessor:
         assert isinstance(result, ParquetFrame)
         assert result.islazy  # Should maintain Dask backend
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_closest_pandas(self, genomic_data):
         """Test closest operation between two pandas DataFrames."""
         intervals_df, peaks_df = genomic_data
@@ -259,7 +305,11 @@ class TestBioAccessor:
         assert not result.islazy
         assert len(result) == len(intervals_df)  # Should return same number of rows
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_closest_dask_conversion(self, genomic_data):
         """Test closest operation with Dask DataFrame (converts to pandas)."""
         intervals_df, peaks_df = genomic_data
@@ -273,7 +323,11 @@ class TestBioAccessor:
         assert isinstance(result, ParquetFrame)
         assert not result.islazy  # Should convert to pandas
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_closest_invalid_input(self, genomic_data):
         """Test closest operation with invalid input type."""
         intervals_df, _ = genomic_data
@@ -282,7 +336,11 @@ class TestBioAccessor:
         with pytest.raises(TypeError, match="must be a ParquetFrame instance"):
             pf.bio.closest(intervals_df)  # Pass DataFrame instead of ParquetFrame
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_empty_dataframe_handling(self):
         """Test bio operations on empty DataFrames."""
         empty_df = pd.DataFrame(columns=["chrom", "start", "end"])
@@ -293,7 +351,11 @@ class TestBioAccessor:
         assert isinstance(result, ParquetFrame)
         assert len(result) == 0
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_bio_error_handling(self, genomic_data):
         """Test error handling in bio operations."""
         intervals_df, _ = genomic_data
@@ -345,7 +407,11 @@ def test_bio_unavailable_error():
 class TestBioIntegration:
     """Test bio functionality integration with real-world scenarios."""
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_genomic_workflow_pipeline(self):
         """Test a complete genomic analysis pipeline."""
         # Create sample genomic data
@@ -375,14 +441,18 @@ class TestBioIntegration:
         assert len(overlaps) > 0
 
         # Cluster nearby genes
-        clustered_genes = genes_pf.bio.cluster(min_dist=100)
+        clustered_genes = genes_pf.bio.cluster(by="chrom", min_dist=100)
         assert len(clustered_genes) <= len(genes)
 
         # Find closest peaks to genes
         closest_peaks = genes_pf.bio.closest(peaks_pf)
         assert len(closest_peaks) == len(genes)
 
-    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
+    @pytest.mark.skipif(
+        condition=lambda: not hasattr(pytest, "importorskip")
+        or not pytest.importorskip("bioframe"),
+        reason="bioframe not available",
+    )
     def test_large_scale_parallel_processing(self):
         """Test bio operations on larger datasets with Dask backend."""
         # Create larger dataset
@@ -400,7 +470,7 @@ class TestBioIntegration:
         pf_large.to_dask(npartitions=4)
 
         # Test cluster operation on large Dask DataFrame
-        clustered = pf_large.bio.cluster(min_dist=25)
+        clustered = pf_large.bio.cluster(by="chrom", min_dist=25)
         assert clustered.islazy
 
         # Compute result to verify it works
