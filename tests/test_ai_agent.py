@@ -94,6 +94,16 @@ class TestQueryGeneration:
         self, mock_ollama_module, mock_ollama_client, mock_data_context
     ):
         """Test simple query generation from natural language."""
+        # Ensure async mocks are properly set up (robust fix for CI environment)
+        from unittest.mock import AsyncMock
+
+        if not isinstance(mock_data_context.execute, AsyncMock):
+            mock_data_context.execute = AsyncMock(
+                return_value=mock_data_context.execute.return_value
+            )
+        if not isinstance(mock_data_context.validate_query, AsyncMock):
+            mock_data_context.validate_query = AsyncMock(return_value=True)
+
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
             with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
                 # Setup mock response
@@ -150,6 +160,16 @@ class TestQueryGeneration:
         self, mock_ollama_module, mock_ollama_client, mock_data_context
     ):
         """Test multi-step query generation for complex queries."""
+        # Ensure async mocks are properly set up (robust fix for CI environment)
+        from unittest.mock import AsyncMock
+
+        if not isinstance(mock_data_context.execute, AsyncMock):
+            mock_data_context.execute = AsyncMock(
+                return_value=mock_data_context.execute.return_value
+            )
+        if not isinstance(mock_data_context.validate_query, AsyncMock):
+            mock_data_context.validate_query = AsyncMock(return_value=True)
+
         # Mock table selection response
         mock_ollama_client.chat.side_effect = [
             # First call: table selection
@@ -187,6 +207,16 @@ class TestQueryGeneration:
         self, mock_ollama_module, mock_ollama_client, mock_data_context
     ):
         """Test self-correction when initial query fails."""
+        # Ensure async mocks are properly set up (robust fix for CI environment)
+        from unittest.mock import AsyncMock
+
+        if not isinstance(mock_data_context.execute, AsyncMock):
+            mock_data_context.execute = AsyncMock(
+                return_value=mock_data_context.execute.return_value
+            )
+        if not isinstance(mock_data_context.validate_query, AsyncMock):
+            mock_data_context.validate_query = AsyncMock(return_value=True)
+
         # Mock failed execution followed by successful retry
         mock_data_context.execute.side_effect = [
             Exception("Table 'user' doesn't exist"),  # First attempt fails
@@ -215,8 +245,19 @@ class TestQueryGeneration:
         self, mock_ollama_module, mock_ollama_client, mock_data_context
     ):
         """Test behavior when max retries are exceeded."""
-        # Mock continuous failures
-        mock_data_context.execute.side_effect = Exception("Persistent error")
+        # Ensure async mocks are properly set up (robust fix for CI environment)
+        from unittest.mock import AsyncMock
+
+        if not isinstance(mock_data_context.execute, AsyncMock):
+            mock_data_context.execute = AsyncMock(
+                side_effect=Exception("Persistent error")
+            )
+        else:
+            mock_data_context.execute.side_effect = Exception("Persistent error")
+        if not isinstance(mock_data_context.validate_query, AsyncMock):
+            mock_data_context.validate_query = AsyncMock(return_value=True)
+
+        # Mock continuous failures already set up above
 
         mock_ollama_client.chat.return_value = {
             "message": {"content": "SELECT * FROM invalid_table;"}
@@ -345,7 +386,9 @@ class TestAIAgentIntegration:
         sample_natural_language_queries,
     ):
         """Test various natural language query patterns."""
-        # Create mock data context for this test
+        # Create mock data context for this test with proper async setup
+        from unittest.mock import AsyncMock, MagicMock
+
         mock_data_context = MagicMock()
         mock_data_context.is_initialized = True
         mock_data_context.execute = AsyncMock(return_value=MagicMock())
