@@ -12,8 +12,13 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from src.parquetframe.datacontext import DataContext, DataContextFactory, SourceType
-from src.parquetframe.exceptions import DataContextError, DataSourceError
+from src.parquetframe.datacontext import (
+    DataContext,
+    DataContextError,
+    DataContextFactory,
+    SourceType,
+)
+from src.parquetframe.exceptions import DataSourceError
 
 
 class TestDataContextFactory:
