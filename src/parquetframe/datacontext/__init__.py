@@ -36,14 +36,17 @@ class DataContextError(DataSourceError):
     def __init__(
         self,
         message: str,
+        cause: Exception | None = None,
         source_type: str = "unknown",
         source_location: str = "unknown",
     ):
         super().__init__(
             source_type=source_type,
             source_location=source_location,
-            underlying_error=Exception(message),
+            underlying_error=cause or Exception(message),
         )
+        if cause:
+            self.__cause__ = cause
 
 
 class DataContext(ABC):

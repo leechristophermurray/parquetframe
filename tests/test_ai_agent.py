@@ -87,33 +87,7 @@ class TestLLMAgentInitialization:
 class TestQueryGeneration:
     """Test query generation functionality."""
 
-    @pytest.fixture
-    def mock_data_context(self):
-        """Mock DataContext for testing."""
-        context = MagicMock()
-        context.is_initialized = True
-        context.get_table_names.return_value = ["users", "sales"]
-        context.get_schema_as_text.return_value = """
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT,
-            age INTEGER,
-            city TEXT
-        );
-        CREATE TABLE sales (
-            id INTEGER PRIMARY KEY,
-            user_id INTEGER,
-            amount REAL,
-            product TEXT
-        );
-        """
-
-        # Mock successful query execution
-        mock_result = MagicMock()
-        mock_result.__len__ = MagicMock(return_value=5)
-        context.execute = AsyncMock(return_value=mock_result)
-
-        return context
+    # Use the mock_data_context fixture from conftest.py instead
 
     @pytest.mark.asyncio
     async def test_simple_query_generation(
@@ -156,6 +130,7 @@ class TestQueryGeneration:
         mock_result = MagicMock()
         mock_result.__len__ = MagicMock(return_value=3)
         context.execute = AsyncMock(return_value=mock_result)
+        context.validate_query = AsyncMock(return_value=True)
 
         mock_ollama_client.chat.return_value = {
             "message": {"content": "SELECT * FROM users;"}
@@ -374,6 +349,7 @@ class TestAIAgentIntegration:
         mock_data_context = MagicMock()
         mock_data_context.is_initialized = True
         mock_data_context.execute = AsyncMock(return_value=MagicMock())
+        mock_data_context.validate_query = AsyncMock(return_value=True)
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
             with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
@@ -435,6 +411,8 @@ class TestErrorHandling:
         # Create mock data context for this test
         mock_data_context = MagicMock()
         mock_data_context.is_initialized = True
+        mock_data_context.execute = AsyncMock(return_value=MagicMock())
+        mock_data_context.validate_query = AsyncMock(return_value=True)
 
         mock_ollama_client.chat.return_value = {
             "message": {"content": ""}  # Empty response

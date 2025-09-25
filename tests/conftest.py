@@ -357,6 +357,58 @@ def sample_database_engine():
     return engine
 
 
+# Mock data context fixtures
+@pytest.fixture
+def mock_data_context():
+    """Mock DataContext with proper async method handling for testing."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    context = MagicMock()
+    context.is_initialized = True
+    context.source_location = "test://memory"
+    context.source_type = MagicMock()
+    context.source_type.value = "test"
+
+    # Mock table information
+    context.get_table_names.return_value = ["users", "sales"]
+    context.get_schema_as_text.return_value = """
+    CREATE TABLE users (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        age INTEGER,
+        city TEXT
+    );
+    CREATE TABLE sales (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER,
+        amount REAL,
+        product TEXT
+    );
+    """
+
+    # Mock table schema method
+    context.get_table_schema.return_value = {
+        "columns": [
+            {"name": "id", "sql_type": "INTEGER", "nullable": False},
+            {"name": "name", "sql_type": "TEXT", "nullable": False},
+            {"name": "age", "sql_type": "INTEGER", "nullable": True},
+            {"name": "city", "sql_type": "TEXT", "nullable": True},
+        ]
+    }
+
+    # Mock successful query execution result
+    mock_result = MagicMock()
+    mock_result.__len__ = MagicMock(return_value=5)
+    mock_result.to_dict.return_value = {"count": 5}
+
+    # Set up async methods properly
+    context.initialize = AsyncMock()
+    context.execute = AsyncMock(return_value=mock_result)
+    context.validate_query = AsyncMock(return_value=True)
+
+    return context
+
+
 # Parametrized fixtures for comprehensive testing
 @pytest.fixture(params=[True, False])
 def ai_enabled(request) -> bool:

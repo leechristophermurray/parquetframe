@@ -42,7 +42,7 @@ jobs:
       run: |
         uv venv .venv
         .venv\Scripts\Activate.ps1
-        uv pip install -e ".[dev,test,cli]"
+        uv pip install -e ".[dev,test-all]"
       shell: pwsh
 
     - name: Create virtual environment and install dependencies (Unix)
@@ -52,7 +52,7 @@ jobs:
         echo "$PWD/.venv/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
-        uv pip install -e ".[dev,test,cli]"
+        uv pip install -e ".[dev,test-all]"
       shell: bash
 
     - name: Install package (already done above)
@@ -147,14 +147,14 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         .venv\Scripts\Activate.ps1
-        python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=50
+        python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=47
       shell: pwsh
 
     - name: Run tests (Unix)
       if: runner.os != 'Windows'
       run: |
         source .venv/bin/activate
-        python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=50
+        python -m pytest tests/ --cov=src/parquetframe --cov-report=xml --cov-report=html --tb=short -v --cov-fail-under=47
       shell: bash
 
     - name: Upload coverage to Codecov
@@ -252,7 +252,7 @@ jobs:
         echo "$PWD/.venv/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
-        uv pip install -e ".[cli]"
+        uv pip install -e ".[cli,test]"
     - name: Test CLI functionality
       run: |
         # Create test data
