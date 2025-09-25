@@ -45,6 +45,20 @@ try:
 except ImportError:
     SQL_AVAILABLE = False
 
+try:
+    from .workflow_history import WorkflowHistoryManager
+
+    WORKFLOW_HISTORY_AVAILABLE = True
+except ImportError:
+    WORKFLOW_HISTORY_AVAILABLE = False
+
+try:
+    from .workflow_visualization import WorkflowVisualizer
+
+    WORKFLOW_VISUALIZATION_AVAILABLE = True
+except ImportError:
+    WORKFLOW_VISUALIZATION_AVAILABLE = False
+
 # Global console for rich output
 console = Console(force_terminal=False, color_system="auto")
 
@@ -579,7 +593,33 @@ def benchmark(output, quiet, operations, file_sizes):
     help="Create an example workflow file at the specified path",
 )
 @click.option("--quiet", "-q", is_flag=True, help="Run in quiet mode (minimal output)")
-def workflow(workflow_file, validate, variables, list_steps, create_example, quiet):
+@click.option(
+    "--visualize",
+    type=click.Choice(["graphviz", "networkx", "mermaid"]),
+    help="Generate workflow visualization (requires graphviz, networkx, or mermaid)",
+)
+@click.option(
+    "--viz-output",
+    type=click.Path(),
+    help="Output path for visualization (e.g., workflow.svg, workflow.png)",
+)
+@click.option(
+    "--viz-format",
+    type=click.Choice(["svg", "png", "pdf", "dot"]),
+    default="svg",
+    help="Visualization output format (default: svg)",
+)
+def workflow(
+    workflow_file,
+    validate,
+    variables,
+    list_steps,
+    create_example,
+    quiet,
+    visualize,
+    viz_output,
+    viz_format,
+):
     """
     Execute or manage YAML workflow files.
 
@@ -593,6 +633,7 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
         pframe workflow --validate my_pipeline.yml
         pframe workflow --create-example example.yml
         pframe workflow --list-steps
+        pframe workflow my_pipeline.yml --visualize graphviz --viz-output dag.svg
     """
     if not WORKFLOW_AVAILABLE:
         console.print(
@@ -678,13 +719,91 @@ def workflow(workflow_file, validate, variables, list_steps, create_example, qui
     # Create workflow engine
     engine = WorkflowEngine(verbose=not quiet)
 
+    # Load workflow for visualization or validation/execution
+    workflow = engine.load_workflow(workflow_file)
+
+    # Handle visualization if requested
+    if visualize:
+        if not WORKFLOW_VISUALIZATION_AVAILABLE:
+            console.print(
+                "[bold red]Error:[/bold red] Workflow visualization requires additional dependencies."
+            )
+            console.print(
+                "Please install with: pip install networkx graphviz matplotlib"
+            )
+            sys.exit(1)
+
+        try:
+            visualizer = WorkflowVisualizer()
+
+            if visualize == "mermaid":
+                # Generate Mermaid diagram
+                mermaid_code = visualizer.export_to_mermaid(workflow)
+
+                if viz_output:
+                    with open(viz_output, "w") as f:
+                        f.write(mermaid_code)
+                    console.print(
+                        f"[SUCCESS] [bold green]Mermaid diagram saved to:[/bold green] {viz_output}"
+                    )
+                else:
+                    console.print("\n[MERMAID] Workflow DAG in Mermaid format:")
+                    console.print(mermaid_code)
+
+            elif visualize == "graphviz":
+                # Generate Graphviz visualization
+                output_path = visualizer.visualize_with_graphviz(
+                    workflow, output_path=viz_output, format=viz_format
+                )
+
+                if output_path:
+                    console.print(
+                        f"[SUCCESS] [bold green]Graphviz visualization saved to:[/bold green] {output_path}"
+                    )
+                else:
+                    console.print("\n[GRAPHVIZ] Workflow DAG source code:")
+                    console.print(output_path)
+
+            elif visualize == "networkx":
+                # Generate NetworkX visualization
+                output_path = visualizer.visualize_with_networkx(
+                    workflow, output_path=viz_output or "workflow_dag.png"
+                )
+
+                if output_path:
+                    console.print(
+                        f"[SUCCESS] [bold green]NetworkX visualization saved to:[/bold green] {output_path}"
+                    )
+                else:
+                    console.print("[INFO] NetworkX visualization displayed in window")
+
+            # Show DAG statistics
+            if not quiet:
+                stats = visualizer.get_dag_statistics(workflow)
+                console.print("\n[STATS] Workflow DAG Statistics:")
+                console.print(f"  • Total Steps: {stats.get('total_steps', 0)}")
+                console.print(f"  • Dependencies: {stats.get('total_dependencies', 0)}")
+                console.print(f"  • Is Valid DAG: {stats.get('is_dag', False)}")
+                console.print(f"  • Longest Path: {stats.get('longest_path', 0)}")
+                if stats.get("potential_issues"):
+                    console.print(f"  • Issues: {', '.join(stats['potential_issues'])}")
+
+            return
+
+        except Exception as e:
+            console.print(f"[bold red]Visualization error:[/bold red] {e}")
+            if not quiet:
+                import traceback
+
+                console.print(f"[dim]{traceback.format_exc()}[/dim]")
+            sys.exit(1)
+
     try:
         if validate:
             # Validate workflow
             console.print(
                 f"[VALIDATING] [bold blue]Validating workflow:[/bold blue] {workflow_file}"
             )
-            workflow = engine.load_workflow(workflow_file)
             errors = engine.validate_workflow(workflow)
 
             if errors:
@@ -916,6 +1035,212 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
             console.print(
                 "[bold green][SUCCESS] Results saved successfully![/bold green]"
             )
+
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        import traceback
+
+        console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
+
+
+@main.command()
+@click.option("--workflow-name", "-w", help="Filter history by specific workflow name")
+@click.option(
+    "--limit",
+    "-l",
+    type=int,
+    default=10,
+    help="Limit number of records to show (default: 10)",
+)
+@click.option(
+    "--status",
+    "-s",
+    type=click.Choice(["completed", "failed", "running"]),
+    help="Filter by execution status",
+)
+@click.option(
+    "--details", "-d", is_flag=True, help="Show detailed execution information"
+)
+@click.option("--cleanup", type=int, help="Clean up history files older than N days")
+@click.option("--stats", is_flag=True, help="Show aggregate statistics")
+def workflow_history(workflow_name, limit, status, details, cleanup, stats):
+    """
+    View and manage workflow execution history.
+
+    This command allows you to explore .hist files generated by workflow executions,
+    view statistics, and manage historical data.
+
+    Examples:
+        pframe workflow-history                          # Show recent executions
+        pframe workflow-history --workflow-name my_flow # Filter by workflow
+        pframe workflow-history --details               # Show detailed info
+        pframe workflow-history --stats                 # Show aggregate stats
+        pframe workflow-history --cleanup 30            # Clean up old files
+    """
+    if not WORKFLOW_HISTORY_AVAILABLE:
+        console.print(
+            "[bold red]Error:[/bold red] Workflow history functionality requires additional dependencies."
+        )
+        console.print("Please ensure the workflow_history module is available.")
+        sys.exit(1)
+
+    try:
+        history_manager = WorkflowHistoryManager()
+
+        # Handle cleanup operation
+        if cleanup:
+            removed_count = history_manager.cleanup_old_records(cleanup)
+            console.print(
+                f"[SUCCESS] [bold green]Cleaned up {removed_count} history files older than {cleanup} days[/bold green]"
+            )
+            return
+
+        # Handle stats request
+        if stats:
+            statistics = history_manager.get_workflow_statistics(workflow_name)
+
+            if "message" in statistics:
+                console.print(f"[yellow]{statistics['message']}[/yellow]")
+                return
+
+            # Display statistics table
+            stats_table = Table(
+                title=f"Workflow Statistics{f' - {workflow_name}' if workflow_name else ''}"
+            )
+            stats_table.add_column("Metric", style="cyan")
+            stats_table.add_column("Value", style="white")
+
+            stats_table.add_row("Total Executions", str(statistics["total_executions"]))
+            stats_table.add_row("Successful", str(statistics["successful_executions"]))
+            stats_table.add_row("Failed", str(statistics["failed_executions"]))
+            stats_table.add_row("Success Rate", f"{statistics['success_rate']:.1%}")
+            stats_table.add_row(
+                "Avg Duration", f"{statistics['average_duration_seconds']:.2f}s"
+            )
+            stats_table.add_row(
+                "Total Duration", f"{statistics['total_duration_seconds']:.2f}s"
+            )
+
+            console.print(stats_table)
+            return
+
+        # Get execution records
+        hist_files = history_manager.list_execution_records(workflow_name)[:limit]
+
+        if not hist_files:
+            console.print(
+                f"[yellow]No execution records found{f' for workflow {workflow_name}' if workflow_name else ''}[/yellow]"
+            )
+            return
+
+        console.print(
+            f"\n[HISTORY] [bold blue]Workflow Execution History{f' - {workflow_name}' if workflow_name else ''}[/bold blue]"
+        )
+
+        if details:
+            # Show detailed information for each execution
+            for hist_file in hist_files:
+                try:
+                    execution = history_manager.load_execution_record(hist_file)
+
+                    # Skip if status filter doesn't match
+                    if status and execution.status != status:
+                        continue
+
+                    console.print(f"\n{'='*50}")
+                    console.print(
+                        f"[bold]Execution ID:[/bold] {execution.execution_id}"
+                    )
+                    console.print(f"[bold]Workflow:[/bold] {execution.workflow_name}")
+                    console.print(f"[bold]Status:[/bold] {execution.status}")
+                    console.print(f"[bold]Started:[/bold] {execution.start_time}")
+                    if execution.duration_seconds:
+                        console.print(
+                            f"[bold]Duration:[/bold] {execution.duration_seconds:.2f}s"
+                        )
+                    if execution.peak_memory_usage_mb:
+                        console.print(
+                            f"[bold]Peak Memory:[/bold] {execution.peak_memory_usage_mb:.1f}MB"
+                        )
+
+                    # Show step details
+                    if execution.steps:
+                        console.print(f"\n[bold]Steps ({len(execution.steps)}):[/bold]")
+
+                        steps_table = Table()
+                        steps_table.add_column("Step", style="cyan")
+                        steps_table.add_column("Type", style="yellow")
+                        steps_table.add_column("Status", style="magenta")
+                        steps_table.add_column("Duration", style="green")
+
+                        for step in execution.steps:
+                            duration_str = (
+                                f"{step.duration_seconds:.2f}s"
+                                if step.duration_seconds
+                                else "N/A"
+                            )
+                            steps_table.add_row(
+                                step.name, step.step_type, step.status, duration_str
+                            )
+
+                        console.print(steps_table)
+
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning: Could not load {hist_file}: {e}[/yellow]"
+                    )
+                    continue
+        else:
+            # Show summary table
+            history_table = Table(title="Recent Workflow Executions")
+            history_table.add_column("Execution ID", style="cyan")
+            history_table.add_column("Workflow", style="yellow")
+            history_table.add_column("Status", style="magenta")
+            history_table.add_column("Started", style="white")
+            history_table.add_column("Duration", style="green")
+            history_table.add_column("Steps", style="blue")
+
+            for hist_file in hist_files:
+                try:
+                    summary = history_manager.get_execution_summary(hist_file)
+
+                    # Skip if status filter doesn't match
+                    if status and summary["status"] != status:
+                        continue
+
+                    duration_str = (
+                        f"{summary['duration_seconds']:.2f}s"
+                        if summary["duration_seconds"]
+                        else "N/A"
+                    )
+                    started_str = (
+                        summary["start_time"].strftime("%Y-%m-%d %H:%M:%S")
+                        if summary["start_time"]
+                        else "N/A"
+                    )
+
+                    history_table.add_row(
+                        summary["execution_id"],
+                        summary["workflow_name"],
+                        summary["status"],
+                        started_str,
+                        duration_str,
+                        str(summary["stats"]["total_steps"]),
+                    )
+
+                except Exception as e:
+                    console.print(
+                        f"[yellow]Warning: Could not load {hist_file}: {e}[/yellow]"
+                    )
+                    continue
+
+            console.print(history_table)
+
+            if len(hist_files) == limit:
+                console.print(
+                    f"\n[dim]Showing latest {limit} records. Use --limit to see more.[/dim]"
+                )
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")

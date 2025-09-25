@@ -4,14 +4,16 @@
   <img src="https://raw.githubusercontent.com/leechristophermurray/parquetframe/main/docs/assets/logo.svg" alt="ParquetFrame Logo" width="400">
 </p>
 
-<p align="center">
+<div align="center">
   <a href="https://pypi.org/project/parquetframe/"><img src="https://badge.fury.io/py/parquetframe.svg" alt="PyPI Version"></a>
-[![Python Support](https://img.shields.io/pypi/pyversions/parquetframe.svg)](https://pypi.org/project/parquetframe/)
-[![License](https://img.shields.io/github/license/leechristophermurray/parquetframe.svg)](https://github.com/leechristophermurray/parquetframe/blob/main/LICENSE)
-[![Tests](https://github.com/leechristophermurray/parquetframe/workflows/Tests/badge.svg)](https://github.com/leechristophermurray/parquetframe/actions?query=workflow%3ATests)
-[![Coverage](https://codecov.io/gh/leechristophermurray/parquetframe/branch/main/graph/badge.svg)](https://codecov.io/gh/leechristophermurray/parquetframe)
+  <a href="https://pypi.org/project/parquetframe/"><img src="https://img.shields.io/pypi/pyversions/parquetframe.svg" alt="Python Support"></a>
+  <a href="https://github.com/leechristophermurray/parquetframe/blob/main/LICENSE"><img src="https://img.shields.io/github/license/leechristophermurray/parquetframe.svg" alt="License"></a>
+  <br>
+  <a href="https://github.com/leechristophermurray/parquetframe/actions"><img src="https://github.com/leechristophermurray/parquetframe/workflows/Tests/badge.svg" alt="Tests"></a>
+  <a href="https://codecov.io/gh/leechristophermurray/parquetframe"><img src="https://codecov.io/gh/leechristophermurray/parquetframe/branch/main/graph/badge.svg" alt="Coverage"></a>
+</div>
 
-A universal wrapper for working with dataframes in Python, seamlessly switching between pandas and Dask based on file size or manual control.
+**A universal wrapper for working with dataframes in Python, seamlessly switching between pandas and Dask based on file size or manual control.**
 
 ## Features
 
