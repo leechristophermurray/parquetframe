@@ -46,7 +46,7 @@ class TestWorkflowVisualizer:
             mock_graph = MagicMock()
             mock_nx.DiGraph.return_value = mock_graph
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {
@@ -94,7 +94,7 @@ class TestWorkflowVisualizer:
             mock_graph = MagicMock()
             mock_nx.DiGraph.return_value = mock_graph
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {
@@ -135,7 +135,11 @@ class TestWorkflowVisualizer:
             mock_dot = MagicMock()
             mock_graphviz.Digraph.return_value = mock_dot
 
-            with patch("parquetframe.workflow_visualization.graphviz", mock_graphviz):
+            with patch(
+                "parquetframe.workflow_visualization.graphviz",
+                mock_graphviz,
+                create=True,
+            ):
                 with patch(
                     "parquetframe.workflow_visualization.NETWORKX_AVAILABLE", True
                 ):
@@ -146,7 +150,9 @@ class TestWorkflowVisualizer:
                         ("step1", "step2", {"type": "data_dependency"})
                     ]
 
-                    with patch("parquetframe.workflow_visualization.nx", mock_nx):
+                    with patch(
+                        "parquetframe.workflow_visualization.nx", mock_nx, create=True
+                    ):
                         visualizer = WorkflowVisualizer()
 
                         workflow = {
@@ -180,12 +186,18 @@ class TestWorkflowVisualizer:
             mock_graphviz.Digraph.return_value = mock_dot
             mock_dot.render.return_value = None
 
-            with patch("parquetframe.workflow_visualization.graphviz", mock_graphviz):
+            with patch(
+                "parquetframe.workflow_visualization.graphviz",
+                mock_graphviz,
+                create=True,
+            ):
                 with patch(
                     "parquetframe.workflow_visualization.NETWORKX_AVAILABLE", True
                 ):
                     mock_nx = MagicMock()
-                    with patch("parquetframe.workflow_visualization.nx", mock_nx):
+                    with patch(
+                        "parquetframe.workflow_visualization.nx", mock_nx, create=True
+                    ):
                         visualizer = WorkflowVisualizer()
 
                         workflow = {
@@ -209,7 +221,7 @@ class TestWorkflowVisualizer:
         """Test NetworkX visualization without matplotlib."""
         with patch("parquetframe.workflow_visualization.NETWORKX_AVAILABLE", True):
             # Mock NetworkX but fail matplotlib import
-            with patch("parquetframe.workflow_visualization.nx"):
+            with patch("parquetframe.workflow_visualization.nx", create=True):
                 with patch.dict("sys.modules", {"matplotlib.pyplot": None}):
                     with patch("builtins.__import__", side_effect=ImportError):
                         visualizer = WorkflowVisualizer()
@@ -237,7 +249,7 @@ class TestWorkflowVisualizer:
                 ("step3", {"type": "save"}),
             ]
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {
@@ -273,7 +285,7 @@ class TestWorkflowVisualizer:
                 ("step2", {"type": "save"}),
             ]
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {"steps": [{"name": "step1", "type": "read"}]}
@@ -300,7 +312,7 @@ class TestWorkflowVisualizer:
             mock_nx.DiGraph.return_value = mock_graph
             mock_graph.edges.return_value = [("step_1", "step_2")]
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {
@@ -330,7 +342,7 @@ class TestWorkflowVisualizer:
             mock_nx.DiGraph.return_value = mock_graph
             mock_graph.edges.return_value = []
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {"steps": [{"name": "step1", "type": "read"}]}
@@ -378,7 +390,7 @@ class TestWorkflowVisualizer:
 
                 # Should raise ImportError for NetworkX
                 with pytest.raises(ImportError, match="NetworkX is required"):
-                    visualizer.visualize_with_networkx(workflow)
+                    visualizer.create_dag_from_workflow(workflow)
 
     def test_complex_workflow_dag_creation(self):
         """Test DAG creation with complex workflow dependencies."""
@@ -387,7 +399,7 @@ class TestWorkflowVisualizer:
             mock_graph = MagicMock()
             mock_nx.DiGraph.return_value = mock_graph
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {
@@ -443,7 +455,7 @@ class TestWorkflowVisualizer:
             mock_nx.isolates.return_value = []
             mock_graph.nodes.return_value = []
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {"name": "Empty Workflow", "steps": []}
@@ -466,15 +478,22 @@ class TestWorkflowVisualizer:
             mock_nx.dag_longest_path.return_value = ["step1", "step2", "step3", "step4"]
             mock_nx.isolates.return_value = []
 
-            # Mock nodes with different types
-            mock_graph.nodes.return_value = [
-                ("step1", {"type": "read"}),
-                ("step2", {"type": "filter"}),
-                ("step3", {"type": "filter"}),
-                ("step4", {"type": "save"}),
-            ]
+            # Mock nodes with different types - simulate NetworkX graph behavior
+            node_list = ["step1", "step2", "step3", "step4"]
+            node_data = {
+                "step1": {"type": "read"},
+                "step2": {"type": "filter"},
+                "step3": {"type": "filter"},
+                "step4": {"type": "save"},
+            }
 
-            with patch("parquetframe.workflow_visualization.nx", mock_nx):
+            # Mock the G.nodes() method (returns node list)
+            mock_graph.nodes.return_value = node_list
+
+            # Mock the G.nodes[node] indexing (returns node attributes)
+            mock_graph.nodes.__getitem__ = lambda self, node: node_data.get(node, {})
+
+            with patch("parquetframe.workflow_visualization.nx", mock_nx, create=True):
                 visualizer = WorkflowVisualizer()
 
                 workflow = {

@@ -395,7 +395,6 @@ class WorkflowVisualizer:
 
             # Add styling based on status
             if status == "completed":
-                lines.append(f"    {safe_name} --> {safe_name}")
                 lines.append(f"    style {safe_name} fill:#90EE90")
             elif status == "failed":
                 lines.append(f"    style {safe_name} fill:#FFB6C1")
