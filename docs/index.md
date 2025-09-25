@@ -1,6 +1,11 @@
 # ParquetFrame
 
-[![PyPI Version](https://badge.fury.io/py/parquetframe.svg)](https://badge.fury.io/py/parquetframe)
+<div align="center">
+  <img src="assets/logo.svg" alt="ParquetFrame Logo" width="400" style="max-width: 100%;">
+</div>
+
+<div align="center">
+  <a href="https://pypi.org/project/parquetframe/"><img src="https://badge.fury.io/py/parquetframe.svg" alt="PyPI Version"></a>
 [![Python Support](https://img.shields.io/pypi/pyversions/parquetframe.svg)](https://pypi.org/project/parquetframe/)
 [![License](https://img.shields.io/github/license/leechristophermurray/parquetframe.svg)](https://github.com/leechristophermurray/parquetframe/blob/main/LICENSE)
 [![Tests](https://github.com/leechristophermurray/parquetframe/workflows/Tests/badge.svg)](https://github.com/leechristophermurray/parquetframe/actions)
