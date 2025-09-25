@@ -14,6 +14,8 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ..exceptions import DataSourceError
+
 if TYPE_CHECKING:
     from .database_context import DatabaseDataContext
     from .parquet_context import ParquetDataContext
@@ -27,10 +29,21 @@ class SourceType(Enum):
     DATABASE = "database"
 
 
-class DataContextError(Exception):
+# Keep for backward compatibility
+class DataContextError(DataSourceError):
     """Base exception for DataContext-related errors."""
 
-    pass
+    def __init__(
+        self,
+        message: str,
+        source_type: str = "unknown",
+        source_location: str = "unknown",
+    ):
+        super().__init__(
+            source_type=source_type,
+            source_location=source_location,
+            underlying_error=Exception(message),
+        )
 
 
 class DataContext(ABC):
@@ -171,9 +184,24 @@ class DataContextFactory:
 
         path_obj = Path(path).resolve()
         if not path_obj.exists():
-            raise DataContextError(f"Path does not exist: {path_obj}")
+            raise DataSourceError(
+                source_type="parquet",
+                source_location=str(path_obj),
+                troubleshooting_steps=[
+                    "Verify the path exists and is accessible",
+                    "Check file permissions",
+                    "Ensure the path is correctly formatted",
+                ],
+            )
         if not path_obj.is_dir():
-            raise DataContextError(f"Path must be a directory: {path_obj}")
+            raise DataSourceError(
+                source_type="parquet",
+                source_location=str(path_obj),
+                troubleshooting_steps=[
+                    "Path must point to a directory, not a file",
+                    "Use the parent directory containing parquet files",
+                ],
+            )
 
         logger.info(f"Creating ParquetDataContext for path: {path_obj}")
         return ParquetDataContext(str(path_obj))
@@ -192,7 +220,15 @@ class DataContextFactory:
         from .database_context import DatabaseDataContext
 
         if not db_uri or not isinstance(db_uri, str):
-            raise DataContextError("Database URI must be a non-empty string")
+            raise DataSourceError(
+                source_type="database",
+                source_location=db_uri or "<empty>",
+                troubleshooting_steps=[
+                    "Database URI must be a non-empty string",
+                    "Use format: driver://username:password@host:port/database",
+                    "Example: postgresql://user:pass@localhost:5432/mydb",
+                ],
+            )
 
         logger.info(f"Creating DatabaseDataContext for URI: {db_uri[:20]}...")
         return DatabaseDataContext(db_uri)

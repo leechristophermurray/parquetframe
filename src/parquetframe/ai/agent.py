@@ -22,6 +22,8 @@ from .prompts import (
 if TYPE_CHECKING:
     from ..datacontext import DataContext
 
+from ..exceptions import DependencyError
+
 logger = logging.getLogger(__name__)
 
 # Optional dependency for ollama
@@ -82,9 +84,10 @@ class LLMAgent:
             temperature: LLM temperature for query generation (lower = more deterministic)
         """
         if not OLLAMA_AVAILABLE:
-            raise LLMError(
-                "ollama-python is required for LLM functionality. "
-                "Install with: pip install parquetframe[ai]"
+            raise DependencyError(
+                missing_package="ollama",
+                feature="AI-powered query generation",
+                install_command="pip install ollama && ollama pull llama3.2",
             )
 
         self.model_name = model_name
