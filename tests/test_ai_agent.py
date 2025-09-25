@@ -338,14 +338,16 @@ class TestAIAgentIntegration:
         }
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
-            result = await agent.generate_query(
-                "How many users are there?", data_context
-            )
+            # Also patch the ollama module usage in the agent
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
+                result = await agent.generate_query(
+                    "How many users are there?", data_context
+                )
 
-            assert result.success
-            assert "COUNT" in result.query.upper()
-            assert result.result is not None
+                assert result.success
+                assert "COUNT" in result.query.upper()
+                assert result.result is not None
 
     @pytest.mark.asyncio
     @pytest.mark.ai
@@ -353,10 +355,14 @@ class TestAIAgentIntegration:
         self,
         mock_ollama_module,
         mock_ollama_client,
-        mock_data_context,
         sample_natural_language_queries,
     ):
         """Test various natural language query patterns."""
+        # Create mock data context for this test
+        mock_data_context = MagicMock()
+        mock_data_context.is_initialized = True
+        mock_data_context.execute = AsyncMock(return_value=MagicMock())
+
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
             agent = LLMAgent()
 
@@ -409,9 +415,13 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_graceful_handling_of_empty_responses(
-        self, mock_ollama_module, mock_ollama_client, mock_data_context
+        self, mock_ollama_module, mock_ollama_client
     ):
         """Test handling of empty or malformed responses from LLM."""
+        # Create mock data context for this test
+        mock_data_context = MagicMock()
+        mock_data_context.is_initialized = True
+
         mock_ollama_client.chat.return_value = {
             "message": {"content": ""}  # Empty response
         }
