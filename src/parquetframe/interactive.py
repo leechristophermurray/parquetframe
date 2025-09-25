@@ -17,6 +17,7 @@ from typing import Any
 
 from .ai import LLMAgent, LLMError
 from .datacontext import DataContext, DataContextFactory
+from .history import HistoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -74,9 +75,14 @@ class InteractiveSession:
                 logger.warning(f"AI functionality disabled: {e}")
                 self.ai_enabled = False
 
-        # Session state
+        # Session state and history management
+        self.history_manager = HistoryManager()
+        self.session_id = self.history_manager.create_session(
+            data_source=str(data_context.source_location),
+            data_source_type=data_context.source_type.value,
+            ai_enabled=enable_ai,
+        )
         self.query_history: list[dict[str, Any]] = []
-        self.session_id = self._generate_session_id()
 
         # Setup command completions
         meta_commands = [
@@ -157,6 +163,8 @@ class InteractiveSession:
 
             except (EOFError, KeyboardInterrupt):
                 self.console.print("\n👋 Goodbye!")
+                # End session in history
+                self.history_manager.end_session(self.session_id)
                 break
             except Exception as e:
                 self.console.print(f"❌ Error: {e}", style="red")
@@ -214,6 +222,15 @@ class InteractiveSession:
             else:
                 self.console.print("Usage: \\load-session <filename>", style="yellow")
 
+        elif cmd in ["\\save-script", "\\export-script"]:
+            if args:
+                await self._save_script(args[0])
+            else:
+                self.console.print("Usage: \\save-script <filename>", style="yellow")
+
+        elif cmd in ["\\stats", "\\statistics"]:
+            await self._show_statistics()
+
         elif cmd in ["\\quit", "\\q", "\\exit"]:
             return False
 
@@ -236,7 +253,18 @@ class InteractiveSession:
             # Display results
             self._display_query_result(result, execution_time)
 
-            # Log to history
+            # Log to both in-memory and persistent history
+            result_rows = len(result) if hasattr(result, "__len__") else None
+
+            self.history_manager.log_query(
+                session_id=self.session_id,
+                query_text=query,
+                query_type="sql",
+                execution_time_ms=execution_time,
+                success=True,
+                result_rows=result_rows,
+            )
+
             self.query_history.append(
                 {
                     "query": query,
@@ -250,7 +278,15 @@ class InteractiveSession:
         except Exception as e:
             self.console.print(f"❌ Query failed: {e}", style="red")
 
-            # Log failed query to history
+            # Log failed query to both histories
+            self.history_manager.log_query(
+                session_id=self.session_id,
+                query_text=query,
+                query_type="sql",
+                success=False,
+                error_message=str(e),
+            )
+
             self.query_history.append(
                 {
                     "query": query,
@@ -294,7 +330,40 @@ class InteractiveSession:
                 if confirm("\n🚀 Execute this query?", default=True):
                     self._display_query_result(result.result, result.execution_time_ms)
 
-                    # Log to history
+                    # Log to persistent history
+                    result_rows = (
+                        len(result.result)
+                        if hasattr(result.result, "__len__")
+                        else None
+                    )
+
+                    self.history_manager.log_query(
+                        session_id=self.session_id,
+                        query_text=result.query,
+                        query_type="natural_language",
+                        execution_time_ms=result.execution_time_ms,
+                        success=True,
+                        result_rows=result_rows,
+                        ai_generated=True,
+                        natural_language_input=natural_query,
+                        ai_attempts=result.attempts,
+                    )
+
+                    # Also log the AI interaction
+                    self.history_manager.log_ai_message(
+                        session_id=self.session_id,
+                        natural_language_input=natural_query,
+                        generated_sql=result.query,
+                        success=True,
+                        attempts=result.attempts,
+                        final_result=(
+                            f"Returned {result_rows} rows"
+                            if result_rows
+                            else "Query executed successfully"
+                        ),
+                    )
+
+                    # Log to in-memory history
                     self.query_history.append(
                         {
                             "query": result.query,
@@ -553,6 +622,118 @@ class InteractiveSession:
 
         except Exception as e:
             self.console.print(f"❌ Error loading session: {e}", style="red")
+
+    async def _save_script(self, filename: str) -> None:
+        """Export session queries as SQL script."""
+        try:
+            # Determine output path
+            if not filename.endswith(".sql"):
+                filename += ".sql"
+
+            output_path = Path(filename)
+            if not output_path.is_absolute():
+                output_path = Path.cwd() / filename
+
+            # Export using history manager
+            self.history_manager.export_session_script(
+                session_id=self.session_id,
+                output_path=output_path,
+                include_ai_queries=True,
+                include_failed_queries=False,
+            )
+
+            self.console.print(
+                f"📝 Session script exported to: {output_path}", style="green"
+            )
+
+        except Exception as e:
+            self.console.print(f"❌ Error exporting script: {e}", style="red")
+
+    async def _show_statistics(self) -> None:
+        """Show session and overall usage statistics."""
+        try:
+            # Get overall statistics
+            stats = self.history_manager.get_statistics()
+
+            # Create statistics table
+            table = Table(
+                title="📊 ParquetFrame Usage Statistics",
+                show_header=True,
+                header_style="bold blue",
+            )
+            table.add_column("Metric", style="cyan")
+            table.add_column("Value", style="white", justify="right")
+
+            # Add overall statistics
+            table.add_row("Total Sessions", str(stats["total_sessions"]))
+            table.add_row("Total Queries", str(stats["total_queries"]))
+            table.add_row("Successful Queries", str(stats["successful_queries"]))
+            table.add_row("Query Success Rate", f"{stats['query_success_rate']:.1%}")
+
+            if stats["total_ai_messages"] > 0:
+                table.add_row("AI Messages", str(stats["total_ai_messages"]))
+                table.add_row("AI Success Rate", f"{stats['ai_success_rate']:.1%}")
+
+            table.add_row("Recent Sessions (7d)", str(stats["recent_sessions_7d"]))
+
+            self.console.print(table)
+
+            # Current session info
+            current_queries = len(self.query_history)
+            successful_current = len(
+                [q for q in self.query_history if q.get("success", False)]
+            )
+
+            self.console.print("\n[bold]Current Session:[/bold]")
+            self.console.print(f"  • Session ID: [dim]{self.session_id[:8]}...[/dim]")
+            self.console.print(
+                f"  • Queries executed: [green]{current_queries}[/green]"
+            )
+            if current_queries > 0:
+                self.console.print(
+                    f"  • Success rate: [green]{successful_current/current_queries:.1%}[/green]"
+                )
+            self.console.print(
+                f"  • AI enabled: [{'green' if self.ai_enabled else 'red'}]{'Yes' if self.ai_enabled else 'No'}[/]"
+            )
+
+        except Exception as e:
+            self.console.print(f"❌ Error showing statistics: {e}", style="red")
+
+    async def _show_help(self) -> None:
+        """Show enhanced help information."""
+        help_text = """
+[bold blue]ParquetFrame Interactive Commands[/bold blue]
+
+[bold]Data Exploration:[/bold]
+  \\list, \\l, \\tables     List all available tables
+  \\describe <table>       Show detailed table schema
+
+[bold]Querying:[/bold]
+  <SQL query>             Execute SQL query directly
+  \\ai <question>          Ask question in natural language 🤖
+
+[bold]Session Management:[/bold]
+  \\history                Show query history
+  \\save-session <file>    Save current session
+  \\load-session <file>    Load saved session
+  \\save-script <file>     Export queries as SQL script
+  \\stats                  Show usage statistics
+
+[bold]Other:[/bold]
+  \\help, \\h, \\?           Show this help
+  \\quit, \\q, \\exit        Exit interactive mode
+
+[bold]Examples:[/bold]
+  SELECT * FROM users LIMIT 10;
+  \\ai show me top 10 customers by revenue
+  \\describe customers
+  \\save-script my_analysis.sql
+        """
+
+        self.console.print(
+            Panel(help_text, title="Help", border_style="blue", expand=False)
+        )
 
 
 async def start_interactive_session(
