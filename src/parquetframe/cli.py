@@ -5,7 +5,6 @@ This module provides a powerful CLI for interacting with parquet files,
 including batch processing and interactive modes.
 """
 
-import code
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,13 +13,19 @@ try:
     import click
     from rich.console import Console
     from rich.table import Table
-    from rich.text import Text
 except ImportError as e:
     print("CLI dependencies not installed. Install with: pip install parquetframe[cli]")
     print(f"Missing: {e.name}")
     sys.exit(1)
 
 from .core import ParquetFrame
+
+try:
+    from .interactive import start_interactive_session
+
+    INTERACTIVE_AVAILABLE = True
+except ImportError:
+    INTERACTIVE_AVAILABLE = False
 
 try:
     from .benchmark import PerformanceBenchmark, run_comprehensive_benchmark
@@ -74,7 +79,8 @@ def main():
 
     Examples:
         pframe run data.parquet --query "age > 30" --head 10
-        pframe interactive data.parquet
+        pframe interactive --path ./data_lake/
+        pframe interactive --db-uri "sqlite:///example.db"
         pframe info data.parquet
     """
     pass
@@ -257,95 +263,6 @@ def run(
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
         sys.exit(1)
-
-
-@main.command()
-@click.argument("filepath", type=click.Path(exists=True), required=False)
-@click.option(
-    "--threshold",
-    type=float,
-    default=10,
-    help="File size threshold in MB for Dask vs pandas (default: 10)",
-)
-def interactive(filepath, threshold):
-    """
-    Start an interactive Python session with ParquetFrame.
-
-    Launches a Python REPL with a ParquetFrame object available as 'pf'.
-    If a file is provided, it's automatically loaded.
-
-    Examples:
-        pframe interactive
-        pframe interactive data.parquet
-    """
-    # Enable session tracking for interactive mode
-    ParquetFrame._current_session_tracking = True
-
-    # Create ParquetFrame instance with history tracking
-    pf = ParquetFrame(track_history=True)
-
-    # Load file if provided
-    if filepath:
-        console.print(f"[bold blue]Loading file:[/bold blue] {filepath}")
-        try:
-            pf = ParquetFrame.read(filepath, threshold_mb=threshold)
-            pf._track_history = True  # Enable history tracking after read
-            pf._history = [
-                f"pf = ParquetFrame.read('{filepath}', threshold_mb={threshold})"
-            ]
-        except Exception as e:
-            console.print(f"[bold red]Error loading file:[/bold red] {e}")
-            console.print("Starting with empty ParquetFrame...")
-
-    # Setup interactive context
-    context = {
-        "pf": pf,
-        "pd": __import__("pandas"),
-        "dd": __import__("dask.dataframe"),
-        "ParquetFrame": ParquetFrame,
-        "console": console,
-    }
-
-    # Create banner
-    banner_text = Text()
-    banner_text.append(
-        "🚀 Welcome to ParquetFrame Interactive Mode!\n\n", style="bold blue"
-    )
-    banner_text.append("Available variables:\n", style="bold")
-    banner_text.append("  • pf", style="cyan")
-    banner_text.append(" - Your ParquetFrame instance\n")
-    banner_text.append("  • pd", style="cyan")
-    banner_text.append(" - pandas module\n")
-    banner_text.append("  • dd", style="cyan")
-    banner_text.append(" - dask.dataframe module\n")
-    banner_text.append("  • console", style="cyan")
-    banner_text.append(" - rich console for pretty printing\n\n")
-    banner_text.append("Tips:\n", style="bold")
-    banner_text.append("  • Use pf.get_history() to see command history\n")
-    banner_text.append(
-        "  • Use pf.save('output', save_script='session.py') to save work\n"
-    )
-    banner_text.append("  • Use exit() or Ctrl+D to quit\n\n")
-
-    console.print(banner_text)
-
-    # Additional setup for better REPL experience
-    import atexit
-    import readline
-
-    # History file for readline
-    history_file = Path.home() / ".parquetframe_history"
-    try:
-        readline.read_history_file(str(history_file))
-    except FileNotFoundError:
-        pass
-    atexit.register(readline.write_history_file, str(history_file))
-
-    # Start interactive session
-    try:
-        code.interact(banner="", local=context)
-    except (EOFError, KeyboardInterrupt):
-        console.print("\n[bold blue]Goodbye![/bold blue]")
 
 
 @main.command()
@@ -1247,6 +1164,70 @@ def workflow_history(workflow_name, limit, status, details, cleanup, stats):
         import traceback
 
         console.print(f"[dim]{traceback.format_exc()}[/dim]")
+        sys.exit(1)
+
+
+@main.command()
+@click.option(
+    "--path",
+    "-p",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="Path to directory containing parquet files",
+)
+@click.option(
+    "--db-uri",
+    "--database",
+    "-d",
+    help="Database connection URI (e.g., 'postgresql://user:pass@host/db')",
+)
+@click.option("--no-ai", is_flag=True, help="Disable AI/LLM functionality")
+def interactive(path, db_uri, no_ai):
+    """
+    Start an interactive ParquetFrame session.
+
+    This launches a powerful REPL interface that can connect to either
+    parquet file collections or relational databases, with optional
+    AI-powered natural language query capabilities.
+
+    Examples:
+        pframe interactive --path ./data/parquets/
+        pframe interactive --db-uri "postgresql://user:pass@localhost/mydb"
+        pframe interactive --path ./sales_data/ --no-ai
+    """
+    if not INTERACTIVE_AVAILABLE:
+        console.print(
+            "[bold red]Error:[/bold red] Interactive mode requires additional dependencies."
+        )
+        console.print("Please install with: pip install parquetframe[ai,cli]")
+        sys.exit(1)
+
+    # Validate arguments
+    if not path and not db_uri:
+        console.print(
+            "[bold red]Error:[/bold red] Must specify either --path or --db-uri"
+        )
+        console.print("\n[EXAMPLES]")
+        console.print("  pframe interactive --path ./my_parquet_files/")
+        console.print("  pframe interactive --db-uri 'sqlite:///my_database.db'")
+        sys.exit(1)
+
+    if path and db_uri:
+        console.print(
+            "[bold red]Error:[/bold red] Cannot specify both --path and --db-uri"
+        )
+        sys.exit(1)
+
+    # Start interactive session
+    import asyncio
+
+    try:
+        asyncio.run(
+            start_interactive_session(path=path, db_uri=db_uri, enable_ai=not no_ai)
+        )
+    except KeyboardInterrupt:
+        console.print("\n[bold blue]Interactive session cancelled.[/bold blue]")
+    except Exception as e:
+        console.print(f"[bold red]Failed to start interactive session:[/bold red] {e}")
         sys.exit(1)
 
 
