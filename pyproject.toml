@@ -175,7 +175,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config --cov=parquetframe --cov-fail-under=50 --cov-report=term-missing --cov-report=html"
+addopts = "-ra -q --strict-markers --strict-config --cov=src/parquetframe --cov-fail-under=50 --cov-report=term-missing --cov-report=html"
 testpaths = ["tests"]
 filterwarnings = [
     "error",
@@ -186,6 +186,8 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "asyncio: marks tests as async tests",
+    "ai: marks tests as AI/LLM related tests",
+    "db: marks tests as database related tests",
 ]
 
 [tool.coverage.run]
@@ -198,15 +200,11 @@ exclude_lines = [
     "def __repr__",
     "if self.debug:",
     "if settings.DEBUG",
+    "if TYPE_CHECKING:",
     "raise AssertionError",
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
-]
-
-[dependency-groups]
-dev = [
-    "psutil>=7.1.0",
 ]
