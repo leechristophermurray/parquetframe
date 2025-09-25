@@ -34,6 +34,45 @@ try:
 
     INTERACTIVE_AVAILABLE = True
 except ImportError:
+    # Define fallback classes for testing when dependencies are not available
+    class Console:
+        def print(self, *args, **kwargs):
+            pass
+
+    class Panel:
+        @staticmethod
+        def fit(*args, **kwargs):
+            return "Panel"
+
+    class Table:
+        def add_column(self, *args, **kwargs):
+            pass
+
+        def add_row(self, *args, **kwargs):
+            pass
+
+    class HTML:
+        def __init__(self, text):
+            self.text = text
+
+    class PromptSession:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def prompt(self, *args, **kwargs):
+            return ""
+
+    class WordCompleter:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class InMemoryHistory:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def confirm(*args, **kwargs):
+        return True
+
     INTERACTIVE_AVAILABLE = False
 
 

@@ -58,26 +58,30 @@ class TestLLMAgentInitialization:
     def test_model_verification_success(self, mock_ollama_module, mock_ollama_client):
         """Test successful model verification."""
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            mock_ollama_client.list.return_value = {
-                "models": [{"name": "llama3.2"}, {"name": "codellama"}]
-            }
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                mock_ollama_client.list.return_value = {
+                    "models": [{"name": "llama3.2"}, {"name": "codellama"}]
+                }
 
-            # Should not raise an exception
-            agent = LLMAgent(model_name="llama3.2")
-            assert agent.model_name == "llama3.2"
+                # Should not raise an exception
+                agent = LLMAgent(model_name="llama3.2")
+                assert agent.model_name == "llama3.2"
 
     def test_model_verification_warning(
         self, mock_ollama_module, mock_ollama_client, caplog
     ):
         """Test warning when model is not available."""
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            mock_ollama_client.list.return_value = {"models": [{"name": "codellama"}]}
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                mock_ollama_client.list.return_value = {
+                    "models": [{"name": "codellama"}]
+                }
 
-            agent = LLMAgent(model_name="llama3.2")
+                agent = LLMAgent(model_name="llama3.2")
 
-            # Should log a warning but continue
-            assert "Model 'llama3.2' not found" in caplog.text
-            assert agent.model_name == "llama3.2"
+                # Should log a warning but continue
+                assert "Model 'llama3.2' not found" in caplog.text
+                assert agent.model_name == "llama3.2"
 
 
 class TestQueryGeneration:
@@ -117,22 +121,23 @@ class TestQueryGeneration:
     ):
         """Test simple query generation from natural language."""
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            # Setup mock response
-            mock_ollama_client.chat.return_value = {
-                "message": {
-                    "content": "```sql\nSELECT * FROM users WHERE age > 30;\n```"
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                # Setup mock response
+                mock_ollama_client.chat.return_value = {
+                    "message": {
+                        "content": "```sql\nSELECT * FROM users WHERE age > 30;\n```"
+                    }
                 }
-            }
 
-            agent = LLMAgent()
-            result = await agent.generate_query(
-                "Show me users older than 30", mock_data_context
-            )
+                agent = LLMAgent()
+                result = await agent.generate_query(
+                    "Show me users older than 30", mock_data_context
+                )
 
-            assert result.success
-            assert "SELECT * FROM users WHERE age > 30;" in result.query
-            assert result.result is not None
-            assert result.attempts == 1
+                assert result.success
+                assert "SELECT * FROM users WHERE age > 30;" in result.query
+                assert result.result is not None
+                assert result.attempts == 1
 
     @pytest.mark.asyncio
     async def test_query_generation_with_context_initialization(
@@ -157,12 +162,13 @@ class TestQueryGeneration:
         }
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
-            result = await agent.generate_query("Show all users", context)
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
+                result = await agent.generate_query("Show all users", context)
 
-            # Verify context was initialized
-            context.initialize.assert_called_once()
-            assert result.success
+                # Verify context was initialized
+                context.initialize.assert_called_once()
+                assert result.success
 
     @pytest.mark.asyncio
     async def test_multi_step_query_generation(
@@ -191,14 +197,15 @@ class TestQueryGeneration:
 
         # Use multi-step approach
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent(use_multi_step=True)
-            result = await agent.generate_query(
-                "Show me total sales by user name", mock_data_context
-            )
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent(use_multi_step=True)
+                result = await agent.generate_query(
+                    "Show me total sales by user name", mock_data_context
+                )
 
-            assert result.success
-            assert "JOIN" in result.query
-            assert result.attempts == 1
+                assert result.success
+                assert "JOIN" in result.query
+                assert result.attempts == 1
 
     @pytest.mark.asyncio
     async def test_query_self_correction(
@@ -218,12 +225,15 @@ class TestQueryGeneration:
         ]
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
-            result = await agent.generate_query("Show me all users", mock_data_context)
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
+                result = await agent.generate_query(
+                    "Show me all users", mock_data_context
+                )
 
-            assert result.success
-            assert result.attempts == 2
-            assert "users" in result.query
+                assert result.success
+                assert result.attempts == 2
+                assert "users" in result.query
 
     @pytest.mark.asyncio
     async def test_query_max_retries_exceeded(
@@ -238,12 +248,13 @@ class TestQueryGeneration:
         }
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent(max_retries=2)
-            result = await agent.generate_query("Show me data", mock_data_context)
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent(max_retries=2)
+                result = await agent.generate_query("Show me data", mock_data_context)
 
-            assert not result.success
-            assert result.attempts > 1
-            assert "Persistent error" in result.error
+                assert not result.success
+                assert result.attempts > 1
+                assert "Persistent error" in result.error
 
     @pytest.mark.asyncio
     async def test_query_generation_ollama_error(
@@ -253,8 +264,9 @@ class TestQueryGeneration:
         mock_ollama_client.chat.side_effect = Exception("Ollama connection failed")
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
-            result = await agent.generate_query("Show me users", mock_data_context)
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
+                result = await agent.generate_query("Show me users", mock_data_context)
 
             assert not result.success
             assert "Ollama connection failed" in result.error
@@ -364,28 +376,29 @@ class TestAIAgentIntegration:
         mock_data_context.execute = AsyncMock(return_value=MagicMock())
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
 
-            # Test different types of queries
-            test_cases = [
-                ("simple", "SELECT * FROM users;"),
-                ("filtered", "SELECT * FROM users WHERE value > 150;"),
-                (
-                    "aggregated",
-                    "SELECT category, COUNT(*) FROM users GROUP BY category;",
-                ),
-            ]
+                # Test different types of queries
+                test_cases = [
+                    ("simple", "SELECT * FROM users;"),
+                    ("filtered", "SELECT * FROM users WHERE value > 150;"),
+                    (
+                        "aggregated",
+                        "SELECT category, COUNT(*) FROM users GROUP BY category;",
+                    ),
+                ]
 
-            for query_type, expected_sql in test_cases:
-                mock_ollama_client.chat.return_value = {
-                    "message": {"content": expected_sql}
-                }
+                for query_type, expected_sql in test_cases:
+                    mock_ollama_client.chat.return_value = {
+                        "message": {"content": expected_sql}
+                    }
 
-                nl_query = sample_natural_language_queries[query_type]
-                result = await agent.generate_query(nl_query, mock_data_context)
+                    nl_query = sample_natural_language_queries[query_type]
+                    result = await agent.generate_query(nl_query, mock_data_context)
 
-                assert result.success, f"Failed for query type: {query_type}"
-                assert result.query is not None
+                    assert result.success, f"Failed for query type: {query_type}"
+                    assert result.query is not None
 
 
 class TestErrorHandling:
@@ -407,8 +420,9 @@ class TestErrorHandling:
         """Test AI error when model verification fails catastrophically."""
         # Mock a complete failure in model verification
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            with patch("src.parquetframe.ai.agent.ollama") as mock_ollama:
-                mock_ollama.list.side_effect = Exception("API Error")
+            # Patch the module-level ollama to simulate the mock
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                mock_ollama_module.list.side_effect = Exception("API Error")
                 # Should log warning but not fail initialization
                 agent = LLMAgent()
                 assert agent.model_name == "llama3.2"
@@ -427,8 +441,9 @@ class TestErrorHandling:
         }
 
         with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", True):
-            agent = LLMAgent()
-            result = await agent.generate_query("Show me users", mock_data_context)
+            with patch("src.parquetframe.ai.agent.ollama", mock_ollama_module):
+                agent = LLMAgent()
+                result = await agent.generate_query("Show me users", mock_data_context)
 
-            assert not result.success
-            assert "Failed to generate query" in result.error
+                assert not result.success
+                assert "Failed to generate query" in result.error

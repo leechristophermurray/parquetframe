@@ -32,6 +32,7 @@ try:
 
     OLLAMA_AVAILABLE = True
 except ImportError:
+    ollama = None  # type: ignore
     OLLAMA_AVAILABLE = False
 
 
@@ -103,10 +104,26 @@ class LLMAgent:
         # Verify model availability
         self._verify_model_available()
 
+    def _get_ollama_module(self):
+        """Get ollama module, handling dynamic imports for testing."""
+        # This allows tests to mock ollama even when not installed
+        if not OLLAMA_AVAILABLE and ollama is None:
+            try:
+                import ollama as _ollama
+
+                return _ollama
+            except ImportError:
+                return None
+        return ollama
+
     def _verify_model_available(self) -> None:
         """Verify that the specified model is available in ollama."""
         try:
-            models = ollama.list()
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                return
+
+            models = _ollama.list()
             available_models = [model["name"] for model in models.get("models", [])]
 
             if self.model_name not in available_models:
@@ -185,7 +202,12 @@ class LLMAgent:
         logger.debug(f"Single-step prompt: {full_prompt[:200]}...")
 
         try:
-            response = ollama.chat(
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                logger.error("Ollama module not available")
+                return None
+
+            response = _ollama.chat(
                 model=self.model_name,
                 messages=[{"role": "user", "content": full_prompt}],
                 options={"temperature": self.temperature},
@@ -214,7 +236,12 @@ class LLMAgent:
         )
 
         try:
-            response = ollama.chat(
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                logger.error("Ollama module not available")
+                return None
+
+            response = _ollama.chat(
                 model=self.model_name,
                 messages=[{"role": "user", "content": full_selection_prompt}],
                 options={"temperature": self.temperature},
@@ -258,7 +285,12 @@ class LLMAgent:
                 f'{focused_prompt}\n\nQuestion: "{natural_language_query}"'
             )
 
-            response = ollama.chat(
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                logger.error("Ollama module not available for second call")
+                return None
+
+            response = _ollama.chat(
                 model=self.model_name,
                 messages=[{"role": "user", "content": full_query_prompt}],
                 options={"temperature": self.temperature},
@@ -390,7 +422,12 @@ class LLMAgent:
         )
 
         try:
-            response = ollama.chat(
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                logger.error("Ollama module not available for correction")
+                return None
+
+            response = _ollama.chat(
                 model=self.model_name,
                 messages=[{"role": "user", "content": correction_prompt}],
                 options={
@@ -474,7 +511,11 @@ class LLMAgent:
     def get_available_models(self) -> list[str]:
         """Get list of available ollama models."""
         try:
-            models = ollama.list()
+            _ollama = self._get_ollama_module()
+            if _ollama is None:
+                return []
+
+            models = _ollama.list()
             return [model["name"] for model in models.get("models", [])]
         except Exception as e:
             logger.error(f"Could not list models: {e}")

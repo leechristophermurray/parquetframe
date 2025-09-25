@@ -171,7 +171,7 @@ class TestCLIInteractive:
         result = cli_runner.invoke(main, ["interactive", "--help"])
 
         assert result.exit_code == 0
-        assert "Start an interactive Python session" in result.output
+        assert "Start an interactive ParquetFrame session" in result.output
 
     # Note: Interactive mode is difficult to test in automated tests
     # as it starts a Python REPL. We would need more sophisticated
