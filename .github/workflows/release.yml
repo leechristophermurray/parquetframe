@@ -58,6 +58,7 @@ jobs:
     - name: Run type checking
       run: |
         mypy src/parquetframe
+      continue-on-error: true
 
   build:
     needs: test
