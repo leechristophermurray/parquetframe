@@ -58,11 +58,18 @@ jobs:
         name: documentation
         path: site/
 
+    - name: List site contents
+      run: |
+        echo "Site directory contents:"
+        ls -la site/
+        echo "Site index.html preview:"
+        head -20 site/index.html || echo "No index.html found"
+
     - name: Setup Pages
-      uses: actions/configure-pages@v4
+      uses: actions/configure-pages@v5
 
     - name: Upload to GitHub Pages
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: site/
 
