@@ -56,7 +56,8 @@ pframe interactive --path ./my_data_lake/
 ```
 
 Example session:
-```
+
+```shell
 🚀 Welcome to ParquetFrame Interactive Mode
 Data source: /Users/me/sales_data/
 Type: parquet

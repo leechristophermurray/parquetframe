@@ -19,6 +19,11 @@ except ImportError as e:
     sys.exit(1)
 
 from .core import ParquetFrame
+from .exceptions import (
+    check_dependencies,
+    format_dependency_status,
+    suggest_installation_commands,
+)
 
 try:
     from .interactive import start_interactive_session
@@ -1228,6 +1233,44 @@ def interactive(path, db_uri, no_ai):
         console.print("\n[bold blue]Interactive session cancelled.[/bold blue]")
     except Exception as e:
         console.print(f"[bold red]Failed to start interactive session:[/bold red] {e}")
+        sys.exit(1)
+
+
+@main.command()
+def deps():
+    """
+    Check dependency status and show installation commands.
+
+    This command shows which optional dependencies are available
+    and provides installation commands for missing ones.
+
+    Examples:
+        pframe deps
+    """
+    try:
+        # Show dependency status
+        status = format_dependency_status()
+        console.print(status)
+
+        # Show installation commands for missing dependencies
+        deps = check_dependencies()
+        missing_deps = [dep for dep, available in deps.items() if not available]
+
+        if missing_deps:
+            install_commands = suggest_installation_commands()
+            console.print(
+                "\n🔧 [bold yellow]Installation Commands for Missing Dependencies:[/bold yellow]"
+            )
+            for dep in missing_deps:
+                if dep in install_commands:
+                    console.print(f"  • {dep}: [cyan]{install_commands[dep]}[/cyan]")
+        else:
+            console.print(
+                "\n✅ [bold green]All dependencies are available![/bold green]"
+            )
+
+    except Exception as e:
+        console.print(f"[bold red]Error checking dependencies:[/bold red] {e}")
         sys.exit(1)
 
 

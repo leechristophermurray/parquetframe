@@ -17,6 +17,7 @@ from typing import Any
 
 from .ai import LLMAgent, LLMError
 from .datacontext import DataContext, DataContextFactory
+from .exceptions import DependencyError, check_dependencies, format_dependency_status
 from .history import HistoryManager
 
 logger = logging.getLogger(__name__)
@@ -53,9 +54,10 @@ class InteractiveSession:
             enable_ai: Whether to enable LLM functionality
         """
         if not INTERACTIVE_AVAILABLE:
-            raise ImportError(
-                "Interactive mode requires additional dependencies. "
-                "Install with: pip install parquetframe[ai,cli]"
+            raise DependencyError(
+                missing_package="prompt_toolkit or rich",
+                feature="interactive CLI mode",
+                install_command="pip install parquetframe[ai,cli]",
             )
 
         self.data_context = data_context
@@ -230,6 +232,9 @@ class InteractiveSession:
 
         elif cmd in ["\\stats", "\\statistics"]:
             await self._show_statistics()
+
+        elif cmd in ["\\deps", "\\dependencies"]:
+            await self._show_dependencies()
 
         elif cmd in ["\\quit", "\\q", "\\exit"]:
             return False
@@ -700,6 +705,38 @@ class InteractiveSession:
         except Exception as e:
             self.console.print(f"❌ Error showing statistics: {e}", style="red")
 
+    async def _show_dependencies(self) -> None:
+        """Show dependency status and installation guidance."""
+        try:
+            # Format and display dependency status
+            status_text = format_dependency_status()
+            self.console.print(status_text)
+
+            # Show missing dependencies with installation commands
+            deps = check_dependencies()
+            missing_deps = [dep for dep, available in deps.items() if not available]
+
+            if missing_deps:
+                from .exceptions import suggest_installation_commands
+
+                install_commands = suggest_installation_commands()
+
+                self.console.print(
+                    "\n🔧 [bold yellow]Installation Commands for Missing Dependencies:[/bold yellow]"
+                )
+                for dep in missing_deps:
+                    if dep in install_commands:
+                        self.console.print(
+                            f"  • {dep}: [cyan]{install_commands[dep]}[/cyan]"
+                        )
+            else:
+                self.console.print(
+                    "\n✅ [bold green]All dependencies are available![/bold green]"
+                )
+
+        except Exception as e:
+            self.console.print(f"❌ Error checking dependencies: {e}", style="red")
+
     async def _show_help(self) -> None:
         """Show enhanced help information."""
         help_text = """
@@ -719,6 +756,7 @@ class InteractiveSession:
   \\load-session <file>    Load saved session
   \\save-script <file>     Export queries as SQL script
   \\stats                  Show usage statistics
+  \\deps                   Show dependency status
 
 [bold]Other:[/bold]
   \\help, \\h, \\?           Show this help
