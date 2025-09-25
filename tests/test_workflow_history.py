@@ -3,6 +3,7 @@ Tests for workflow execution history tracking functionality.
 """
 
 import json
+import os
 import tempfile
 import time
 from datetime import datetime
@@ -452,10 +453,28 @@ class TestWorkflowHistoryManager:
             # Verify file exists
             assert hist_file.exists()
 
-            # Cleanup with 0 days (should remove all files)
-            removed_count = manager.cleanup_old_records(keep_days=0)
+            # On some platforms (especially Windows), we need to ensure the file timestamp
+            # is definitely older than the cutoff. Let's manually set the file's mtime to the past
+            old_time = time.time() - (2 * 24 * 60 * 60)  # 2 days ago
+            os.utime(hist_file, (old_time, old_time))
+
+            # Cleanup with 1 day (should remove files older than 1 day)
+            removed_count = manager.cleanup_old_records(keep_days=1)
             assert removed_count == 1
             assert not hist_file.exists()
+
+            # Test that recent files are not removed
+            execution2 = manager.create_execution_record(
+                workflow_name="test_workflow_2",
+                workflow_file="test2.yml",
+            )
+            hist_file2 = manager.save_execution_record(execution2)
+            assert hist_file2.exists()
+
+            # This should not remove the recent file
+            removed_count = manager.cleanup_old_records(keep_days=1)
+            assert removed_count == 0
+            assert hist_file2.exists()
 
     def test_get_workflow_statistics(self):
         """Test getting workflow statistics."""
