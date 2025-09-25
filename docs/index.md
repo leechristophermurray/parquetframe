@@ -25,9 +25,17 @@
 
 ⚡ **Full API Compatibility**: All pandas/Dask operations work transparently
 
-🖥️ **Powerful CLI**: Command-line interface for data exploration, batch processing, and performance benchmarking
+🗃️ **SQL Support**: Execute SQL queries on DataFrames using DuckDB with automatic JOIN capabilities
 
-📊 **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection
+🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations
+
+🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing
+
+📝 **Script Generation**: Automatic Python script generation from CLI sessions
+
+⚡ **Performance Optimization**: Built-in benchmarking tools and intelligent threshold detection
+
+📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax
 
 🎯 **Zero Configuration**: Works out of the box with sensible defaults
 
