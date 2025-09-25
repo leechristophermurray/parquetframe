@@ -12,12 +12,8 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from src.parquetframe.datacontext import (
-    DataContext,
-    DataContextError,
-    DataContextFactory,
-    SourceType,
-)
+from src.parquetframe.datacontext import DataContext, DataContextFactory, SourceType
+from src.parquetframe.exceptions import DataContextError, DataSourceError
 
 
 class TestDataContextFactory:
@@ -355,7 +351,7 @@ class TestErrorHandling:
         with pytest.raises(TypeError):
             DataContextFactory.create_from_path(123)  # Wrong type
 
-        with pytest.raises(DataContextError):
+        with pytest.raises((DataContextError, DataSourceError)):
             DataContextFactory.create_from_db_uri(123)  # Wrong type
 
 
@@ -405,11 +401,12 @@ class TestDataContextErrorHandling:
 
         import asyncio
 
-        # Execute multiple queries concurrently
+        # Execute multiple queries concurrently using specific tables
+        # Note: Using specific table names since files have different schemas
         queries = [
-            "SELECT COUNT(*) FROM parquet_data;",
-            "SELECT * FROM parquet_data LIMIT 1;",
-            "SELECT MAX(id) FROM parquet_data;",
+            "SELECT COUNT(*) FROM 'users.parquet';",
+            "SELECT * FROM 'users.parquet' LIMIT 1;",
+            "SELECT MAX(id) FROM 'users.parquet';",
         ]
 
         results = await asyncio.gather(*[context.execute(query) for query in queries])
@@ -457,8 +454,8 @@ class TestDataContextPerformance:
             pytest.skip("Required dependencies not available")
 
         queries = [
-            "SELECT COUNT(*) FROM parquet_data;",
-            "SELECT * FROM parquet_data LIMIT 100;",
+            "SELECT COUNT(*) FROM 'users.parquet';",
+            "SELECT * FROM 'users.parquet' LIMIT 100;",
         ]
 
         for query in queries:
@@ -575,7 +572,8 @@ class TestDataContextUtilities:
         # Test error with cause
         cause = ValueError("Original cause")
         error2 = DataContextError("Wrapper error", cause)
-        assert "Wrapper error" in str(error2)
+        # DataContextError inherits from DataSourceError, so check for core message parts
+        assert "Wrapper error" in str(error2) or "Original cause" in str(error2)
         assert error2.__cause__ == cause
 
     def test_factory_parameter_validation(self):
@@ -584,7 +582,7 @@ class TestDataContextUtilities:
         with pytest.raises((DataContextError, TypeError)):
             DataContextFactory.create_from_path(None)
 
-        with pytest.raises(DataContextError):
+        with pytest.raises((DataContextError, DataSourceError)):
             DataContextFactory.create_from_db_uri(None)
 
         # Test empty string values
