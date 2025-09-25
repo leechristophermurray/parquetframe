@@ -36,6 +36,7 @@ except ImportError:
 
 from .core import ParquetFrame
 from .exceptions import ParquetFrameError
+from .workflow_history import StepExecution, WorkflowHistoryManager
 
 
 class WorkflowError(ParquetFrameError):
@@ -358,9 +359,18 @@ STEP_REGISTRY = {
 class WorkflowEngine:
     """Main workflow engine for executing YAML workflows."""
 
-    def __init__(self, verbose: bool = True):
+    def __init__(
+        self,
+        verbose: bool = True,
+        enable_history: bool = True,
+        history_dir: Optional[Union[str, Path]] = None,
+    ):
         self.verbose = verbose
         self.console = Console() if RICH_AVAILABLE and verbose else None
+        self.enable_history = enable_history
+        self.history_manager = (
+            WorkflowHistoryManager(history_dir) if enable_history else None
+        )
 
     def load_workflow(self, workflow_path: Union[str, Path]) -> dict[str, Any]:
         """Load a workflow from a YAML file."""
@@ -427,6 +437,7 @@ class WorkflowEngine:
         workflow: dict[str, Any],
         working_dir: Optional[Path] = None,
         variables: Optional[dict[str, Any]] = None,
+        workflow_file: Optional[str] = None,
     ) -> WorkflowContext:
         """Execute a workflow."""
 
@@ -440,10 +451,20 @@ class WorkflowEngine:
             context.variables.update(workflow["variables"])
 
         steps = workflow["steps"]
+        workflow_name = workflow.get("name", "unnamed_workflow")
+
+        # Initialize execution history tracking
+        execution_record = None
+        if self.enable_history and self.history_manager:
+            execution_record = self.history_manager.create_execution_record(
+                workflow_name=workflow_name,
+                workflow_file=workflow_file or "<inline>",
+                variables=context.variables,
+            )
 
         if self.verbose and self.console:
             self.console.print(
-                f"\n[EXECUTE] [bold blue]Executing workflow with {len(steps)} steps[/bold blue]"
+                f"\n[EXECUTE] [bold blue]Executing workflow '{workflow_name}' with {len(steps)} steps[/bold blue]"
             )
 
         # Execute steps
@@ -457,34 +478,90 @@ class WorkflowEngine:
         ) as progress:
             main_task = progress.add_task("Processing workflow...", total=len(steps))
 
-            for i, step_config in enumerate(steps):
-                step_name = step_config.get("name", f"step_{i}")
-                step_type = step_config["type"]
+            try:
+                for i, step_config in enumerate(steps):
+                    step_name = step_config.get("name", f"step_{i}")
+                    step_type = step_config["type"]
 
-                if self.verbose:
-                    progress.update(
-                        main_task, description=f"Executing {step_name} ({step_type})"
+                    # Create step execution record
+                    step_execution = None
+                    if execution_record:
+                        input_datasets = (
+                            [step_config.get("input", "data")]
+                            if "input" in step_config or step_type == "read"
+                            else []
+                        )
+                        step_execution = StepExecution(
+                            name=step_name,
+                            step_type=step_type,
+                            status="running",
+                            start_time=__import__("datetime").datetime.now(),
+                            input_datasets=input_datasets,
+                            config=step_config,
+                        )
+                        step_execution.start()
+
+                    if self.verbose:
+                        progress.update(
+                            main_task,
+                            description=f"Executing {step_name} ({step_type})",
+                        )
+
+                    try:
+                        # Create and execute step
+                        step_class = STEP_REGISTRY[step_type]
+                        step = step_class(step_name, step_config)
+                        result = step.execute(context)
+
+                        # Store step result in context
+                        context.outputs[step_name] = result
+
+                        # Update step execution record
+                        if step_execution:
+                            output_datasets = (
+                                [step_config.get("output", step_name)]
+                                if "output" in step_config
+                                else []
+                            )
+                            step_execution.complete(output_datasets)
+                            execution_record.add_step(step_execution)
+
+                        if self.verbose and self.console:
+                            self.console.print(f"  [SUCCESS] {step_name} completed")
+
+                    except Exception as e:
+                        error_msg = f"Step '{step_name}' failed: {e}"
+
+                        # Update step execution record with failure
+                        if step_execution:
+                            step_execution.fail(str(e))
+                            execution_record.add_step(step_execution)
+
+                        if self.verbose and self.console:
+                            self.console.print(f"  [ERROR] {error_msg}")
+                        raise WorkflowExecutionError(error_msg) from e
+
+                    progress.update(main_task, advance=1)
+
+                # Mark workflow as completed
+                if execution_record:
+                    execution_record.complete()
+
+            except Exception as e:
+                # Mark workflow as failed
+                if execution_record:
+                    execution_record.fail(str(e))
+                raise
+            finally:
+                # Save execution record
+                if execution_record and self.history_manager:
+                    hist_file = self.history_manager.save_execution_record(
+                        execution_record
                     )
-
-                try:
-                    # Create and execute step
-                    step_class = STEP_REGISTRY[step_type]
-                    step = step_class(step_name, step_config)
-                    result = step.execute(context)
-
-                    # Store step result in context
-                    context.outputs[step_name] = result
-
                     if self.verbose and self.console:
-                        self.console.print(f"  [SUCCESS] {step_name} completed")
-
-                except Exception as e:
-                    error_msg = f"Step '{step_name}' failed: {e}"
-                    if self.verbose and self.console:
-                        self.console.print(f"  [ERROR] {error_msg}")
-                    raise WorkflowExecutionError(error_msg) from e
-
-                progress.update(main_task, advance=1)
+                        self.console.print(
+                            f"\n[HISTORY] Execution history saved to: {hist_file}"
+                        )
 
         if self.verbose and self.console:
             self.console.print(
@@ -532,7 +609,10 @@ class WorkflowEngine:
 
         # Execute workflow
         return self.execute_workflow(
-            workflow, working_dir=working_dir, variables=variables
+            workflow,
+            working_dir=working_dir,
+            variables=variables,
+            workflow_file=str(workflow_path),
         )
 
 
