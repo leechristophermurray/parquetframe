@@ -354,5 +354,246 @@ class TestErrorHandling:
             DataContextFactory.create_from_db_uri(123)  # Wrong type
 
 
+@pytest.mark.asyncio
+class TestDataContextErrorHandling:
+    """Test comprehensive error handling in DataContext."""
+
+    async def test_query_execution_with_syntax_error(self, temp_parquet_dir):
+        """Test handling of SQL syntax errors."""
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await context.initialize()
+        except DataContextError as e:
+            if "PyArrow is required" in str(e) or "No query engine available" in str(e):
+                pytest.skip("Required dependencies not available")
+            else:
+                raise
+
+        with pytest.raises(Exception):  # Should raise SQL syntax error
+            await context.execute("INVALID SQL SYNTAX;")
+
+        context.close()
+
+    async def test_query_execution_with_missing_table(self, temp_parquet_dir):
+        """Test handling of queries on nonexistent tables."""
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await context.initialize()
+        except DataContextError:
+            pytest.skip("Required dependencies not available")
+
+        with pytest.raises(Exception):  # Should raise table not found error
+            await context.execute("SELECT * FROM nonexistent_table;")
+
+        context.close()
+
+    async def test_concurrent_query_execution(self, temp_parquet_dir):
+        """Test concurrent query execution."""
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await context.initialize()
+        except DataContextError:
+            pytest.skip("Required dependencies not available")
+
+        import asyncio
+
+        # Execute multiple queries concurrently
+        queries = [
+            "SELECT COUNT(*) FROM parquet_data;",
+            "SELECT * FROM parquet_data LIMIT 1;",
+            "SELECT MAX(id) FROM parquet_data;",
+        ]
+
+        results = await asyncio.gather(*[context.execute(query) for query in queries])
+
+        assert len(results) == 3
+        assert all(result is not None for result in results)
+
+        context.close()
+
+
+@pytest.mark.asyncio
+class TestDataContextPerformance:
+    """Performance tests for DataContext operations."""
+
+    @pytest.mark.slow
+    async def test_initialization_performance(self, temp_parquet_dir):
+        """Test that context initialization completes in reasonable time."""
+        import time
+
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        start_time = time.time()
+        try:
+            await context.initialize()
+        except DataContextError:
+            pytest.skip("Required dependencies not available")
+
+        init_time = time.time() - start_time
+
+        # Should initialize within reasonable time
+        assert init_time < 10.0, f"Initialization took {init_time:.2f} seconds"
+
+        context.close()
+
+    @pytest.mark.slow
+    async def test_query_performance(self, temp_parquet_dir):
+        """Test that queries execute in reasonable time."""
+        import time
+
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await context.initialize()
+        except DataContextError:
+            pytest.skip("Required dependencies not available")
+
+        queries = [
+            "SELECT COUNT(*) FROM parquet_data;",
+            "SELECT * FROM parquet_data LIMIT 100;",
+        ]
+
+        for query in queries:
+            start_time = time.time()
+            result = await context.execute(query)
+            query_time = time.time() - start_time
+
+            assert result is not None
+            assert query_time < 5.0, f"Query '{query}' took {query_time:.2f} seconds"
+
+        context.close()
+
+
+@pytest.mark.asyncio
+class TestDataContextIntegration:
+    """Integration tests across different DataContext scenarios."""
+
+    @pytest.mark.integration
+    async def test_parquet_and_database_compatibility(self, temp_parquet_dir):
+        """Test that parquet and database contexts have compatible interfaces."""
+        # Test parquet context
+        parquet_context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await parquet_context.initialize()
+            parquet_schema = parquet_context.get_schema_as_text()
+            parquet_tables = parquet_context.get_table_names()
+
+            assert isinstance(parquet_schema, str)
+            assert isinstance(parquet_tables, list)
+            assert len(parquet_tables) > 0
+
+        except DataContextError:
+            pytest.skip("Parquet context dependencies not available")
+        finally:
+            parquet_context.close()
+
+        # Test database context (minimal SQLite)
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as temp_db:
+            db_path = temp_db.name
+
+        try:
+            import sqlite3
+
+            conn = sqlite3.connect(db_path)
+            conn.execute("CREATE TABLE test (id INTEGER, name TEXT);")
+            conn.execute("INSERT INTO test VALUES (1, 'test');")
+            conn.commit()
+            conn.close()
+
+            db_context = DataContextFactory.create_from_db_uri(f"sqlite:///{db_path}")
+
+            try:
+                await db_context.initialize()
+                db_schema = db_context.get_schema_as_text()
+                db_tables = db_context.get_table_names()
+
+                assert isinstance(db_schema, str)
+                assert isinstance(db_tables, list)
+                assert len(db_tables) > 0
+
+            except DataContextError:
+                pytest.skip("Database context dependencies not available")
+            finally:
+                db_context.close()
+
+        finally:
+            Path(db_path).unlink(missing_ok=True)
+
+    @pytest.mark.integration
+    async def test_schema_discovery_consistency(self, temp_parquet_dir):
+        """Test that schema discovery methods are consistent."""
+        context = DataContextFactory.create_from_path(temp_parquet_dir)
+
+        try:
+            await context.initialize()
+        except DataContextError:
+            pytest.skip("Required dependencies not available")
+
+        # Get schema information using different methods
+        table_names = context.get_table_names()
+        schema_text = context.get_schema_as_text()
+
+        # Verify consistency
+        for table_name in table_names:
+            assert table_name in schema_text
+            table_schema = context.get_table_schema(table_name)
+            assert table_schema["table_name"] == table_name
+            assert len(table_schema["columns"]) > 0
+
+        context.close()
+
+
+class TestDataContextUtilities:
+    """Test utility methods and helper functions."""
+
+    def test_source_type_enum(self):
+        """Test SourceType enumeration."""
+        assert SourceType.PARQUET.value == "parquet"
+        assert SourceType.DATABASE.value == "database"
+
+        # Test string representation
+        assert str(SourceType.PARQUET) == "SourceType.PARQUET"
+        assert str(SourceType.DATABASE) == "SourceType.DATABASE"
+
+    def test_data_context_error_types(self):
+        """Test different DataContextError scenarios."""
+        # Test basic error
+        error1 = DataContextError("Basic error")
+        assert str(error1) == "Basic error"
+
+        # Test error with cause
+        cause = ValueError("Original cause")
+        error2 = DataContextError("Wrapper error", cause)
+        assert str(error2) == "Wrapper error"
+        assert error2.__cause__ == cause
+
+    def test_factory_parameter_validation(self):
+        """Test comprehensive parameter validation in factory."""
+        # Test None values
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_path(None)
+
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_db_uri(None)
+
+        # Test empty string values
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_path("")
+
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_db_uri("")
+
+        # Test whitespace-only values
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_path("   ")
+
+        with pytest.raises(DataContextError):
+            DataContextFactory.create_from_db_uri("   ")
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
