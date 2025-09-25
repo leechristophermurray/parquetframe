@@ -18,7 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 - Added comprehensive tests for SQL and bioframe functionality (unit and integration)
 
-## [0.2.1] - 2024-09-24
+## [0.2.1] - 2025-01-25
+
+### 🎉 First PyPI Release
+- ✅ **Successfully Published to PyPI**: Package now available via `pip install parquetframe`
+- 🔒 **Trusted Publishing Configured**: Secure automated releases without API tokens
+- 📦 **GitHub Releases**: Automatic release creation with downloadable artifacts
+- 🚀 **Full CI/CD Pipeline**: Comprehensive testing, building, and publishing automation
 
 ### Improved
 - 📦 **Release Pipeline** - Enhanced GitHub Actions workflow with trusted PyPI publishing
