@@ -220,6 +220,107 @@ pframe interactive large_data.parquet --threshold 50
 
 ---
 
+## `pframe workflow`
+
+Execute, validate, or visualize YAML workflow definitions.
+
+### Usage
+
+```bash
+pframe workflow <workflow_file> [OPTIONS]
+```
+
+### Key Options
+
+| Option | Short | Type | Description |
+|--------|-------|------|-------------|
+| `--variables` | `-V` | TEXT | Set workflow variables as `key=value` pairs |
+| `--validate` | `-v` | FLAG | Validate workflow without executing |
+| `--visualize` | | CHOICE | Generate visualization: `graphviz`, `networkx`, `mermaid` |
+| `--viz-output` | | PATH | Output path for visualization file |
+| `--quiet` | `-q` | FLAG | Run in quiet mode |
+| `--list-steps` | | FLAG | List all available step types |
+| `--create-example` | | PATH | Create example workflow file |
+
+### Examples
+
+```bash
+# Execute workflow
+pframe workflow pipeline.yml
+
+# Execute with variables
+pframe workflow pipeline.yml --variables "region=US,min_age=21"
+
+# Validate before running
+pframe workflow pipeline.yml --validate
+
+# Generate DAG visualization
+pframe workflow pipeline.yml --visualize graphviz --viz-output dag.svg
+
+# Create example workflow
+pframe workflow --create-example example.yml
+```
+
+### Features
+
+- **Multi-step Pipelines**: Chain read, filter, transform, save operations
+- **DAG Visualization**: Generate workflow dependency graphs
+- **Execution History**: Automatic tracking of all workflow runs
+- **Performance Monitoring**: Memory usage and timing metrics
+- **Variable Substitution**: Dynamic workflow configuration
+
+---
+
+## `pframe workflow-history`
+
+View and manage workflow execution history with detailed analytics.
+
+### Usage
+
+```bash
+pframe workflow-history [OPTIONS]
+```
+
+### Key Options
+
+| Option | Short | Type | Description |
+|--------|-------|------|-------------|
+| `--workflow-name` | `-w` | TEXT | Filter by specific workflow name |
+| `--status` | `-s` | CHOICE | Filter by status: `completed`, `failed`, `running` |
+| `--limit` | `-l` | INT | Limit number of records (default: 10) |
+| `--details` | `-d` | FLAG | Show detailed execution information |
+| `--stats` | | FLAG | Show aggregate statistics |
+| `--cleanup` | | INT | Clean up files older than N days |
+
+### Examples
+
+```bash
+# View recent executions
+pframe workflow-history
+
+# Filter by workflow name
+pframe workflow-history --workflow-name "Data Pipeline"
+
+# Show detailed information
+pframe workflow-history --details --limit 5
+
+# View aggregate statistics
+pframe workflow-history --stats
+
+# Clean up old history
+pframe workflow-history --cleanup 30
+```
+
+### Features
+
+- **Execution Tracking**: Complete history of workflow runs
+- **Performance Analytics**: Success rates, duration trends
+- **Rich Filtering**: By name, status, time period
+- **Detailed Views**: Step-by-step execution breakdown
+- **History Management**: Cleanup and maintenance tools
+
+---
+
 ## Global Options
 
 These options are available for all commands:

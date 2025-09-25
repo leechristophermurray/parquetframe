@@ -83,6 +83,14 @@ nav:
     - Batch Processing: cli/batch.md
     - Script Generation: cli/scripts.md
     - CLI Examples: cli/examples.md
+  - Workflow System:
+    - Workflow Overview: workflows/index.md
+    - Step Types: workflows/step-types.md
+    - CLI Commands: workflows/cli-commands.md
+    - History & Analytics: workflows/history-analytics.md
+    - DAG Visualization: workflows/visualization.md
+    - Advanced Features: workflows/advanced.md
+    - Examples: workflows/examples.md
   - Tutorials:
     - Data Exploration: tutorials/exploration.md
     - Large Dataset Processing: tutorials/large-data.md
