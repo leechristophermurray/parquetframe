@@ -7,6 +7,7 @@ containing detailed execution metrics, timings, and status information.
 
 import json
 import time
+import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -183,7 +184,7 @@ class WorkflowHistoryManager:
         variables: Optional[dict[str, Any]] = None,
     ) -> WorkflowExecution:
         """Create a new workflow execution record."""
-        execution_id = f"{workflow_name}_{int(time.time())}"
+        execution_id = f"{workflow_name}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
 
         return WorkflowExecution(
             workflow_name=workflow_name,
