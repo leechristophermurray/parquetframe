@@ -594,8 +594,8 @@ class TestDataContextUtilities:
 
     def test_factory_parameter_validation(self):
         """Test comprehensive parameter validation in factory."""
-        # Test None values - Path constructor will raise TypeError
-        with pytest.raises((DataContextError, TypeError)):
+        # Test None values - should raise DataContextError
+        with pytest.raises(DataContextError):
             DataContextFactory.create_from_path(None)
 
         with pytest.raises(DataContextError):

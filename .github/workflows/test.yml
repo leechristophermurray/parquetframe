@@ -54,9 +54,9 @@ jobs:
         pip install prompt-toolkit>=3.0.0 || exit 1
         # Verify installations
         echo "Verifying installations..."
-        python -c "import bioframe; print('✅ bioframe:', bioframe.__version__)"
-        python -c "import sqlalchemy; print('✅ sqlalchemy:', sqlalchemy.__version__)"
-        python -c "import duckdb; print('✅ duckdb:', duckdb.__version__)"
+        python -c "import bioframe; print('INSTALLED bioframe:', bioframe.__version__)"
+        python -c "import sqlalchemy; print('INSTALLED sqlalchemy:', sqlalchemy.__version__)"
+        python -c "import duckdb; print('INSTALLED duckdb:', duckdb.__version__)"
         echo "All dependencies installed successfully!"
       shell: pwsh
 
@@ -79,9 +79,9 @@ jobs:
         pip install prompt-toolkit>=3.0.0 || exit 1
         # Verify installations
         echo "Verifying installations..."
-        python -c "import bioframe; print('✅ bioframe:', bioframe.__version__)"
-        python -c "import sqlalchemy; print('✅ sqlalchemy:', sqlalchemy.__version__)"
-        python -c "import duckdb; print('✅ duckdb:', duckdb.__version__)"
+        python -c "import bioframe; print('INSTALLED bioframe:', bioframe.__version__)"
+        python -c "import sqlalchemy; print('INSTALLED sqlalchemy:', sqlalchemy.__version__)"
+        python -c "import duckdb; print('INSTALLED duckdb:', duckdb.__version__)"
         echo "All dependencies installed successfully!"
       shell: bash
 

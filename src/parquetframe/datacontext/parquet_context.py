@@ -271,7 +271,7 @@ class ParquetDataContext(DataContext):
         files_str = ", ".join(f"'{path}'" for path in file_paths)
         create_view_sql = f"""
         CREATE VIEW {self._virtual_table_name} AS
-        SELECT * FROM read_parquet([{files_str}])
+        SELECT * FROM read_parquet([{files_str}], union_by_name=True)
         """
 
         try:

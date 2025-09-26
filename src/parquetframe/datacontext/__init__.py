@@ -185,7 +185,7 @@ class DataContextFactory:
         from .parquet_context import ParquetDataContext
 
         # Validate path parameter
-        if not path or (isinstance(path, str) and not path.strip()):
+        if path is None or (isinstance(path, str) and not path.strip()):
             raise DataContextError(
                 "Path cannot be empty or None",
                 source_type="parquet",
@@ -229,7 +229,7 @@ class DataContextFactory:
         """
         from .database_context import DatabaseDataContext
 
-        if not db_uri or not isinstance(db_uri, str):
+        if db_uri is None or not isinstance(db_uri, str) or not db_uri.strip():
             raise DataContextError(
                 f"Failed to connect to database at '{db_uri or '<empty>'}'",
                 source_type="database",

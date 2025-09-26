@@ -33,7 +33,7 @@ class TestLLMAgentInitialization:
 
     def test_initialization_without_ollama(self):
         """Test initialization failure when ollama is not available."""
-        with patch.dict("sys.modules", {"ollama": None}):
+        with patch("src.parquetframe.ai.agent.OLLAMA_AVAILABLE", False):
             with pytest.raises(DependencyError) as exc_info:
                 LLMAgent()
 
