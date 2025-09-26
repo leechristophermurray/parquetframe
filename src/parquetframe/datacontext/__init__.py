@@ -185,6 +185,14 @@ class DataContextFactory:
         """
         from .parquet_context import ParquetDataContext
 
+        # Validate input before processing
+        if not path or (isinstance(path, str) and not path.strip()):
+            raise DataContextError(
+                "Path cannot be empty or whitespace-only",
+                source_type="parquet",
+                source_location="<empty>",
+            )
+
         path_obj = Path(path).resolve()
         if not path_obj.exists():
             raise DataSourceError(
@@ -222,15 +230,11 @@ class DataContextFactory:
         """
         from .database_context import DatabaseDataContext
 
-        if not db_uri or not isinstance(db_uri, str):
-            raise DataSourceError(
+        if not db_uri or not isinstance(db_uri, str) or not db_uri.strip():
+            raise DataContextError(
+                "Database URI cannot be empty or whitespace-only",
                 source_type="database",
                 source_location=db_uri or "<empty>",
-                troubleshooting_steps=[
-                    "Database URI must be a non-empty string",
-                    "Use format: driver://username:password@host:port/database",
-                    "Example: postgresql://user:pass@localhost:5432/mydb",
-                ],
             )
 
         logger.info(f"Creating DatabaseDataContext for URI: {db_uri[:20]}...")

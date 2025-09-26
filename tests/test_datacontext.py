@@ -406,12 +406,12 @@ class TestDataContextErrorHandling:
 
         import asyncio
 
-        # Execute multiple queries concurrently using specific tables
-        # Note: Using specific table names since files have different schemas
+        # Execute multiple queries concurrently using the virtual table
+        # The parquet context creates a view called 'parquet_data'
         queries = [
-            "SELECT COUNT(*) FROM 'users.parquet';",
-            "SELECT * FROM 'users.parquet' LIMIT 1;",
-            "SELECT MAX(id) FROM 'users.parquet';",
+            "SELECT COUNT(*) FROM parquet_data;",
+            "SELECT * FROM parquet_data LIMIT 1;",
+            "SELECT MAX(id) FROM parquet_data;",
         ]
 
         results = await asyncio.gather(*[context.execute(query) for query in queries])
@@ -459,8 +459,8 @@ class TestDataContextPerformance:
             pytest.skip("Required dependencies not available")
 
         queries = [
-            "SELECT COUNT(*) FROM 'users.parquet';",
-            "SELECT * FROM 'users.parquet' LIMIT 100;",
+            "SELECT COUNT(*) FROM parquet_data;",
+            "SELECT * FROM parquet_data LIMIT 100;",
         ]
 
         for query in queries:

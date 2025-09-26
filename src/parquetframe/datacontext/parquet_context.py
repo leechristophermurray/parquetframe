@@ -268,10 +268,11 @@ class ParquetDataContext(DataContext):
         file_paths = [str(path) for path in self._discovered_files]
 
         # DuckDB can read multiple parquet files as a single table
+        # Use union_by_name=True to handle schema mismatches gracefully
         files_str = ", ".join(f"'{path}'" for path in file_paths)
         create_view_sql = f"""
         CREATE VIEW {self._virtual_table_name} AS
-        SELECT * FROM read_parquet([{files_str}])
+        SELECT * FROM read_parquet([{files_str}], union_by_name=true)
         """
 
         try:
