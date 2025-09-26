@@ -71,6 +71,6 @@ with pf.profiler():
 
 ## Further Reading
 
-- [Performance Tips](../../performance.md)
-- [Backend Selection](../../backends.md)
-- [Advanced Features](../../advanced.md)
+- [Performance Tips](../performance.md)
+- [Backend Selection](../backends.md)
+- [Advanced Features](../advanced.md)

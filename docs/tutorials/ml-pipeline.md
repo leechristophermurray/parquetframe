@@ -85,4 +85,4 @@ results.save("ml_results.parquet")
 
 - [Integration Guide](integration.md)
 - [Performance Optimization](performance.md)
-- [Advanced Features](../../advanced.md)
+- [Advanced Features](../advanced.md)

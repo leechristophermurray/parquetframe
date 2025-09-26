@@ -16,6 +16,6 @@ Guide for crafting effective prompts when working with ParquetFrame's AI feature
 
 ## Related Documentation
 
-- [AI Features Overview](../../ai-features.md)
+- [AI Features Overview](../ai-features.md)
 - [Natural Language Queries](queries.md)
 - [Local LLM Setup](setup.md)

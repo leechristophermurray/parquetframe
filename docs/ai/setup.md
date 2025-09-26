@@ -16,5 +16,5 @@ Instructions for setting up local Large Language Model integration with ParquetF
 
 ## Related Documentation
 
-- [AI Features Overview](../../ai-features.md)
+- [AI Features Overview](../ai-features.md)
 - [Prompt Engineering](prompts.md)

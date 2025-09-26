@@ -99,6 +99,7 @@ nav:
   - Workflow System:
     - Workflow Overview: workflows/index.md
     - Step Types: workflows/step-types.md
+    - YAML Syntax: workflows/yaml-syntax.md
     - CLI Commands: workflows/cli-commands.md
     - History & Analytics: workflows/history-analytics.md
     - DAG Visualization: workflows/visualization.md

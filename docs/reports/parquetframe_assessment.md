@@ -35,6 +35,6 @@ Comprehensive assessment of ParquetFrame project status, features, and roadmap.
 
 ## Related Documentation
 
-- [Feature Implementation Matrix](../../feature_implementation_matrix.md)
-- [Architecture Diagram](../../architecture_diagram.md)
-- [Benchmarks](../../benchmarks.md)
+- [Feature Implementation Matrix](../feature_implementation_matrix.md)
+- [Architecture Diagram](../architecture_diagram.md)
+- [Benchmarks](../benchmarks.md)
