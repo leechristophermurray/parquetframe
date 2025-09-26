@@ -7,6 +7,8 @@ This module provides basic testing for the interactive CLI, focusing on:
 - Basic functionality validation
 """
 
+import os
+import platform
 from unittest.mock import patch
 
 import pytest
@@ -14,10 +16,17 @@ import pytest
 from src.parquetframe.exceptions import DependencyError
 from src.parquetframe.interactive import InteractiveSession
 
+# Skip all interactive tests on Windows CI where console is not available
+skip_on_windows_ci = pytest.mark.skipif(
+    platform.system() == "Windows" and os.environ.get("CI") == "true",
+    reason="Interactive tests require console, not available on Windows CI",
+)
+
 
 class TestInteractiveSessionInitialization:
     """Test interactive session initialization."""
 
+    @skip_on_windows_ci
     def test_initialization_with_valid_data_context(self, temp_parquet_dir):
         """Test successful initialization with valid DataContext."""
         from src.parquetframe.datacontext import DataContextFactory
@@ -34,6 +43,7 @@ class TestInteractiveSessionInitialization:
                 assert session.console is not None
                 assert not session.ai_enabled
 
+    @skip_on_windows_ci
     def test_initialization_with_ai_enabled(self, temp_parquet_dir, mock_ollama_module):
         """Test initialization with AI features enabled."""
         from src.parquetframe.datacontext import DataContextFactory
@@ -69,6 +79,7 @@ class TestInteractiveSessionUtilities:
         # Should be a boolean
         assert isinstance(INTERACTIVE_AVAILABLE, bool)
 
+    @skip_on_windows_ci
     def test_session_id_generation(self, temp_parquet_dir):
         """Test session ID generation."""
         from src.parquetframe.datacontext import DataContextFactory
@@ -84,6 +95,7 @@ class TestInteractiveSessionUtilities:
                 assert hasattr(session, "session_id")
                 assert isinstance(session.session_id, str)
 
+    @skip_on_windows_ci
     def test_ai_agent_initialization_failure(self, temp_parquet_dir):
         """Test that AI agent failures are handled gracefully."""
         from src.parquetframe.datacontext import DataContextFactory
@@ -103,6 +115,7 @@ class TestInteractiveSessionUtilities:
 class TestBasicFunctionality:
     """Test basic interactive session functionality."""
 
+    @skip_on_windows_ci
     def test_console_creation(self, temp_parquet_dir):
         """Test that console is properly created."""
         from src.parquetframe.datacontext import DataContextFactory
@@ -118,6 +131,7 @@ class TestBasicFunctionality:
                 assert hasattr(session, "console")
                 assert session.console is not None
 
+    @skip_on_windows_ci
     def test_history_manager_creation(self, temp_parquet_dir):
         """Test that history manager is created."""
         from src.parquetframe.datacontext import DataContextFactory
