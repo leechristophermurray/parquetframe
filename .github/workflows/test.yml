@@ -42,7 +42,18 @@ jobs:
       run: |
         uv venv .venv
         .venv\Scripts\Activate.ps1
-        uv pip install -e ".[dev,test,cli,bio,db,sql,ai,all]"
+        # Install core package and basic extras
+        uv pip install -e ".[dev,test,cli]"
+        # Install optional dependencies explicitly for testing
+        uv pip install bioframe>=0.4.0
+        uv pip install sqlalchemy>=2.0.0
+        uv pip install duckdb>=0.9.0
+        uv pip install ollama>=0.1.7
+        uv pip install prompt-toolkit>=3.0.0
+        # Verify installations
+        python -c "import bioframe; print('bioframe:', bioframe.__version__)" || echo "bioframe not available"
+        python -c "import sqlalchemy; print('sqlalchemy:', sqlalchemy.__version__)" || echo "sqlalchemy not available"
+        python -c "import duckdb; print('duckdb:', duckdb.__version__)" || echo "duckdb not available"
       shell: pwsh
 
     - name: Create virtual environment and install dependencies (Unix)
@@ -52,7 +63,18 @@ jobs:
         echo "$PWD/.venv/bin" >> $GITHUB_PATH
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
-        uv pip install -e ".[dev,test,cli,bio,db,sql,ai,all]"
+        # Install core package and basic extras
+        uv pip install -e ".[dev,test,cli]"
+        # Install optional dependencies explicitly for testing
+        uv pip install bioframe>=0.4.0
+        uv pip install sqlalchemy>=2.0.0
+        uv pip install duckdb>=0.9.0
+        uv pip install ollama>=0.1.7
+        uv pip install prompt-toolkit>=3.0.0
+        # Verify installations
+        python -c "import bioframe; print('bioframe:', bioframe.__version__)" || echo "bioframe not available"
+        python -c "import sqlalchemy; print('sqlalchemy:', sqlalchemy.__version__)" || echo "sqlalchemy not available"
+        python -c "import duckdb; print('duckdb:', duckdb.__version__)" || echo "duckdb not available"
       shell: bash
 
     - name: Install package (already done above)
