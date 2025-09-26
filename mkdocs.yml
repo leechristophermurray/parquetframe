@@ -1,5 +1,5 @@
 site_name: ParquetFrame
-site_description: A universal wrapper for working with dataframes in Python
+site_description: The ultimate Python data processing framework with AI-powered exploration, intelligent backend switching, and advanced workflow orchestration
 site_author: ParquetFrame Contributors
 site_url: https://leechristophermurray.github.io/parquetframe/
 repo_url: https://github.com/leechristophermurray/parquetframe
@@ -75,6 +75,19 @@ nav:
     - Performance Tips: performance.md
     - Backend Selection: backends.md
     - File Formats: formats.md
+  - AI Features:
+    - AI Overview: ai-features.md
+    - Natural Language Queries: ai/queries.md
+    - Local LLM Setup: ai/setup.md
+    - Prompt Engineering: ai/prompts.md
+  - SQL & Database:
+    - SQL Support: sql/index.md
+    - DuckDB Integration: sql/duckdb.md
+    - Database Connections: sql/databases.md
+  - Genomics & BioFrame:
+    - BioFrame Integration: bio/index.md
+    - Genomic Operations: bio/operations.md
+    - Parallel Processing: bio/parallel.md
   - CLI Guide:
     - CLI Overview: cli/index.md
     - CLI Installation: cli/installation.md
@@ -105,6 +118,11 @@ nav:
     - Contributing: contributing.md
     - Release Notes: changelog.md
     - Benchmarks: benchmarks.md
+    - Architecture: architecture.md
+  - Project Assessment:
+    - Comprehensive Report: reports/parquetframe_assessment.md
+    - Feature Matrix: feature_implementation_matrix.md
+    - Architecture Diagram: architecture_diagram.md
 
 markdown_extensions:
   - abbr
