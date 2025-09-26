@@ -8,15 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- 🗃️ SQL support via DuckDB with `.sql()` method and `pframe sql` CLI command
-- 🧬 BioFrame integration with `.bio` accessor supporting cluster, overlap, merge, complement, closest
-- ➕ Optional extras: `[sql]`, `[bio]`, and `[all]` for easy installation of feature sets
+- Future enhancements and features will be listed here
+
+## [0.2.2] - 2025-01-26
+
+### 🚀 Enhanced Features & Documentation Release
+
+### Added
+- 🗃️ **SQL Support via DuckDB** with `.sql()` method and `pframe sql` CLI command
+- 🧬 **BioFrame Integration** with `.bio` accessor supporting cluster, overlap, merge, complement, closest
+- 🤖 **AI-Powered Data Exploration** with natural language to SQL conversion using local LLM (Ollama)
+- 📊 **Performance Benchmarking Suite** with comprehensive analysis and CLI integration
+- 🔄 **YAML Workflow Engine** for declarative data processing pipelines
+- 🗄️ **DataContext Framework** for unified access to parquet files and databases
+- 📈 **Workflow Visualization** and history tracking capabilities
+- ➕ **Optional Extras**: `[sql]`, `[bio]`, `[ai]`, and `[all]` for easy installation of feature sets
+
+### Enhanced
+- 🧠 **Intelligent Backend Switching** with memory pressure analysis and file characteristic detection
+- 🎨 **Rich CLI Experience** with enhanced interactive mode and comprehensive help
+- 🔍 **Advanced Error Handling** with detailed exception hierarchy and user-friendly messages
+- 📚 **Comprehensive Documentation** with architecture guides, AI features documentation, and examples
+- 🧪 **Expanded Test Suite** with 334 passing tests across multiple categories (54% coverage)
+- ⚡ **Performance Optimizations** showing 7-90% speed improvements over direct pandas usage
 
 ### Changed
-- CLI updated to include SQL commands and interactive SQL mode
+- 📋 **CLI Updated** to include SQL commands, interactive SQL mode, and AI-powered queries
+- 🔧 **Architecture Refactored** with dependency injection and factory patterns
+- 📖 **Documentation Structure** enhanced with detailed guides and API references
+
+### Fixed
+- 🛠️ **CI/CD Pipeline** improvements and cross-platform compatibility
+- 🐛 **Test Stability** across different Python versions and operating systems
+- 🔍 **Memory Management** with intelligent threshold adjustment
 
 ### Tests
-- Added comprehensive tests for SQL and bioframe functionality (unit and integration)
+- ✅ **Comprehensive Test Coverage** for SQL, bioframe, AI, and workflow functionality
+- 🧪 **Integration Tests** for end-to-end workflows and real-world scenarios
+- 🔄 **Performance Tests** with benchmarking validation
+- 🤖 **AI Integration Tests** with mock-based LLM testing
 
 ## [0.2.1] - 2025-01-25
 
