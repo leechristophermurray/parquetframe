@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.2.3] - 2025-09-26
+
+### 🛠️ CI/CD Fixes and Test Stability Release
+
+### Fixed
+- 🐛 **Windows CI Compatibility** - Skip interactive tests on Windows CI to handle NoConsoleScreenBufferError
+- 🧪 **Schema Mismatch Handling** - Added union_by_name=True to DuckDB read_parquet for mismatched schemas
+- 🔍 **LLM Agent Tests** - Fixed test mocking of OLLAMA_AVAILABLE flag for proper dependency handling
+- ⚠️ **Factory Validation** - Improved DataContextFactory parameter validation for None handling
+- 🔡 **Encoding Issues** - Fixed Unicode encoding problems in CI workflows by removing emojis
+- 🎯 **Test Coverage** - Maintained 55%+ test coverage across the codebase
+
+### Enhanced
+- 🧩 **Optional Dependency Handling** - Improved installation and validation of bioframe, SQLAlchemy
+- 📝 **Error Messages** - Enhanced clarity of error messages for missing dependencies
+- ⚡ **Test Reliability** - Ensured consistent test behavior across all platforms
+- 🔄 **CI Workflow** - Optimized CI process with explicit dependency verification
+
+### Tests
+- ✅ **Cross-platform Testing** - Ensured tests run consistently on macOS, Linux, and Windows
+- 🛡️ **Edge Case Handling** - Improved robustness for different CI environments
+- 🧠 **Dependency Checking** - Better skip mechanisms for tests that require optional packages
+
 ## [0.2.2] - 2025-01-26
 
 ### 🚀 Enhanced Features & Documentation Release
