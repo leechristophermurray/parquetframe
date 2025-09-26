@@ -92,6 +92,10 @@ class TestQueryGeneration:
         """Mock DataContext for testing."""
         context = MagicMock()
         context.is_initialized = True
+
+        # Properly mock async initialize method
+        context.initialize = AsyncMock()
+
         context.get_table_names.return_value = ["users", "sales"]
         context.get_schema_as_text.return_value = """
         CREATE TABLE users (
@@ -108,10 +112,13 @@ class TestQueryGeneration:
         );
         """
 
-        # Mock successful query execution
+        # Mock successful query execution with proper async mock
         mock_result = MagicMock()
         mock_result.__len__ = MagicMock(return_value=5)
         context.execute = AsyncMock(return_value=mock_result)
+
+        # Mock query validation method
+        context.validate_query = AsyncMock(return_value=True)
 
         return context
 
@@ -156,6 +163,7 @@ class TestQueryGeneration:
         mock_result = MagicMock()
         mock_result.__len__ = MagicMock(return_value=3)
         context.execute = AsyncMock(return_value=mock_result)
+        context.validate_query = AsyncMock(return_value=True)
 
         mock_ollama_client.chat.return_value = {
             "message": {"content": "SELECT * FROM users;"}
