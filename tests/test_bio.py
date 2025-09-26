@@ -9,13 +9,17 @@ import pytest
 
 from parquetframe.core import ParquetFrame
 
-# Check if bioframe is available
+# Check if bioframe is available using the same check as the actual module
 try:
-    import bioframe  # noqa: F401
-
-    BIOFRAME_AVAILABLE = True
+    from parquetframe.bio import BIOFRAME_AVAILABLE
 except ImportError:
-    BIOFRAME_AVAILABLE = False
+    # Fallback check if bio module can't be imported
+    try:
+        import bioframe  # noqa: F401
+
+        BIOFRAME_AVAILABLE = True
+    except ImportError:
+        BIOFRAME_AVAILABLE = False
 
 
 class TestBioAccessor:
@@ -306,6 +310,7 @@ class TestBioAccessor:
         with pytest.raises(ValueError, match="Bioframe .* failed"):
             pf.bio.cluster()
 
+    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
     def test_bio_accessor_initialization(self, genomic_data):
         """Test BioAccessor initialization."""
         intervals_df, _ = genomic_data
@@ -316,6 +321,7 @@ class TestBioAccessor:
         assert bio_accessor._df is pf._df
         assert bio_accessor._is_lazy == pf.islazy
 
+    @pytest.mark.skipif(not BIOFRAME_AVAILABLE, reason="bioframe not available")
     def test_bio_accessor_lazy_detection(self, genomic_data):
         """Test that BioAccessor correctly detects lazy vs eager backends."""
         intervals_df, _ = genomic_data

@@ -193,6 +193,10 @@ class DataSourceError(ParquetFrameError):
             },
         )
 
+        # Properly chain the exception
+        if underlying_error:
+            self.__cause__ = underlying_error
+
 
 class QueryError(ParquetFrameError):
     """Raised when query execution fails with helpful debugging info."""

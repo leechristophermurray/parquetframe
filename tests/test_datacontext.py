@@ -19,6 +19,14 @@ from src.parquetframe.datacontext import (
     SourceType,
 )
 
+# Check if SQLAlchemy is available for database tests
+try:
+    import sqlalchemy  # noqa: F401
+
+    SQLALCHEMY_AVAILABLE = True
+except ImportError:
+    SQLALCHEMY_AVAILABLE = False
+
 
 class TestDataContextFactory:
     """Test the DataContextFactory and its dependency injection patterns."""
@@ -53,6 +61,7 @@ class TestDataContextFactory:
             with pytest.raises(DataSourceError):
                 DataContextFactory.create_from_path(temp_file.name)
 
+    @pytest.mark.skipif(not SQLALCHEMY_AVAILABLE, reason="SQLAlchemy not available")
     def test_create_context_with_db_uri(self):
         """Test factory creation with database URI."""
         db_uri = "sqlite:///test.db"
@@ -98,9 +107,12 @@ class TestDataContextFactory:
             parquet_context = DataContextFactory.create_context(path=temp_dir)
             assert parquet_context.source_type == SourceType.PARQUET
 
-            # Test URI-based creation
-            db_context = DataContextFactory.create_context(db_uri="sqlite:///test.db")
-            assert db_context.source_type == SourceType.DATABASE
+            # Test URI-based creation (only if SQLAlchemy is available)
+            if SQLALCHEMY_AVAILABLE:
+                db_context = DataContextFactory.create_context(
+                    db_uri="sqlite:///test.db"
+                )
+                assert db_context.source_type == SourceType.DATABASE
 
 
 class TestDataContextInterface:
@@ -249,6 +261,7 @@ class TestParquetDataContextIntegration:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(not SQLALCHEMY_AVAILABLE, reason="SQLAlchemy not available")
 class TestDatabaseDataContextIntegration:
     """Integration tests for DatabaseDataContext."""
 
@@ -572,16 +585,17 @@ class TestDataContextUtilities:
         assert "Basic error" in str(error1)
         assert "unknown" in str(error1)
 
-        # Test error with cause
+        # Test error with cause - now uses DataSourceError formatting
         cause = ValueError("Original cause")
         error2 = DataContextError("Wrapper error", cause)
-        assert "Wrapper error" in str(error2)
+        # The error message will be formatted by DataSourceError
+        assert "Original cause" in str(error2)
         assert error2.__cause__ == cause
 
     def test_factory_parameter_validation(self):
         """Test comprehensive parameter validation in factory."""
-        # Test None values - Path constructor will raise TypeError
-        with pytest.raises((DataContextError, TypeError)):
+        # Test None values - should raise DataContextError
+        with pytest.raises(DataContextError):
             DataContextFactory.create_from_path(None)
 
         with pytest.raises(DataContextError):

@@ -36,13 +36,15 @@ class DataContextError(DataSourceError):
     def __init__(
         self,
         message: str,
+        cause: Exception = None,
         source_type: str = "unknown",
         source_location: str = "unknown",
     ):
+        # Always use DataSourceError's standard formatting
         super().__init__(
             source_type=source_type,
             source_location=source_location,
-            underlying_error=Exception(message),
+            underlying_error=cause if cause else Exception(message),
         )
 
 
@@ -182,6 +184,14 @@ class DataContextFactory:
         """
         from .parquet_context import ParquetDataContext
 
+        # Validate path parameter
+        if path is None or (isinstance(path, str) and not path.strip()):
+            raise DataContextError(
+                "Path cannot be empty or None",
+                source_type="parquet",
+                source_location=str(path) if path is not None else "<None>",
+            )
+
         path_obj = Path(path).resolve()
         if not path_obj.exists():
             raise DataSourceError(
@@ -219,15 +229,11 @@ class DataContextFactory:
         """
         from .database_context import DatabaseDataContext
 
-        if not db_uri or not isinstance(db_uri, str):
-            raise DataSourceError(
+        if db_uri is None or not isinstance(db_uri, str) or not db_uri.strip():
+            raise DataContextError(
+                f"Failed to connect to database at '{db_uri or '<empty>'}'",
                 source_type="database",
-                source_location=db_uri or "<empty>",
-                troubleshooting_steps=[
-                    "Database URI must be a non-empty string",
-                    "Use format: driver://username:password@host:port/database",
-                    "Example: postgresql://user:pass@localhost:5432/mydb",
-                ],
+                source_location=str(db_uri) if db_uri is not None else "<empty>",
             )
 
         logger.info(f"Creating DatabaseDataContext for URI: {db_uri[:20]}...")
