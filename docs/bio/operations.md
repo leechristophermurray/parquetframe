@@ -18,4 +18,4 @@ Guide to genomic data operations and analysis using ParquetFrame with BioFrame.
 
 - [BioFrame Integration Overview](index.md)
 - [Parallel Processing](parallel.md)
-- [Performance Tips](../performance.md)
+- [Performance Tips](../../performance.md)

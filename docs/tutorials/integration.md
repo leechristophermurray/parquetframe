@@ -66,6 +66,6 @@ df.save("s3://bucket/processed/output.parquet")
 
 ## Further Reading
 
-- [Advanced Features](../advanced.md)
-- [Performance Tips](../performance.md)
+- [Advanced Features](../../advanced.md)
+- [Performance Tips](../../performance.md)
 - [ML Pipeline Integration](ml-pipeline.md)

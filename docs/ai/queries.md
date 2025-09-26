@@ -16,5 +16,5 @@ This section will cover how to use natural language queries with ParquetFrame's 
 
 ## Related Documentation
 
-- [AI Features Overview](../ai-features.md)
-- [Basic Usage](../usage.md)
+- [AI Features Overview](../../ai-features.md)
+- [Basic Usage](../../usage.md)

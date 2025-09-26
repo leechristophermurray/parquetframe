@@ -18,4 +18,4 @@ Integration guide for genomics and bioinformatics workflows using BioFrame.
 
 - [Genomic Operations](operations.md)
 - [Parallel Processing](parallel.md)
-- [File Formats](../formats.md)
+- [File Formats](../../formats.md)

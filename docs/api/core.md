@@ -74,5 +74,5 @@ df.save("output.parquet")
 ## Further Reading
 
 - [CLI API Reference](cli.md)
-- [Basic Usage](../usage.md)
-- [Advanced Features](../advanced.md)
+- [Basic Usage](../../usage.md)
+- [Advanced Features](../../advanced.md)

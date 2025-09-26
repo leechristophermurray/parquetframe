@@ -18,4 +18,4 @@ Parallel processing strategies for large-scale genomic data analysis.
 
 - [BioFrame Integration Overview](index.md)
 - [Genomic Operations](operations.md)
-- [Performance Tips](../performance.md)
+- [Performance Tips](../../performance.md)
