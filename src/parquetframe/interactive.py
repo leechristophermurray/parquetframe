@@ -112,7 +112,7 @@ class InteractiveSession:
                 self.llm_agent = LLMAgent()
                 self.ai_enabled = True
                 logger.info("AI functionality enabled")
-            except LLMError as e:
+            except (LLMError, Exception) as e:
                 logger.warning(f"AI functionality disabled: {e}")
                 self.ai_enabled = False
 

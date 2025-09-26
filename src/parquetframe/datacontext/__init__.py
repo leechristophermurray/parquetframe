@@ -36,14 +36,31 @@ class DataContextError(DataSourceError):
     def __init__(
         self,
         message: str,
+        cause: Exception = None,
         source_type: str = "unknown",
         source_location: str = "unknown",
     ):
-        super().__init__(
-            source_type=source_type,
-            source_location=source_location,
-            underlying_error=Exception(message),
-        )
+        # For backward compatibility, if it looks like a simple message, use DataSourceError formatting
+        # If it already contains connection info, use it as-is
+        if "Failed to connect to" not in message and not cause:
+            # Use DataSourceError's standard formatting
+            super().__init__(
+                source_type=source_type,
+                source_location=source_location,
+                underlying_error=Exception(message),
+            )
+        else:
+            # For custom messages or those with causes, use minimal processing
+            # Call ParquetFrameError directly to avoid DataSourceError's message formatting
+            from ..exceptions import ParquetFrameError
+
+            ParquetFrameError.__init__(
+                self,
+                message=message,
+                error_code="DATA_SOURCE_ERROR",
+            )
+            if cause:
+                self.__cause__ = cause
 
 
 class DataContext(ABC):
@@ -220,14 +237,10 @@ class DataContextFactory:
         from .database_context import DatabaseDataContext
 
         if not db_uri or not isinstance(db_uri, str):
-            raise DataSourceError(
+            raise DataContextError(
+                f"Failed to connect to database at '{db_uri or '<empty>'}'",
                 source_type="database",
-                source_location=db_uri or "<empty>",
-                troubleshooting_steps=[
-                    "Database URI must be a non-empty string",
-                    "Use format: driver://username:password@host:port/database",
-                    "Example: postgresql://user:pass@localhost:5432/mydb",
-                ],
+                source_location=str(db_uri) if db_uri is not None else "<empty>",
             )
 
         logger.info(f"Creating DatabaseDataContext for URI: {db_uri[:20]}...")

@@ -73,6 +73,9 @@ cli = [
 sql = [
     "duckdb>=0.9.0",  # For SQL query functionality
 ]
+db = [
+    "sqlalchemy>=2.0.0",  # For database connectivity
+]
 bio = [
     "bioframe>=0.4.0",  # For genomic interval operations
 ]
@@ -86,6 +89,7 @@ all = [
     "psutil>=5.8.0",
     "pyyaml>=6.0",
     "duckdb>=0.9.0",
+    "sqlalchemy>=2.0.0",
     "bioframe>=0.4.0",
     "ollama>=0.1.7",
     "prompt-toolkit>=3.0.0",
