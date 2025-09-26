@@ -9,13 +9,17 @@ import pytest
 
 from parquetframe.core import ParquetFrame
 
-# Check if bioframe is available
+# Check if bioframe is available using the same check as the actual module
 try:
-    import bioframe  # noqa: F401
-
-    BIOFRAME_AVAILABLE = True
+    from parquetframe.bio import BIOFRAME_AVAILABLE
 except ImportError:
-    BIOFRAME_AVAILABLE = False
+    # Fallback check if bio module can't be imported
+    try:
+        import bioframe  # noqa: F401
+
+        BIOFRAME_AVAILABLE = True
+    except ImportError:
+        BIOFRAME_AVAILABLE = False
 
 
 class TestBioAccessor:

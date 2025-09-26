@@ -40,27 +40,12 @@ class DataContextError(DataSourceError):
         source_type: str = "unknown",
         source_location: str = "unknown",
     ):
-        # For backward compatibility, if it looks like a simple message, use DataSourceError formatting
-        # If it already contains connection info, use it as-is
-        if "Failed to connect to" not in message and not cause:
-            # Use DataSourceError's standard formatting
-            super().__init__(
-                source_type=source_type,
-                source_location=source_location,
-                underlying_error=Exception(message),
-            )
-        else:
-            # For custom messages or those with causes, use minimal processing
-            # Call ParquetFrameError directly to avoid DataSourceError's message formatting
-            from ..exceptions import ParquetFrameError
-
-            ParquetFrameError.__init__(
-                self,
-                message=message,
-                error_code="DATA_SOURCE_ERROR",
-            )
-            if cause:
-                self.__cause__ = cause
+        # Always use DataSourceError's standard formatting
+        super().__init__(
+            source_type=source_type,
+            source_location=source_location,
+            underlying_error=cause if cause else Exception(message),
+        )
 
 
 class DataContext(ABC):
@@ -198,6 +183,14 @@ class DataContextFactory:
             Configured ParquetDataContext instance
         """
         from .parquet_context import ParquetDataContext
+
+        # Validate path parameter
+        if not path or (isinstance(path, str) and not path.strip()):
+            raise DataContextError(
+                "Path cannot be empty or None",
+                source_type="parquet",
+                source_location=str(path) if path is not None else "<None>",
+            )
 
         path_obj = Path(path).resolve()
         if not path_obj.exists():
