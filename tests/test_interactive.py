@@ -99,6 +99,7 @@ class TestInteractiveSessionUtilities:
                 assert hasattr(session, "session_id")
                 assert isinstance(session.session_id, str)
 
+    @pytest.mark.skipif(is_windows_ci(), reason="Windows CI lacks console buffer")
     def test_ai_agent_initialization_failure(self, temp_parquet_dir):
         """Test that AI agent failures are handled gracefully."""
         from src.parquetframe.datacontext import DataContextFactory
