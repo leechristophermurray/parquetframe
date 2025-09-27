@@ -371,7 +371,7 @@ class InteractiveSession:
                 )
 
                 # Ask for approval
-                if confirm("\n🚀 Execute this query?", default=True):
+                if confirm("\n🚀 Execute this query? [Y/n]"):
                     self._display_query_result(result.result, result.execution_time_ms)
 
                     # Log to persistent history
