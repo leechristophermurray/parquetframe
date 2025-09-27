@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.2.3.2] - 2025-09-27
+
+### 🐛 Additional AI Interactive Mode Fixes
+
+### Fixed
+- 🔄 **Async Event Loop Conflict** - Fixed "asyncio.run() cannot be called from a running event loop" error in AI confirm dialogs
+- 🎯 **AI Query Execution** - Resolved blocking issue preventing AI-generated queries from executing properly
+- 📋 **Interactive Workflow** - Enabled complete AI query confirmation and execution workflow in interactive mode
+
+### Technical Details
+- Used `asyncio.to_thread()` to run `confirm()` function in separate thread to avoid event loop conflicts
+- Fixed async context handling in interactive AI command processing
+- Maintained user confirmation functionality while resolving async execution issues
+
 ## [0.2.3.1] - 2025-01-27
 
 ### 🐛 Critical AI Interactive Mode Hotfix
