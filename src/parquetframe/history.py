@@ -364,6 +364,8 @@ class HistoryManager:
         # Sort by timestamp descending and limit
         queries_df = queries_df.sort_values("timestamp", ascending=False).head(limit)
 
+        # Handle NaN values before converting to dict
+        queries_df = queries_df.where(pd.notna(queries_df), None)
         return queries_df.to_dict("records")
 
     def get_recent_sessions(self, limit: int = 10) -> list[dict[str, Any]]:
@@ -382,6 +384,8 @@ class HistoryManager:
         sessions_df = pd.read_parquet(self.sessions_path)
         sessions_df = sessions_df.sort_values("start_time", ascending=False).head(limit)
 
+        # Handle NaN values before converting to dict
+        sessions_df = sessions_df.where(pd.notna(sessions_df), None)
         return sessions_df.to_dict("records")
 
     def export_session_script(
@@ -410,7 +414,10 @@ class HistoryManager:
         if not session_mask.any():
             raise ValueError(f"Session {session_id} not found")
 
-        session = sessions_df[session_mask].iloc[0].to_dict()
+        # Handle NaN values before converting to dict
+        session_row = sessions_df[session_mask].iloc[0]
+        # Replace NaN with None for JSON serialization
+        session = session_row.where(pd.notna(session_row), None).to_dict()
 
         # Get queries with filters
         if not self.queries_path.exists():
@@ -428,6 +435,8 @@ class HistoryManager:
             # Sort by timestamp
             queries_df = queries_df.sort_values("timestamp")
 
+        # Handle NaN values before converting to dict (fixes JSON serialization issues)
+        queries_df = queries_df.where(pd.notna(queries_df), None)
         queries = queries_df.to_dict("records")
 
         # Generate script content
