@@ -370,8 +370,11 @@ class InteractiveSession:
                     Panel(result.query, expand=False, border_style="green")
                 )
 
-                # Ask for approval
-                if confirm("\n🚀 Execute this query? [Y/n]"):
+                # Ask for approval (run confirm in thread to avoid event loop conflict)
+                user_confirmed = await asyncio.to_thread(
+                    confirm, "\n🚀 Execute this query? [Y/n]"
+                )
+                if user_confirmed:
                     self._display_query_result(result.result, result.execution_time_ms)
 
                     # Log to persistent history
