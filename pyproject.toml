@@ -69,6 +69,8 @@ cli = [
     "rich>=13.0",  # For enhanced terminal output
     "psutil>=5.8.0",  # For performance monitoring
     "pyyaml>=6.0",  # For YAML workflow support
+    "duckdb>=0.9.0",  # For SQL query functionality
+    "polars>=1.33.1"
 ]
 sql = [
     "duckdb>=0.9.0",  # For SQL query functionality

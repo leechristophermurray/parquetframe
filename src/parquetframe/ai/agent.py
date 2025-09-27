@@ -124,9 +124,23 @@ class LLMAgent:
                 return
 
             models = _ollama.list()
-            available_models = [model["name"] for model in models.get("models", [])]
+            available_models = []
+            for model in models.get("models", []):
+                if isinstance(model, dict) and "name" in model:
+                    available_models.append(model["name"])
+                elif hasattr(model, "name"):
+                    available_models.append(model.name)
 
-            if self.model_name not in available_models:
+            # Check if exact model name or model name with :latest tag matches
+            model_matches = [
+                model_name
+                for model_name in available_models
+                if model_name == self.model_name
+                or model_name.startswith(f"{self.model_name}:")
+                or f"{self.model_name}:latest" == model_name
+            ]
+
+            if not model_matches:
                 logger.warning(
                     f"Model '{self.model_name}' not found in ollama. "
                     f"Available models: {available_models}. "
