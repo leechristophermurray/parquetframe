@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.2.3.1] - 2025-01-27
+
+### 🐛 Critical AI Interactive Mode Hotfix
+
+### Fixed
+- 🤖 **AI Interactive Command Bug** - Fixed `confirm()` function call in interactive mode that used unsupported `default=True` parameter
+- 🔍 **Model Availability Check** - Improved Ollama model parsing to handle different response formats and `:latest` tags
+- 📦 **AI Dependencies** - Enhanced error handling for missing Python `ollama` package in AI functionality
+- 🎯 **Interactive Experience** - Resolved crashes when using `\ai` commands in ParquetFrame interactive CLI
+
+### Technical Details
+- Removed unsupported `default` parameter from `prompt_toolkit.shortcuts.confirm()` calls
+- Enhanced model availability detection with better JSON parsing and tag normalization
+- Added clearer error messages and user guidance for AI setup requirements
+- Verified AI query execution and response generation in interactive mode
+
 ## [0.2.3] - 2025-09-26
 
 ### 🛠️ CI/CD Fixes and Test Stability Release
