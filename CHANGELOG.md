@@ -19,12 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔍 **Model Availability Check** - Improved Ollama model parsing to handle different response formats and `:latest` tags
 - 📦 **AI Dependencies** - Enhanced error handling for missing Python `ollama` package in AI functionality
 - 🎯 **Interactive Experience** - Resolved crashes when using `\ai` commands in ParquetFrame interactive CLI
+- 📝 **Save-Script Command** - Fixed "Invalid value NaN (not a number)" errors in `\save-script` command
+- 🗄️ **History Export** - Resolved JSON serialization issues with DataFrame NaN values in session export
 
 ### Technical Details
 - Removed unsupported `default` parameter from `prompt_toolkit.shortcuts.confirm()` calls
 - Enhanced model availability detection with better JSON parsing and tag normalization
 - Added clearer error messages and user guidance for AI setup requirements
 - Verified AI query execution and response generation in interactive mode
+- Fixed DataFrame to dict conversion by replacing NaN values with None using `pandas.where()`
+- Improved history manager's export functionality to handle missing/null values properly
 
 ## [0.2.3] - 2025-09-26
 
