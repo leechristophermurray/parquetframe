@@ -104,21 +104,12 @@ class TestSaveErrors:
         """Test saving with invalid file names."""
         pf = ParquetFrame(sample_small_df, islazy=False)
 
-        # Test various invalid file names (platform dependent)
-        invalid_names = []
-        if os.name == "nt":  # Windows
-            invalid_names = ["CON", "PRN", "AUX", "NUL"]
-        else:  # Unix-like
-            invalid_names = [""]  # Empty string
+        # Use a filename that is guaranteed to fail on all platforms
+        # Very long filename exceeds filesystem limits (Windows MAX_PATH, Unix NAME_MAX)
+        long_name = "very" * 100  # 400+ characters
 
-        for invalid_name in invalid_names:
-            if invalid_name:  # Skip empty string test for now
-                try:
-                    with pytest.raises(OSError):
-                        pf.save(invalid_name)
-                except OSError:
-                    # Expected behavior
-                    pass
+        with pytest.raises(OSError):
+            pf.save(long_name)
 
     def test_save_disk_full_simulation(self, sample_small_df, temp_dir):
         """Test save operation when disk is full (simulated)."""
