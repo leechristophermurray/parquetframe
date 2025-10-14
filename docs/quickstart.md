@@ -16,15 +16,21 @@ pip install parquetframe
 import parquetframe as pqf
 ```
 
-### 2. Read Parquet Files
+### 2. Read Data Files (Multi-Format Support)
 
-ParquetFrame automatically detects file extensions and chooses the optimal backend:
+ParquetFrame automatically detects file formats and chooses the optimal backend:
 
 ```python
-# These all work the same way:
-df = pqf.read("data.parquet")    # Explicit .parquet extension
-df = pqf.read("data.pqt")        # Alternative .pqt extension
-df = pqf.read("data")            # Auto-detect extension
+# All formats work the same way:
+df = pqf.read("data.parquet")    # Parquet files
+df = pqf.read("data.csv")        # CSV files
+df = pqf.read("data.json")       # JSON files
+df = pqf.read("data.jsonl")      # JSON Lines files
+df = pqf.read("data.orc")        # ORC files (requires pyarrow)
+df = pqf.read("data")            # Auto-detect .parquet extension
+
+# Override format detection
+df = pqf.read("data.txt", format="csv")  # Force CSV format
 ```
 
 ### 3. Check Current Backend
@@ -55,11 +61,13 @@ result = (df
 ### 5. Save Results
 
 ```python
-# Save with automatic .parquet extension
+# Save with automatic .parquet extension (default)
 result.save("output")
 
-# Or specify extension
-result.save("output.pqt")
+# Or specify different formats
+result.save("output.parquet")   # Parquet format
+result.save("output.csv")       # CSV format
+result.save("output.json")      # JSON format
 
 # Pass additional options
 result.save("compressed_output", compression='snappy')
@@ -103,6 +111,34 @@ df = pqf.read("data.parquet", threshold_mb=50)
 
 # Use pandas for files larger than 1MB (force small threshold)
 df = pqf.read("data.parquet", threshold_mb=1)
+```
+
+## Multi-Format Examples
+
+### CSV to Parquet Conversion
+```python
+# Read CSV, process, save as optimized Parquet
+csv_data = pqf.read("sales.csv")
+processed = csv_data.query("amount > 0").groupby("region").sum()
+processed.save("sales_summary.parquet")  # Much faster to read later
+```
+
+### JSON Data Processing
+```python
+# Process JSON Lines streaming data
+events = pqf.read("user_events.jsonl")  # JSON Lines format
+daily_stats = events.groupby(events.timestamp.dt.date).count()
+daily_stats.save("daily_user_stats.parquet")
+```
+
+### Format Chain Processing
+```python
+# Chain operations across different formats
+result = (pqf.read("raw_data.csv")
+    .query("status == 'active'")
+    .merge(pqf.read("metadata.json")._df, on="id")
+    .groupby("category").sum()
+    .save("final_report.parquet"))  # Fast format for analytics
 ```
 
 ## Common Patterns
