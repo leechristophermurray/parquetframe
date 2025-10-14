@@ -158,12 +158,13 @@ class ParquetHandler(IOHandler):
         """Resolve Parquet file path with extension detection."""
         file_path = Path(file)
 
-        # If extension is already present, use as-is
+        # First, check if the file exists exactly as specified
+        if file_path.exists():
+            return file_path
+
+        # If extension is already present and matches our format, check existence
         if file_path.suffix in (".parquet", ".pqt"):
-            if file_path.exists():
-                return file_path
-            else:
-                raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         # Try different extensions
         for ext in [".parquet", ".pqt"]:
@@ -209,6 +210,9 @@ class CsvHandler(IOHandler):
         if path.suffix.lower() in [".tsv"] and "sep" not in kwargs:
             kwargs["sep"] = "\t"
 
+        # Default to not including index unless explicitly specified
+        kwargs.setdefault("index", False)
+
         if isinstance(df, dd.DataFrame):
             df.to_csv(file_path, **kwargs)
         else:
@@ -218,12 +222,13 @@ class CsvHandler(IOHandler):
         """Resolve CSV file path with extension detection."""
         file_path = Path(file)
 
-        # If extension is already present, use as-is
+        # First, check if the file exists exactly as specified
+        if file_path.exists():
+            return file_path
+
+        # If extension is already present and matches our format, check existence
         if file_path.suffix.lower() in (".csv", ".tsv"):
-            if file_path.exists():
-                return file_path
-            else:
-                raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         # Try different extensions
         for ext in [".csv", ".tsv"]:
@@ -268,11 +273,16 @@ class JsonHandler(IOHandler):
         """Write a DataFrame to a JSON file."""
         path = Path(file_path)
 
-        # Default to JSON Lines format for better compatibility
+        # Handle format based on file extension
         is_lines_format = path.suffix.lower() in [".jsonl", ".ndjson"]
-        if is_lines_format or "orient" not in kwargs:
+        if is_lines_format:
+            # For JSON Lines format
             kwargs.setdefault("orient", "records")
             kwargs.setdefault("lines", True)
+        else:
+            # For regular JSON, default to records format but not lines
+            kwargs.setdefault("orient", "records")
+            # Don't set lines=True for regular JSON files
 
         if isinstance(df, dd.DataFrame):
             # Dask doesn't have to_json, compute first
@@ -284,12 +294,13 @@ class JsonHandler(IOHandler):
         """Resolve JSON file path with extension detection."""
         file_path = Path(file)
 
-        # If extension is already present, use as-is
+        # First, check if the file exists exactly as specified
+        if file_path.exists():
+            return file_path
+
+        # If extension is already present and matches our format, check existence
         if file_path.suffix.lower() in (".json", ".jsonl", ".ndjson"):
-            if file_path.exists():
-                return file_path
-            else:
-                raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         # Try different extensions
         for ext in [".json", ".jsonl", ".ndjson"]:
@@ -354,12 +365,13 @@ class OrcHandler(IOHandler):
         """Resolve ORC file path with extension detection."""
         file_path = Path(file)
 
-        # If extension is already present, use as-is
+        # First, check if the file exists exactly as specified
+        if file_path.exists():
+            return file_path
+
+        # If extension is already present and matches our format, check existence
         if file_path.suffix.lower() == ".orc":
-            if file_path.exists():
-                return file_path
-            else:
-                raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
 
         # Try ORC extension
         candidate = file_path.with_suffix(".orc")
