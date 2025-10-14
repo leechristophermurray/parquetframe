@@ -2,11 +2,15 @@
 SQL support for ParquetFrame using DuckDB.
 
 This module provides SQL query capabilities on ParquetFrame objects,
-supporting both pandas and Dask DataFrames with automatic JOIN operations.
+supporting both pandas and Dask DataFrames with automatic JOIN operations,
+performance profiling, and query optimization.
 """
 
+import hashlib
+import time
 import warnings
-from typing import Any, Optional, Union
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 try:
     import duckdb
@@ -18,24 +22,382 @@ except ImportError:
 import dask.dataframe as dd
 import pandas as pd
 
+if TYPE_CHECKING:
+    from .core import ParquetFrame
+
+# Global query result cache
+_QUERY_CACHE: dict[str, tuple] = {}
+_CACHE_ENABLED = True
+_MAX_CACHE_SIZE = 100
+
+
+@dataclass
+class QueryResult:
+    """
+    Enhanced query result with execution metadata.
+
+    Attributes:
+        data: The pandas DataFrame result
+        execution_time: Query execution time in seconds
+        row_count: Number of rows in the result
+        column_count: Number of columns in the result
+        query: The original SQL query
+        from_cache: Whether the result came from cache
+        memory_usage: Approximate memory usage in MB
+    """
+
+    data: pd.DataFrame
+    execution_time: float
+    row_count: int
+    column_count: int
+    query: str
+    from_cache: bool = False
+    memory_usage: Optional[float] = None
+
+    def __post_init__(self):
+        """Calculate memory usage after initialization."""
+        if self.memory_usage is None:
+            try:
+                # Estimate memory usage in MB
+                self.memory_usage = self.data.memory_usage(deep=True).sum() / (
+                    1024 * 1024
+                )
+            except Exception:
+                self.memory_usage = 0.0
+
+    # Convenience properties for easier access
+    @property
+    def rows(self) -> int:
+        """Number of rows in the result."""
+        return self.row_count
+
+    @property
+    def columns(self) -> int:
+        """Number of columns in the result."""
+        return self.column_count
+
+    @property
+    def cached(self) -> bool:
+        """Whether the result came from cache."""
+        return self.from_cache
+
+    @property
+    def dataframe(self) -> "ParquetFrame":
+        """The result data as a ParquetFrame."""
+        from .core import ParquetFrame
+
+        return ParquetFrame(self.data, islazy=False)
+
+    @property
+    def memory_usage_mb(self) -> float:
+        """Memory usage in MB."""
+        return self.memory_usage or 0.0
+
+    def summary(self) -> str:
+        """Get a summary of the query execution."""
+        cache_info = " (from cache)" if self.from_cache else ""
+        return (
+            f"Query executed in {self.execution_time:.3f}s{cache_info}\n"
+            f"Result: {self.row_count} rows × {self.column_count} columns\n"
+            f"Memory usage: {self.memory_usage:.2f} MB"
+        )
+
+
+def _generate_cache_key(query: str, df_shapes: dict) -> str:
+    """Generate a cache key for a query and DataFrame shapes."""
+    # Include query and shapes of all DataFrames to ensure cache validity
+    key_data = f"{query}_{str(sorted(df_shapes.items()))}"
+    return hashlib.md5(key_data.encode()).hexdigest()
+
+
+def _manage_cache_size():
+    """Remove oldest cache entries if cache is too large."""
+    global _QUERY_CACHE
+    if len(_QUERY_CACHE) > _MAX_CACHE_SIZE:
+        # Remove oldest entries (simple FIFO)
+        keys_to_remove = list(_QUERY_CACHE.keys())[:-_MAX_CACHE_SIZE]
+        for key in keys_to_remove:
+            del _QUERY_CACHE[key]
+
+
+def clear_query_cache():
+    """Clear the SQL query result cache."""
+    global _QUERY_CACHE
+    _QUERY_CACHE.clear()
+
+
+def set_cache_enabled(enabled: bool):
+    """Enable or disable query result caching."""
+    global _CACHE_ENABLED
+    _CACHE_ENABLED = enabled
+
+
+def get_cache_stats() -> dict:
+    """Get cache statistics."""
+    return {
+        "enabled": _CACHE_ENABLED,
+        "entries": len(_QUERY_CACHE),
+        "max_size": _MAX_CACHE_SIZE,
+    }
+
+
+class SQLBuilder:
+    """
+    Fluent SQL query builder for ParquetFrame operations.
+
+    Provides a chainable interface for building SQL queries in a more
+    programmatic way than writing raw SQL strings.
+    """
+
+    def __init__(self, parent_frame: "ParquetFrame"):
+        """Initialize the SQL builder with a parent ParquetFrame."""
+        self._parent = parent_frame
+        self._select_cols = ["*"]
+        self._where_conditions = []
+        self._group_by_cols = []
+        self._having_conditions = []
+        self._order_by_clauses = []
+        self._limit_count = None
+        self._joins = []
+        self._profile = False
+        self._use_cache = True
+
+    def select(self, *columns: str) -> "SQLBuilder":
+        """Set the columns to select.
+
+        Args:
+            *columns: Column names to select
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("name", "age")
+            >>> pf.select("COUNT(*) as count", "AVG(salary) as avg_sal")
+        """
+        if columns:
+            self._select_cols = list(columns)
+        return self
+
+    def where(self, condition: str) -> "SQLBuilder":
+        """Add a WHERE condition.
+
+        Args:
+            condition: SQL WHERE condition
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("*").where("age > 25")
+            >>> pf.select("*").where("status = 'active'").where("salary > 50000")
+        """
+        self._where_conditions.append(condition)
+        return self
+
+    def group_by(self, *columns: str) -> "SQLBuilder":
+        """Add GROUP BY columns.
+
+        Args:
+            *columns: Column names to group by
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("category", "COUNT(*)").group_by("category")
+        """
+        self._group_by_cols.extend(columns)
+        return self
+
+    def having(self, condition: str) -> "SQLBuilder":
+        """Add a HAVING condition.
+
+        Args:
+            condition: SQL HAVING condition
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("category", "COUNT(*) as cnt").group_by("category").having("cnt > 10")
+        """
+        self._having_conditions.append(condition)
+        return self
+
+    def order_by(self, *columns: str) -> "SQLBuilder":
+        """Add ORDER BY columns.
+
+        Args:
+            *columns: Column names/expressions to order by. Can include direction.
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("*").order_by("name")
+            >>> pf.select("*").order_by("salary DESC")  # Use single string with direction
+            >>> pf.select("*").order_by("age DESC", "name")
+        """
+        # If two arguments and second looks like a direction, combine them
+        if len(columns) == 2 and columns[1].upper() in ["ASC", "DESC"]:
+            self._order_by_clauses.append(f"{columns[0]} {columns[1].upper()}")
+        else:
+            self._order_by_clauses.extend(columns)
+        return self
+
+    def limit(self, count: int) -> "SQLBuilder":
+        """Add a LIMIT clause.
+
+        Args:
+            count: Number of rows to limit to
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("*").order_by("salary", "DESC").limit(10)
+        """
+        self._limit_count = count
+        return self
+
+    def join(
+        self,
+        other_frame: "ParquetFrame",
+        condition: str,
+        join_type: str = "JOIN",
+        alias: str = "other",
+    ) -> "SQLBuilder":
+        """Add a JOIN clause.
+
+        Args:
+            other_frame: ParquetFrame to join with
+            condition: JOIN condition (ON clause)
+            join_type: Type of join (JOIN, LEFT JOIN, RIGHT JOIN, etc.)
+            alias: Alias for the joined table
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("df.name", "other.city").join(cities, "df.city_id = other.id")
+        """
+        self._joins.append(
+            {
+                "frame": other_frame,
+                "condition": condition,
+                "join_type": join_type,
+                "alias": alias,
+            }
+        )
+        return self
+
+    def profile(self, enabled: bool = True) -> "SQLBuilder":
+        """Enable query profiling.
+
+        Args:
+            enabled: Whether to enable profiling
+
+        Returns:
+            Self for method chaining
+        """
+        self._profile = enabled
+        return self
+
+    def cache(self, enabled: bool = True) -> "SQLBuilder":
+        """Control query caching.
+
+        Args:
+            enabled: Whether to enable caching
+
+        Returns:
+            Self for method chaining
+        """
+        self._use_cache = enabled
+        return self
+
+    def build(self) -> str:
+        """Build the SQL query string.
+
+        Returns:
+            Complete SQL query string
+        """
+        query_parts = []
+
+        # SELECT clause
+        query_parts.append(f"SELECT {', '.join(self._select_cols)}")
+
+        # FROM clause
+        query_parts.append("FROM df")
+
+        # JOIN clauses
+        for join in self._joins:
+            join_type = join["join_type"].upper()
+            if not join_type.endswith("JOIN"):
+                join_type = f"{join_type} JOIN"
+            query_parts.append(f"{join_type} {join['alias']} ON {join['condition']}")
+
+        # WHERE clause
+        if self._where_conditions:
+            query_parts.append(f"WHERE {' AND '.join(self._where_conditions)}")
+
+        # GROUP BY clause
+        if self._group_by_cols:
+            query_parts.append(f"GROUP BY {', '.join(self._group_by_cols)}")
+
+        # HAVING clause
+        if self._having_conditions:
+            query_parts.append(f"HAVING {' AND '.join(self._having_conditions)}")
+
+        # ORDER BY clause
+        if self._order_by_clauses:
+            query_parts.append(f"ORDER BY {', '.join(self._order_by_clauses)}")
+
+        # LIMIT clause
+        if self._limit_count is not None:
+            query_parts.append(f"LIMIT {self._limit_count}")
+
+        return " ".join(query_parts)
+
+    def execute(self) -> Union["ParquetFrame", QueryResult]:
+        """Execute the built SQL query.
+
+        Returns:
+            ParquetFrame with results, or QueryResult if profiling is enabled
+        """
+        query = self.build()
+
+        # Prepare other frames for JOINs
+        other_frames = {}
+        for join in self._joins:
+            other_frames[join["alias"]] = join["frame"]
+
+        return self._parent.sql(
+            query, profile=self._profile, use_cache=self._use_cache, **other_frames
+        )
+
 
 def query_dataframes(
     main_df: Union[pd.DataFrame, dd.DataFrame],
     query: str,
     other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
+    profile: bool = False,
+    use_cache: bool = True,
     **kwargs: Any,
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, QueryResult]:
     """
-    Execute a SQL query on one or more DataFrames using DuckDB.
+    Execute a SQL query on one or more DataFrames using DuckDB with profiling and caching.
 
     Args:
         main_df: The main DataFrame, available as 'df' in the query.
         query: SQL query string to execute.
         other_dfs: Additional DataFrames for JOINs, keyed by table name.
+        profile: If True, return QueryResult with execution metadata.
+        use_cache: If True, use cached results for identical queries.
         **kwargs: Additional arguments (reserved for future use).
 
     Returns:
-        pandas DataFrame with query results.
+        pandas DataFrame with query results, or QueryResult if profile=True.
 
     Raises:
         ImportError: If DuckDB is not installed.
@@ -45,6 +407,9 @@ def query_dataframes(
         >>> df1 = pd.DataFrame({'a': [1, 2], 'b': ['x', 'y']})
         >>> df2 = pd.DataFrame({'a': [1, 2], 'c': ['p', 'q']})
         >>> result = query_dataframes(df1, "SELECT * FROM df JOIN other ON df.a = other.a", {'other': df2})
+        >>> # With profiling
+        >>> result = query_dataframes(df1, "SELECT COUNT(*) FROM df", profile=True)
+        >>> print(result.summary())  # Shows execution time and metadata
     """
     if not DUCKDB_AVAILABLE:
         raise ImportError(
@@ -53,6 +418,31 @@ def query_dataframes(
 
     if other_dfs is None:
         other_dfs = {}
+
+    # Generate cache key if caching is enabled
+    cache_key = None
+    if use_cache and _CACHE_ENABLED:
+        df_shapes = {"df": main_df.shape}
+        df_shapes.update({name: df.shape for name, df in other_dfs.items()})
+        cache_key = _generate_cache_key(query, df_shapes)
+
+        # Check cache
+        if cache_key in _QUERY_CACHE:
+            cached_result, cached_time = _QUERY_CACHE[cache_key]
+            if profile:
+                return QueryResult(
+                    data=cached_result.copy(),
+                    execution_time=cached_time,
+                    row_count=len(cached_result),
+                    column_count=len(cached_result.columns),
+                    query=query,
+                    from_cache=True,
+                )
+            else:
+                return cached_result.copy()
+
+    # Start timing
+    start_time = time.time()
 
     # Warn about Dask DataFrame computation
     has_dask = isinstance(main_df, dd.DataFrame) or any(
@@ -81,9 +471,27 @@ def query_dataframes(
             df_pandas = df.compute() if isinstance(df, dd.DataFrame) else df
             conn.register(name, df_pandas)
 
-        # Execute query and return results
+        # Execute query and measure time
         result = conn.execute(query).fetchdf()
-        return result
+        execution_time = time.time() - start_time
+
+        # Cache the result if caching is enabled
+        if cache_key and _CACHE_ENABLED:
+            _QUERY_CACHE[cache_key] = (result.copy(), execution_time)
+            _manage_cache_size()
+
+        # Return result with profiling info if requested
+        if profile:
+            return QueryResult(
+                data=result,
+                execution_time=execution_time,
+                row_count=len(result),
+                column_count=len(result.columns),
+                query=query,
+                from_cache=False,
+            )
+        else:
+            return result
 
     except Exception as e:
         raise ValueError(f"SQL query execution failed: {e}") from e
