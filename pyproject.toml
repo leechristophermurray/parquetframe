@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "parquetframe"
 version = "0.2.3.2"
 authors = [
-    {name = "ParquetFrame Contributors", email = "parquetframe@example.com"},
+    {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
 description = "A universal wrapper for working with dataframes in Python, seamlessly switching between pandas and Dask based on file size"
 readme = "README.md"
@@ -98,7 +98,7 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/leechristophermurray/parquetframe"
+Homepage = "https://leechristophermurray.github.io/parquetframe/"
 Documentation = "https://leechristophermurray.github.io/parquetframe/"
 Repository = "https://github.com/leechristophermurray/parquetframe.git"
 "Bug Tracker" = "https://github.com/leechristophermurray/parquetframe/issues"

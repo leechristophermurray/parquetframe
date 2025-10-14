@@ -96,7 +96,7 @@ df.to_pandas()  # Convert to pandas
 ### Advanced Usage
 
 ```python
-import parquetframe as pqf
+import parquetframe as pf
 
 # Custom threshold
 df = pf.read("data", threshold_mb=50)  # Use Dask for files >50MB
