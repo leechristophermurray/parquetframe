@@ -292,6 +292,66 @@ class SQLBuilder:
         )
         return self
 
+    def left_join(
+        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
+    ) -> "SQLBuilder":
+        """Add a LEFT JOIN clause.
+
+        Args:
+            other_frame: ParquetFrame to join with
+            condition: JOIN condition (ON clause)
+            alias: Alias for the joined table
+
+        Returns:
+            Self for method chaining
+        """
+        return self.join(other_frame, condition, "LEFT", alias)
+
+    def right_join(
+        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
+    ) -> "SQLBuilder":
+        """Add a RIGHT JOIN clause.
+
+        Args:
+            other_frame: ParquetFrame to join with
+            condition: JOIN condition (ON clause)
+            alias: Alias for the joined table
+
+        Returns:
+            Self for method chaining
+        """
+        return self.join(other_frame, condition, "RIGHT", alias)
+
+    def inner_join(
+        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
+    ) -> "SQLBuilder":
+        """Add an INNER JOIN clause.
+
+        Args:
+            other_frame: ParquetFrame to join with
+            condition: JOIN condition (ON clause)
+            alias: Alias for the joined table
+
+        Returns:
+            Self for method chaining
+        """
+        return self.join(other_frame, condition, "INNER", alias)
+
+    def full_join(
+        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
+    ) -> "SQLBuilder":
+        """Add a FULL JOIN clause.
+
+        Args:
+            other_frame: ParquetFrame to join with
+            condition: JOIN condition (ON clause)
+            alias: Alias for the joined table
+
+        Returns:
+            Self for method chaining
+        """
+        return self.join(other_frame, condition, "FULL", alias)
+
     def profile(self, enabled: bool = True) -> "SQLBuilder":
         """Enable query profiling.
 
@@ -375,6 +435,100 @@ class SQLBuilder:
         return self._parent.sql(
             query, profile=self._profile, use_cache=self._use_cache, **other_frames
         )
+
+
+def parameterize_query(query: str, **params: Any) -> str:
+    """
+    Simple parameterized query support using named parameters.
+
+    Args:
+        query: SQL query string with {param_name} placeholders
+        **params: Named parameters to substitute
+
+    Returns:
+        Query string with parameters substituted
+
+    Examples:
+        >>> parameterize_query("SELECT * FROM df WHERE age > {min_age}", min_age=25)
+        "SELECT * FROM df WHERE age > 25"
+        >>> parameterize_query("SELECT * WHERE name = '{name}'", name="John")
+        "SELECT * WHERE name = 'John'"
+    """
+    try:
+        return query.format(**params)
+    except KeyError as e:
+        raise ValueError(f"Missing required parameter: {e.args[0]}") from e
+
+
+def build_join_query(
+    main_table: str = "df",
+    select_cols: Optional[list[str]] = None,
+    joins: Optional[list[dict]] = None,
+    where_conditions: Optional[list[str]] = None,
+    group_by: Optional[list[str]] = None,
+    having_conditions: Optional[list[str]] = None,
+    order_by: Optional[list[str]] = None,
+    limit: Optional[int] = None,
+) -> str:
+    """
+    Build a SQL query with JOIN operations using a structured approach.
+
+    Args:
+        main_table: Name of the main table (default "df")
+        select_cols: List of columns to select
+        joins: List of join dictionaries with 'table', 'condition', 'type' keys
+        where_conditions: List of WHERE conditions
+        group_by: List of GROUP BY columns
+        having_conditions: List of HAVING conditions
+        order_by: List of ORDER BY clauses
+        limit: LIMIT value
+
+    Returns:
+        Complete SQL query string
+
+    Examples:
+        >>> joins = [{'table': 'users', 'condition': 'df.user_id = users.id', 'type': 'LEFT'}]
+        >>> build_join_query(select_cols=['df.name', 'users.email'], joins=joins)
+        "SELECT df.name, users.email FROM df LEFT JOIN users ON df.user_id = users.id"
+    """
+    parts = []
+
+    # SELECT
+    select_clause = "*" if not select_cols else ", ".join(select_cols)
+    parts.append(f"SELECT {select_clause}")
+
+    # FROM
+    parts.append(f"FROM {main_table}")
+
+    # JOINs
+    if joins:
+        for join in joins:
+            join_type = join.get("type", "INNER").upper()
+            if not join_type.endswith("JOIN"):
+                join_type = f"{join_type} JOIN"
+            parts.append(f"{join_type} {join['table']} ON {join['condition']}")
+
+    # WHERE
+    if where_conditions:
+        parts.append(f"WHERE {' AND '.join(where_conditions)}")
+
+    # GROUP BY
+    if group_by:
+        parts.append(f"GROUP BY {', '.join(group_by)}")
+
+    # HAVING
+    if having_conditions:
+        parts.append(f"HAVING {' AND '.join(having_conditions)}")
+
+    # ORDER BY
+    if order_by:
+        parts.append(f"ORDER BY {', '.join(order_by)}")
+
+    # LIMIT
+    if limit is not None:
+        parts.append(f"LIMIT {limit}")
+
+    return " ".join(parts)
 
 
 def query_dataframes(

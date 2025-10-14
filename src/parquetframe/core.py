@@ -913,6 +913,39 @@ class ParquetFrame:
         # Otherwise return as pandas-backed ParquetFrame (SQL results are always pandas)
         return self.__class__(result, islazy=False)
 
+    def sql_with_params(
+        self,
+        query_template: str,
+        profile: bool = False,
+        use_cache: bool = True,
+        **params: Any,
+    ) -> Union["ParquetFrame", "QueryResult"]:
+        """
+        Execute a parameterized SQL query on this ParquetFrame.
+
+        Args:
+            query_template: SQL query string with {param_name} placeholders
+            profile: If True, return QueryResult with execution metadata
+            use_cache: If True, use cached results for identical queries
+            **params: Named parameters to substitute in the query
+
+        Returns:
+            New ParquetFrame with query results or QueryResult if profile=True
+
+        Examples:
+            >>> result = pf.sql_with_params(
+            ...     "SELECT * FROM df WHERE age > {min_age} AND salary < {max_salary}",
+            ...     min_age=25, max_salary=100000
+            ... )
+        """
+        from .sql import parameterize_query
+
+        # Substitute parameters
+        query = parameterize_query(query_template, **params)
+
+        # Execute the parameterized query
+        return self.sql(query, profile=profile, use_cache=use_cache)
+
     def select(self, *columns: str) -> "SQLBuilder":
         """
         Start building a fluent SQL query with SELECT.
