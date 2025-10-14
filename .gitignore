@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 CONTEXT*
 IMPLEMENTATION*
+WARP.md
 __pycache__/
 *.py[cod]
 *$py.class
