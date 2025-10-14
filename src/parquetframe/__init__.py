@@ -1,21 +1,28 @@
 """
-ParquetFrame: A universal wrapper for working with dataframes in Python.
+ParquetFrame: A universal data processing framework with multi-format support.
 
 This package provides seamless switching between pandas and Dask DataFrames
-based on file size thresholds, with automatic file extension handling for
-parquet files.
+based on file size thresholds, with automatic format detection for multiple
+file types including CSV, JSON, Parquet, and ORC.
+
+Supported formats:
+    - CSV (.csv, .tsv) - Comma or tab-separated values
+    - JSON (.json, .jsonl, .ndjson) - Regular or JSON Lines format
+    - Parquet (.parquet, .pqt) - Columnar format (optimal performance)
+    - ORC (.orc) - Optimized Row Columnar format
 
 Examples:
-    Basic usage:
+    Multi-format usage:
         >>> import parquetframe as pqf
-        >>> df = pqf.read("data")  # Auto-detects backend and extension
-        >>> result = df.groupby("column").sum()
-        >>> result.save("output")  # Saves as output.parquet
+        >>> csv_df = pqf.read("sales.csv")  # Auto-detects CSV
+        >>> json_df = pqf.read("events.jsonl")  # Auto-detects JSON Lines
+        >>> parquet_df = pqf.read("data.parquet")  # Auto-detects Parquet
+        >>> result = csv_df.groupby("region").sum().save("output.parquet")
 
     Manual control:
-        >>> df = pqf.read("large_data", islazy=True)  # Force Dask
-        >>> df.to_pandas()  # Convert to pandas
-        >>> print(df.islazy)  # False
+        >>> df = pqf.read("data.txt", format="csv")  # Force CSV format
+        >>> df = pqf.read("large_data.csv", islazy=True)  # Force Dask
+        >>> print(df.islazy)  # True
 """
 
 from pathlib import Path
@@ -35,24 +42,26 @@ def read(
     **kwargs,
 ) -> ParquetFrame:
     """
-    Read a parquet file into a ParquetFrame.
+    Read a data file into a ParquetFrame with automatic format detection.
 
     This is a convenience function that wraps ParquetFrame.read().
+    Supports CSV, JSON, Parquet, and ORC formats with automatic detection.
 
     Args:
-        file: Path to the parquet file (extension optional).
-        threshold_mb: Size threshold in MB for backend selection. Defaults to 10MB.
+        file: Path to the data file. Format auto-detected from extension.
+        threshold_mb: Size threshold in MB for backend selection. Defaults to 100MB.
         islazy: Force backend selection (True=Dask, False=pandas, None=auto).
-        **kwargs: Additional keyword arguments for read_parquet methods.
+        **kwargs: Additional keyword arguments (format="csv|json|parquet|orc", etc.).
 
     Returns:
         ParquetFrame instance with loaded data.
 
     Examples:
         >>> import parquetframe as pqf
-        >>> df = pqf.read("data")  # Auto-detect extension and backend
-        >>> df = pqf.read("data.parquet", threshold_mb=50)
-        >>> df = pqf.read("data", islazy=True)  # Force Dask
+        >>> df = pqf.read("sales.csv")  # Auto-detect CSV format and backend
+        >>> df = pqf.read("events.jsonl")  # Auto-detect JSON Lines format
+        >>> df = pqf.read("data.parquet", threshold_mb=50)  # Custom threshold
+        >>> df = pqf.read("data.txt", format="csv")  # Manual format override
     """
     return ParquetFrame.read(file, threshold_mb=threshold_mb, islazy=islazy, **kwargs)
 
@@ -75,5 +84,5 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
     return ParquetFrame(islazy=islazy)
 
 
-__version__ = "0.2.3.2"
+__version__ = "0.3.0"
 __all__ = ["ParquetFrame", "pf", "read", "create_empty"]
