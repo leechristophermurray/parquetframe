@@ -2,6 +2,199 @@
 
 Real-world examples showing how to use ParquetFrame in common scenarios.
 
+## Multi-Format Data Processing
+
+### Working with Different File Formats
+
+```python
+import parquetframe as pf
+from pathlib import Path
+
+def process_mixed_data_sources():
+    """Process data from multiple formats in a unified workflow."""
+
+    # Read from different formats - all work the same way
+    print("Loading data from various formats...")
+
+    # CSV with sales data
+    sales_csv = pf.read("sales_data.csv")  # Auto-detects CSV
+    print(f"Sales CSV: {len(sales_csv)} rows using {'Dask' if sales_csv.islazy else 'pandas'}")
+
+    # JSON Lines with user events
+    events_jsonl = pf.read("user_events.jsonl")  # Auto-detects JSON Lines
+    print(f"Events JSONL: {len(events_jsonl)} rows")
+
+    # Parquet with customer data
+    customers = pf.read("customers.parquet")  # Native format
+    print(f"Customers: {len(customers)} rows")
+
+    # TSV with product catalog
+    products = pf.read("product_catalog.tsv")  # Auto-detects tab delimiter
+    print(f"Products TSV: {len(products)} rows")
+
+    # Process and combine data using consistent API
+    # Filter active customers
+    active_customers = customers.query("status == 'active'")
+
+    # Aggregate sales by customer
+    customer_sales = (sales_csv
+                     .groupby('customer_id')
+                     .agg({'amount': 'sum', 'order_count': 'sum'})
+                     .reset_index())
+
+    # Process events data
+    event_summary = (events_jsonl
+                    .query("event_type == 'purchase'")
+                    .groupby('customer_id')
+                    .size()
+                    .reset_index(name='event_count'))
+
+    # Combine all data using SQL-like joins
+    final_result = active_customers.sql("""
+        SELECT
+            c.customer_id,
+            c.name,
+            c.region,
+            COALESCE(s.amount, 0) as total_sales,
+            COALESCE(s.order_count, 0) as orders,
+            COALESCE(e.event_count, 0) as events
+        FROM df c
+        LEFT JOIN customer_sales s ON c.customer_id = s.customer_id
+        LEFT JOIN event_summary e ON c.customer_id = e.customer_id
+        ORDER BY total_sales DESC
+    """, customer_sales=customer_sales, event_summary=event_summary)
+
+    # Save result in optimal format (Parquet)
+    final_result.save("customer_360_view.parquet")
+
+    print(f"✅ Processed {len(final_result)} customer records from multiple formats")
+    return final_result
+
+# Run mixed format processing
+result = process_mixed_data_sources()
+```
+
+### Format-Specific Processing
+
+```python
+import parquetframe as pf
+import json
+from datetime import datetime
+
+def format_specific_examples():
+    """Examples of format-specific features and optimizations."""
+
+    # CSV with custom parameters
+    print("Processing CSV with custom delimiter...")
+    pipe_delimited = pf.read("data.csv",
+                           sep="|",              # Custom delimiter
+                           header=1,             # Header on row 1
+                           dtype={'id': 'str'},  # Custom data types
+                           nrows=10000)          # Read only first 10k rows
+
+    # JSON with nested data handling
+    print("Processing nested JSON data...")
+    nested_json = pf.read("api_response.json")
+
+    # Flatten nested columns if needed
+    if 'user_profile' in nested_json.columns:
+        # Extract nested fields
+        flattened = nested_json.copy()
+        # This would require custom logic for your specific JSON structure
+        print("Note: Nested JSON flattening requires custom logic based on structure")
+
+    # JSON Lines for streaming data
+    print("Processing streaming JSON Lines data...")
+    stream_data = pf.read("streaming_events.jsonl")  # Perfect for log files
+
+    # Filter recent events
+    recent_events = stream_data.query("timestamp > '2024-01-01'")
+
+    # TSV with automatic tab detection
+    print("Processing TSV data...")
+    tab_data = pf.read("genome_annotations.tsv")  # Common in bioinformatics
+
+    # ORC for big data workflows
+    try:
+        print("Processing ORC data...")
+        orc_data = pf.read("hadoop_export.orc")  # Requires pyarrow
+        print(f"ORC file loaded: {len(orc_data)} rows")
+    except ImportError:
+        print("ORC support requires: pip install pyarrow")
+
+    return {
+        'csv_rows': len(pipe_delimited),
+        'json_rows': len(nested_json),
+        'jsonl_rows': len(stream_data),
+        'tsv_rows': len(tab_data)
+    }
+
+# Run format-specific examples
+stats = format_specific_examples()
+print(f"Processing summary: {stats}")
+```
+
+### Intelligent Backend Selection Demo
+
+```python
+import parquetframe as pf
+import tempfile
+import pandas as pd
+from pathlib import Path
+
+def backend_selection_demo():
+    """Demonstrate automatic backend selection based on file size."""
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Create small CSV file
+        small_data = pd.DataFrame({
+            'id': range(1000),
+            'value': range(1000),
+            'category': ['A', 'B', 'C'] * 334
+        })
+        small_csv = temp_path / 'small.csv'
+        small_data.to_csv(small_csv, index=False)
+
+        # Create larger dataset
+        large_data = pd.DataFrame({
+            'id': range(100000),
+            'value': range(100000),
+            'category': ['A', 'B', 'C', 'D', 'E'] * 20000
+        })
+        large_csv = temp_path / 'large.csv'
+        large_data.to_csv(large_csv, index=False)
+
+        # Read small file - should use pandas
+        print("Reading small CSV file...")
+        small_pf = pf.read(small_csv, threshold_mb=1)  # 1MB threshold
+        print(f"Small file backend: {'Dask' if small_pf.islazy else 'pandas'}")
+
+        # Read large file - should use Dask
+        print("Reading large CSV file...")
+        large_pf = pf.read(large_csv, threshold_mb=1)  # 1MB threshold
+        print(f"Large file backend: {'Dask' if large_pf.islazy else 'pandas'}")
+
+        # Manual backend control
+        print("Manual backend control...")
+        forced_dask = pf.read(small_csv, islazy=True)
+        forced_pandas = pf.read(small_csv, islazy=False)
+
+        print(f"Forced Dask (small file): {'Dask' if forced_dask.islazy else 'pandas'}")
+        print(f"Forced pandas (small file): {'Dask' if forced_pandas.islazy else 'pandas'}")
+
+        # Same operations work regardless of backend
+        small_result = small_pf.groupby('category').value.sum()
+        large_result = large_pf.groupby('category').value.sum()
+
+        print("✅ Backend selection demo completed!")
+        return small_result, large_result
+
+# Run backend selection demo
+small_res, large_res = backend_selection_demo()
+```
+
 ## Data Processing Pipeline
 
 ```python
