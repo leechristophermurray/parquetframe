@@ -371,7 +371,7 @@ pframe workflow --validate my_pipeline.yml
 
 ### Development Status
 
-✅ **Production Ready (v0.2.2)**: 334 passing tests with 54% coverage across comprehensive test suites
+✅ **Production Ready (v0.3.0)**: Multi-format support with comprehensive testing across CSV, JSON, Parquet, and ORC formats
 🧪 **Robust Testing**: Complete test suite for AI, CLI, SQL, bioframe, and workflow functionality
 🔄 **Active Development**: Regular updates with cutting-edge AI and performance optimization features
 🏆 **Quality Excellence**: 9.2/10 assessment score with professional CI/CD pipeline
