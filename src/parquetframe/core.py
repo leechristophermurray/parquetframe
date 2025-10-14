@@ -158,8 +158,8 @@ class ParquetHandler(IOHandler):
         """Resolve Parquet file path with extension detection."""
         file_path = Path(file)
 
-        # First, check if the file exists exactly as specified
-        if file_path.exists():
+        # First, check if the file exists exactly as specified and is a file
+        if file_path.exists() and file_path.is_file():
             return file_path
 
         # If extension is already present and matches our format, check existence
@@ -169,7 +169,7 @@ class ParquetHandler(IOHandler):
         # Try different extensions
         for ext in [".parquet", ".pqt"]:
             candidate = file_path.with_suffix(ext)
-            if candidate.exists():
+            if candidate.exists() and candidate.is_file():
                 return candidate
 
         raise FileNotFoundError(
@@ -222,8 +222,8 @@ class CsvHandler(IOHandler):
         """Resolve CSV file path with extension detection."""
         file_path = Path(file)
 
-        # First, check if the file exists exactly as specified
-        if file_path.exists():
+        # First, check if the file exists exactly as specified and is a file
+        if file_path.exists() and file_path.is_file():
             return file_path
 
         # If extension is already present and matches our format, check existence
@@ -233,7 +233,7 @@ class CsvHandler(IOHandler):
         # Try different extensions
         for ext in [".csv", ".tsv"]:
             candidate = file_path.with_suffix(ext)
-            if candidate.exists():
+            if candidate.exists() and candidate.is_file():
                 return candidate
 
         raise FileNotFoundError(f"No CSV file found for '{file}' (tried .csv, .tsv)")
@@ -294,8 +294,8 @@ class JsonHandler(IOHandler):
         """Resolve JSON file path with extension detection."""
         file_path = Path(file)
 
-        # First, check if the file exists exactly as specified
-        if file_path.exists():
+        # First, check if the file exists exactly as specified and is a file
+        if file_path.exists() and file_path.is_file():
             return file_path
 
         # If extension is already present and matches our format, check existence
@@ -305,7 +305,7 @@ class JsonHandler(IOHandler):
         # Try different extensions
         for ext in [".json", ".jsonl", ".ndjson"]:
             candidate = file_path.with_suffix(ext)
-            if candidate.exists():
+            if candidate.exists() and candidate.is_file():
                 return candidate
 
         raise FileNotFoundError(
@@ -365,8 +365,8 @@ class OrcHandler(IOHandler):
         """Resolve ORC file path with extension detection."""
         file_path = Path(file)
 
-        # First, check if the file exists exactly as specified
-        if file_path.exists():
+        # First, check if the file exists exactly as specified and is a file
+        if file_path.exists() and file_path.is_file():
             return file_path
 
         # If extension is already present and matches our format, check existence
@@ -375,7 +375,7 @@ class OrcHandler(IOHandler):
 
         # Try ORC extension
         candidate = file_path.with_suffix(".orc")
-        if candidate.exists():
+        if candidate.exists() and candidate.is_file():
             return candidate
 
         raise FileNotFoundError(f"No ORC file found for '{file}' (tried .orc)")

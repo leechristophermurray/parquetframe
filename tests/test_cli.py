@@ -67,7 +67,7 @@ class TestCLIBasicFunctionality:
         result = self.runner.invoke(main, ["run", "--help"])
 
         # Should show run command help without error
-        assert "Run operations on a parquet file" in result.output
+        assert "Run operations on data files" in result.output
 
 
 class TestCLIUtilities:
