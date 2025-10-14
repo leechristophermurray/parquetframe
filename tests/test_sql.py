@@ -11,6 +11,14 @@ import pytest
 from parquetframe.core import ParquetFrame
 from parquetframe.sql import explain_query, query_dataframes, validate_sql_query
 
+# Check if DuckDB is available for skip conditions
+try:
+    import duckdb  # noqa: F401
+
+    DUCKDB_AVAILABLE = True
+except ImportError:
+    DUCKDB_AVAILABLE = False
+
 
 class TestSQLModule:
     """Test the SQL module functions directly."""
@@ -47,11 +55,7 @@ class TestSQLModule:
 
             assert not DUCKDB_AVAILABLE
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_basic_sql_query(self, sample_data):
         """Test basic SQL query on a single DataFrame."""
         df1, _ = sample_data
@@ -62,11 +66,7 @@ class TestSQLModule:
         assert len(result) == 2  # Charlie and David
         assert list(result["name"]) == ["Charlie", "David"]
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_join(self, sample_data):
         """Test SQL JOIN operation between two DataFrames."""
         df1, df2 = sample_data
@@ -85,11 +85,7 @@ class TestSQLModule:
         assert "city" in result.columns
         assert list(result["city"]) == ["New York", "London", "Tokyo"]
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_with_dask_dataframes(self, sample_data):
         """Test SQL operations with Dask DataFrames."""
         df1, df2 = sample_data
@@ -120,11 +116,7 @@ class TestSQLModule:
         with pytest.warns(UserWarning, match="potentially destructive"):
             assert not validate_sql_query("DROP TABLE df")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_error_handling(self, sample_data):
         """Test error handling in SQL queries."""
         df1, _ = sample_data
@@ -137,11 +129,7 @@ class TestSQLModule:
         with pytest.raises(ValueError, match="SQL query execution failed"):
             query_dataframes(df1, "SELECT * FROM nonexistent_table")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_explain_query(self, sample_data):
         """Test query explanation functionality."""
         df1, df2 = sample_data
@@ -180,11 +168,7 @@ class TestParquetFrameSQL:
 
         return pf1, pf2
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_method(self, sample_parquetframes):
         """Test the .sql() method on ParquetFrame objects."""
         customers, orders = sample_parquetframes
@@ -196,11 +180,7 @@ class TestParquetFrameSQL:
         assert not result.islazy  # SQL results are always pandas
         assert len(result) == 2  # Charlie and David
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_join(self, sample_parquetframes):
         """Test SQL JOIN using ParquetFrame.sql() method."""
         customers, orders = sample_parquetframes
@@ -224,11 +204,7 @@ class TestParquetFrameSQL:
         assert first_row["name"] == "Alice"
         assert first_row["total_orders"] == 250.0
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_with_dask(self, sample_parquetframes):
         """Test SQL operations with Dask-backed ParquetFrame."""
         customers, orders = sample_parquetframes
@@ -250,11 +226,7 @@ class TestParquetFrameSQL:
         with pytest.raises(ValueError, match="No dataframe loaded for SQL query"):
             pf.sql("SELECT * FROM df")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_error_handling(self, sample_parquetframes):
         """Test error handling in ParquetFrame SQL operations."""
         customers, _ = sample_parquetframes
@@ -268,11 +240,7 @@ class TestParquetFrameSQL:
             customers.sql("SELECT * FROM df JOIN nonexistent ON df.id = nonexistent.id")
 
 
-@pytest.mark.skipif(
-    condition=lambda: not hasattr(pytest, "importorskip")
-    or not pytest.importorskip("duckdb"),
-    reason="DuckDB not available",
-)
+@pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
 class TestSQLIntegration:
     """Test SQL functionality in real-world scenarios."""
 
