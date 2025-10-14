@@ -6,6 +6,8 @@ DataFrames for seamless operation.
 """
 
 import os
+from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -13,22 +15,397 @@ import dask.dataframe as dd
 import pandas as pd
 
 
+class FileFormat(Enum):
+    """Supported file formats for ParquetFrame."""
+
+    PARQUET = "parquet"
+    CSV = "csv"
+    JSON = "json"
+    ORC = "orc"
+
+
+def detect_format(
+    file_path: Union[str, Path], explicit_format: Optional[str] = None
+) -> FileFormat:
+    """
+    Detect file format based on extension or explicit format specification.
+
+    Args:
+        file_path: Path to the file
+        explicit_format: Explicitly specified format (overrides detection)
+
+    Returns:
+        FileFormat enum value
+
+    Raises:
+        ValueError: If format cannot be determined or is not supported
+
+    Examples:
+        >>> detect_format("data.csv")
+        <FileFormat.CSV: 'csv'>
+        >>> detect_format("data.unknown", explicit_format="json")
+        <FileFormat.JSON: 'json'>
+    """
+    if explicit_format:
+        try:
+            return FileFormat(explicit_format.lower())
+        except ValueError:
+            raise ValueError(f"Unsupported format: {explicit_format}") from None
+
+    path = Path(file_path)
+
+    # Map extensions to formats
+    extension_map = {
+        ".parquet": FileFormat.PARQUET,
+        ".pqt": FileFormat.PARQUET,
+        ".csv": FileFormat.CSV,
+        ".tsv": FileFormat.CSV,  # TSV treated as CSV with different delimiter
+        ".json": FileFormat.JSON,
+        ".jsonl": FileFormat.JSON,  # JSON lines
+        ".ndjson": FileFormat.JSON,  # Newline delimited JSON
+        ".orc": FileFormat.ORC,
+    }
+
+    suffix = path.suffix.lower()
+    if suffix in extension_map:
+        return extension_map[suffix]
+
+    # Try to auto-detect for files without clear extensions
+    # For now, default to parquet for backwards compatibility
+    # This matches the original _resolve_file_path behavior
+    return FileFormat.PARQUET
+
+
+class IOHandler(ABC):
+    """Abstract base class for file format handlers."""
+
+    @abstractmethod
+    def read(
+        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """
+        Read a file into a DataFrame.
+
+        Args:
+            file_path: Path to the file to read
+            use_dask: Whether to use Dask backend
+            **kwargs: Additional arguments specific to the format
+
+        Returns:
+            pandas or Dask DataFrame
+        """
+        pass
+
+    @abstractmethod
+    def write(
+        self,
+        df: Union[pd.DataFrame, dd.DataFrame],
+        file_path: Union[str, Path],
+        **kwargs,
+    ) -> None:
+        """
+        Write a DataFrame to a file.
+
+        Args:
+            df: DataFrame to write
+            file_path: Path to write the file to
+            **kwargs: Additional arguments specific to the format
+        """
+        pass
+
+    @abstractmethod
+    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+        """
+        Resolve file path and handle extension detection for this format.
+
+        Args:
+            file: Input file path
+
+        Returns:
+            Resolved Path object
+
+        Raises:
+            FileNotFoundError: If no file variant is found
+        """
+        pass
+
+
+class ParquetHandler(IOHandler):
+    """Handler for Parquet files (.parquet, .pqt)."""
+
+    def read(
+        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Read a Parquet file."""
+        if use_dask:
+            return dd.read_parquet(file_path, **kwargs)
+        else:
+            return pd.read_parquet(file_path, **kwargs)
+
+    def write(
+        self,
+        df: Union[pd.DataFrame, dd.DataFrame],
+        file_path: Union[str, Path],
+        **kwargs,
+    ) -> None:
+        """Write a DataFrame to a Parquet file."""
+        if isinstance(df, dd.DataFrame):
+            df.to_parquet(file_path, **kwargs)
+        else:
+            df.to_parquet(file_path, **kwargs)
+
+    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+        """Resolve Parquet file path with extension detection."""
+        file_path = Path(file)
+
+        # If extension is already present, use as-is
+        if file_path.suffix in (".parquet", ".pqt"):
+            if file_path.exists():
+                return file_path
+            else:
+                raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Try different extensions
+        for ext in [".parquet", ".pqt"]:
+            candidate = file_path.with_suffix(ext)
+            if candidate.exists():
+                return candidate
+
+        raise FileNotFoundError(
+            f"No parquet file found for '{file}' (tried .parquet, .pqt)"
+        )
+
+
+class CsvHandler(IOHandler):
+    """Handler for CSV files (.csv, .tsv)."""
+
+    def read(
+        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Read a CSV file."""
+        # Handle TSV files by setting delimiter
+        path = Path(file_path)
+        if (
+            path.suffix.lower() in [".tsv"]
+            and "sep" not in kwargs
+            and "delimiter" not in kwargs
+        ):
+            kwargs["sep"] = "\t"
+
+        if use_dask:
+            return dd.read_csv(file_path, **kwargs)
+        else:
+            return pd.read_csv(file_path, **kwargs)
+
+    def write(
+        self,
+        df: Union[pd.DataFrame, dd.DataFrame],
+        file_path: Union[str, Path],
+        **kwargs,
+    ) -> None:
+        """Write a DataFrame to a CSV file."""
+        # Handle TSV files by setting delimiter
+        path = Path(file_path)
+        if path.suffix.lower() in [".tsv"] and "sep" not in kwargs:
+            kwargs["sep"] = "\t"
+
+        if isinstance(df, dd.DataFrame):
+            df.to_csv(file_path, **kwargs)
+        else:
+            df.to_csv(file_path, **kwargs)
+
+    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+        """Resolve CSV file path with extension detection."""
+        file_path = Path(file)
+
+        # If extension is already present, use as-is
+        if file_path.suffix.lower() in (".csv", ".tsv"):
+            if file_path.exists():
+                return file_path
+            else:
+                raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Try different extensions
+        for ext in [".csv", ".tsv"]:
+            candidate = file_path.with_suffix(ext)
+            if candidate.exists():
+                return candidate
+
+        raise FileNotFoundError(f"No CSV file found for '{file}' (tried .csv, .tsv)")
+
+
+class JsonHandler(IOHandler):
+    """Handler for JSON files (.json, .jsonl, .ndjson)."""
+
+    def read(
+        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Read a JSON file."""
+        path = Path(file_path)
+
+        # Handle different JSON formats
+        is_lines_format = path.suffix.lower() in [".jsonl", ".ndjson"]
+
+        if is_lines_format:
+            kwargs.setdefault("lines", True)
+
+        if use_dask:
+            if is_lines_format:
+                return dd.read_json(file_path, **kwargs)
+            else:
+                # For regular JSON, read with pandas and convert to dask
+                df = pd.read_json(file_path, **kwargs)
+                return dd.from_pandas(df, npartitions=1)
+        else:
+            return pd.read_json(file_path, **kwargs)
+
+    def write(
+        self,
+        df: Union[pd.DataFrame, dd.DataFrame],
+        file_path: Union[str, Path],
+        **kwargs,
+    ) -> None:
+        """Write a DataFrame to a JSON file."""
+        path = Path(file_path)
+
+        # Default to JSON Lines format for better compatibility
+        is_lines_format = path.suffix.lower() in [".jsonl", ".ndjson"]
+        if is_lines_format or "orient" not in kwargs:
+            kwargs.setdefault("orient", "records")
+            kwargs.setdefault("lines", True)
+
+        if isinstance(df, dd.DataFrame):
+            # Dask doesn't have to_json, compute first
+            df.compute().to_json(file_path, **kwargs)
+        else:
+            df.to_json(file_path, **kwargs)
+
+    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+        """Resolve JSON file path with extension detection."""
+        file_path = Path(file)
+
+        # If extension is already present, use as-is
+        if file_path.suffix.lower() in (".json", ".jsonl", ".ndjson"):
+            if file_path.exists():
+                return file_path
+            else:
+                raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Try different extensions
+        for ext in [".json", ".jsonl", ".ndjson"]:
+            candidate = file_path.with_suffix(ext)
+            if candidate.exists():
+                return candidate
+
+        raise FileNotFoundError(
+            f"No JSON file found for '{file}' (tried .json, .jsonl, .ndjson)"
+        )
+
+
+class OrcHandler(IOHandler):
+    """Handler for ORC files (.orc) - requires pyarrow with ORC support."""
+
+    def read(
+        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
+    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        """Read an ORC file."""
+        try:
+            import pyarrow.orc as orc
+        except ImportError:
+            raise ImportError(
+                "ORC support requires pyarrow with ORC functionality. "
+                "Install with: pip install pyarrow"
+            ) from None
+
+        # Read ORC file using pyarrow
+        table = orc.read_table(file_path)
+        df = table.to_pandas()
+
+        if use_dask:
+            return dd.from_pandas(df, npartitions=1)
+        else:
+            return df
+
+    def write(
+        self,
+        df: Union[pd.DataFrame, dd.DataFrame],
+        file_path: Union[str, Path],
+        **kwargs,
+    ) -> None:
+        """Write a DataFrame to an ORC file."""
+        try:
+            import pyarrow as pa
+            import pyarrow.orc as orc
+        except ImportError:
+            raise ImportError(
+                "ORC support requires pyarrow with ORC functionality. "
+                "Install with: pip install pyarrow"
+            ) from None
+
+        # Convert to pandas if Dask
+        if isinstance(df, dd.DataFrame):
+            df = df.compute()
+
+        # Convert to Arrow table and write as ORC
+        table = pa.Table.from_pandas(df)
+        orc.write_table(table, file_path)
+
+    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+        """Resolve ORC file path with extension detection."""
+        file_path = Path(file)
+
+        # If extension is already present, use as-is
+        if file_path.suffix.lower() == ".orc":
+            if file_path.exists():
+                return file_path
+            else:
+                raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Try ORC extension
+        candidate = file_path.with_suffix(".orc")
+        if candidate.exists():
+            return candidate
+
+        raise FileNotFoundError(f"No ORC file found for '{file}' (tried .orc)")
+
+
+# Format handler registry
+FORMAT_HANDLERS: dict[FileFormat, IOHandler] = {
+    FileFormat.PARQUET: ParquetHandler(),
+    FileFormat.CSV: CsvHandler(),
+    FileFormat.JSON: JsonHandler(),
+    FileFormat.ORC: OrcHandler(),
+}
+
+
 class ParquetFrame:
     """
-    A wrapper for pandas and Dask DataFrames to simplify working with parquet files.
+    A universal wrapper for pandas and Dask DataFrames supporting multiple file formats.
 
-    The class automatically switches between pandas and Dask based on file size
-    or a manual flag. It delegates all standard DataFrame methods to the active
-    internal dataframe.
+    Supports reading and writing parquet, CSV, JSON, and ORC files with automatic
+    format detection. The class automatically switches between pandas and Dask based
+    on file size or manual control. It delegates all standard DataFrame methods to
+    the active internal dataframe.
+
+    Supported Formats:
+        - Parquet (.parquet, .pqt)
+        - CSV (.csv, .tsv)
+        - JSON (.json, .jsonl, .ndjson)
+        - ORC (.orc) - requires pyarrow
 
     Examples:
         >>> import parquetframe as pqf
-        >>> # Read file with automatic backend selection
-        >>> pf = pqf.pf.read("data.parquet")
+        >>> # Read files with automatic format detection
+        >>> pf = pqf.pf.read("data.csv")      # Auto-detects CSV
+        >>> pf = pqf.pf.read("data.json")     # Auto-detects JSON
+        >>> pf = pqf.pf.read("data.parquet")  # Auto-detects Parquet
         >>> # Manual backend control
-        >>> pf = pqf.pf.read("data", islazy=True)  # Force Dask
+        >>> pf = pqf.pf.read("data.csv", islazy=True)  # Force Dask
         >>> # Standard DataFrame operations work transparently
         >>> result = pf.groupby("column").sum()
+        >>> # Save in different formats
+        >>> pf.save("output.csv")     # Saves as CSV
+        >>> pf.save("output.json")    # Saves as JSON
     """
 
     def __init__(
@@ -239,41 +616,54 @@ class ParquetFrame:
         file: Union[str, Path],
         threshold_mb: Optional[float] = None,
         islazy: Optional[bool] = None,
+        format: Optional[str] = None,
         **kwargs,
     ) -> "ParquetFrame":
         """
-        Read a parquet file into a ParquetFrame.
+        Read a file into a ParquetFrame with automatic format detection.
 
-        Automatically selects pandas or Dask based on file size, unless overridden.
-        Handles file extension detection automatically.
+        Supports parquet, CSV, JSON, and ORC files. Automatically selects pandas
+        or Dask based on file size, unless overridden. Handles file extension
+        detection automatically.
 
         Args:
-            file: Path to the parquet file (extension optional).
+            file: Path to the file (extension used for format detection if format not specified).
             threshold_mb: Size threshold in MB for backend selection. Defaults to 10MB.
             islazy: Force backend selection (True=Dask, False=pandas, None=auto).
-            **kwargs: Additional keyword arguments for read_parquet methods.
+            format: Explicitly specify format ('parquet', 'csv', 'json', 'orc').
+                   If None, auto-detects from file extension.
+            **kwargs: Additional keyword arguments passed to the format-specific reader.
 
         Returns:
             ParquetFrame instance with loaded data.
 
         Raises:
-            FileNotFoundError: If no parquet file is found.
+            FileNotFoundError: If no file is found.
+            ValueError: If format is unsupported.
+            ImportError: If required dependencies for format are missing.
 
         Examples:
-            >>> pf = ParquetFrame.read("data")  # Auto-detects .parquet/.pqt
-            >>> pf = ParquetFrame.read("data.parquet", threshold_mb=50)
-            >>> pf = ParquetFrame.read("data", islazy=True)  # Force Dask
+            >>> pf = ParquetFrame.read("data.csv")           # Auto-detects CSV
+            >>> pf = ParquetFrame.read("data.json")          # Auto-detects JSON
+            >>> pf = ParquetFrame.read("data")               # Auto-detects .parquet/.pqt
+            >>> pf = ParquetFrame.read("data.txt", format="csv")  # Force CSV format
+            >>> pf = ParquetFrame.read("data.csv", threshold_mb=50, islazy=True)  # Force Dask
         """
         # Support URLs and fsspec-based paths without local existence checks
         file_str = str(file)
         is_url = file_str.startswith(("http://", "https://", "s3://", "gs://"))
 
+        # Detect format
+        file_format = detect_format(file_str, format)
+        handler = FORMAT_HANDLERS[file_format]
+
         if is_url:
             file_path = file_str  # pass through to reader
             file_size_mb = 0.0
         else:
-            file_path = cls._resolve_file_path(file)
-            file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+            # Use format-specific path resolution
+            file_path = handler.resolve_file_path(file)
+            file_size_mb = file_path.stat().st_size / (1024 * 1024)
 
         # Validate islazy parameter
         if islazy is not None and not isinstance(islazy, bool):
@@ -285,28 +675,29 @@ class ParquetFrame:
             use_dask = bool(islazy)
         else:
             # Intelligent switching when not explicitly specified
-            use_dask = cls._should_use_dask(
-                Path(file_path) if not is_url else Path("."), threshold, None
-            )
+            if not is_url and file_format == FileFormat.PARQUET:
+                # Only use advanced heuristics for parquet files
+                use_dask = cls._should_use_dask(file_path, threshold, None)
+            else:
+                # Simple size-based decision for other formats
+                use_dask = file_size_mb >= threshold
 
-        # Read the file
-        if use_dask:
-            df = dd.read_parquet(file_path, **kwargs)
-            print(
-                f"Reading '{file_path}' as Dask DataFrame (size: {file_size_mb:.2f} MB)"
-            )
-        else:
-            df = pd.read_parquet(file_path, **kwargs)
-            print(
-                f"Reading '{file_path}' as pandas DataFrame (size: {file_size_mb:.2f} MB)"
-            )
+        # Read the file using format-specific handler
+        df = handler.read(file_path, use_dask=use_dask, **kwargs)
+
+        backend_type = "Dask" if use_dask else "pandas"
+        print(
+            f"Reading '{file_path}' as {backend_type} DataFrame "
+            f"(format: {file_format.value}, size: {file_size_mb:.2f} MB)"
+        )
 
         instance = cls(df, use_dask)
         # Track read operation in history if needed
         if hasattr(cls, "_current_session_tracking") and cls._current_session_tracking:
             instance._track_history = True
             instance._history = [
-                f"pf = ParquetFrame.read('{file}', threshold_mb={threshold_mb}, islazy={islazy})"
+                f"pf = ParquetFrame.read('{file}', threshold_mb={threshold_mb}, "
+                f"islazy={islazy}, format={format!r})"
             ]
         return instance
 
