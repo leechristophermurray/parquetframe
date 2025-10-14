@@ -77,16 +77,18 @@ console = Console(force_terminal=False, color_system="auto")
 @click.version_option()
 def main():
     """
-    ParquetFrame CLI - A powerful tool for working with parquet files.
+    ParquetFrame CLI - A powerful tool for working with data files.
 
-    Automatically switches between pandas and Dask based on file size.
-    Provides both batch processing and interactive modes.
+    Supports multiple file formats (CSV, JSON, Parquet, ORC) with automatic
+    format detection. Intelligently switches between pandas and Dask backends
+    based on file size and provides both batch processing and interactive modes.
 
     Examples:
-        pframe run data.parquet --query "age > 30" --head 10
+        pframe run sales.csv --query "amount > 100" --head 10
+        pframe run events.jsonl --format json --describe
         pframe interactive --path ./data_lake/
-        pframe interactive --db-uri "sqlite:///example.db"
         pframe info data.parquet
+        pframe info logs.orc --format orc
     """
     pass
 
@@ -103,16 +105,25 @@ def main():
 @click.option("--tail", "-t", type=int, help="Display last N rows")
 @click.option("--sample", "-s", type=int, help="Display N random sample rows")
 @click.option(
-    "--output", "-o", type=click.Path(), help="Save result to output parquet file"
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Save result to output file (supports .parquet, .csv, .json)",
 )
 @click.option(
     "--save-script", "-S", type=click.Path(), help="Save session as Python script"
 )
 @click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["csv", "json", "parquet", "orc"]),
+    help="Manually specify file format (overrides auto-detection)",
+)
+@click.option(
     "--threshold",
     type=float,
-    default=10,
-    help="File size threshold in MB for Dask vs pandas (default: 10)",
+    default=100,
+    help="File size threshold in MB for Dask vs pandas (default: 100)",
 )
 @click.option("--force-dask", is_flag=True, help="Force use of Dask backend")
 @click.option("--force-pandas", is_flag=True, help="Force use of pandas backend")
@@ -127,6 +138,7 @@ def run(
     sample,
     output,
     save_script,
+    format,
     threshold,
     force_dask,
     force_pandas,
@@ -134,15 +146,23 @@ def run(
     info,
 ):
     """
-    Run operations on a parquet file in batch mode.
+    Run operations on data files in batch mode.
 
-    This command processes a parquet file with the specified operations
-    and optionally saves the result and/or generates a Python script.
+    This command processes files in various formats (CSV, JSON, Parquet, ORC)
+    with automatic format detection and intelligent backend selection.
+    Optionally saves results and/or generates Python scripts.
+
+    Supported formats:
+        - CSV (.csv, .tsv) - Comma or tab-separated values
+        - JSON (.json, .jsonl, .ndjson) - Regular or JSON Lines format
+        - Parquet (.parquet, .pqt) - Columnar format (optimal performance)
+        - ORC (.orc) - Optimized Row Columnar format
 
     Examples:
-        pframe run data.parquet --query "age >= 21" --columns "name,email" --head 5
-        pframe run large.parquet --force-dask --describe
-        pframe run data.parquet --output filtered.parquet --save-script process.py
+        pframe run sales.csv --query "amount > 100" --columns "name,total" --head 10
+        pframe run events.jsonl --force-dask --describe
+        pframe run data.parquet --output filtered.csv --save-script process.py
+        pframe run data.txt --format csv --query "status == 'active'"
     """
     # Determine backend selection
     islazy = None
@@ -158,9 +178,19 @@ def run(
     ParquetFrame._current_session_tracking = save_script is not None
 
     try:
-        # Read the file
-        console.print(f"[bold blue]Reading file:[/bold blue] {filepath}")
-        pf = ParquetFrame.read(filepath, threshold_mb=threshold, islazy=islazy)
+        # Read the file with format detection
+        if format:
+            console.print(
+                f"[bold blue]Reading file:[/bold blue] {filepath} (format: {format})"
+            )
+            pf = ParquetFrame.read(
+                filepath, format=format, threshold_mb=threshold, islazy=islazy
+            )
+        else:
+            console.print(
+                f"[bold blue]Reading file:[/bold blue] {filepath} (auto-detecting format)"
+            )
+            pf = ParquetFrame.read(filepath, threshold_mb=threshold, islazy=islazy)
 
         # Apply query filter
         if query:
@@ -272,16 +302,25 @@ def run(
 
 @main.command()
 @click.argument("filepath", type=click.Path(exists=True))
-def info(filepath):
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["csv", "json", "parquet", "orc"]),
+    help="Manually specify file format (overrides auto-detection)",
+)
+def info(filepath, format):
     """
-    Display detailed information about a parquet file.
+    Display detailed information about a data file.
 
-    Shows file size, column information, data types, and basic statistics
-    without loading the entire file into memory.
+    Shows file size, format, column information, data types, and basic statistics.
+    Supports CSV, JSON, Parquet, and ORC formats with automatic detection.
 
     Examples:
+        pframe info sales.csv
+        pframe info events.jsonl
         pframe info data.parquet
-        pframe info large_dataset.pqt
+        pframe info logs.orc
+        pframe info data.txt --format csv
     """
     try:
         # Get file info
@@ -291,56 +330,103 @@ def info(filepath):
 
         console.print(f"\n[bold blue]File Information:[/bold blue] {filepath}")
 
-        # Create info table
-        info_table = Table(title="File Details")
-        info_table.add_column("Property", style="cyan", no_wrap=True)
-        info_table.add_column("Value", style="white")
-
-        info_table.add_row("File Path", str(file_path.absolute()))
-        info_table.add_row("File Size", f"{file_size:,} bytes ({file_size_mb:.2f} MB)")
-
-        # Determine recommended backend
-        backend = "Dask (lazy)" if file_size_mb >= 10 else "pandas (eager)"
-        info_table.add_row("Recommended Backend", backend)
-
-        console.print(info_table)
-
-        # Try to read metadata without loading full file
+        # Try to read the file to get format and schema information
         try:
-            import pyarrow.parquet as pq
+            if format:
+                console.print(f"[dim]Using specified format: {format}[/dim]")
+                pf = ParquetFrame.read(
+                    filepath, format=format, threshold_mb=1000
+                )  # Force pandas for info
+            else:
+                console.print("[dim]Auto-detecting file format...[/dim]")
+                pf = ParquetFrame.read(
+                    filepath, threshold_mb=1000, islazy=False
+                )  # Force pandas for info
 
-            parquet_file = pq.ParquetFile(filepath)
+            # Detect format from our core functionality
+            from .core import detect_format
 
-            console.print("\n[bold green]Parquet Schema:[/bold green]")
+            detected_format = detect_format(filepath, format)
+
+            # Create info table
+            info_table = Table(title="File Details")
+            info_table.add_column("Property", style="cyan", no_wrap=True)
+            info_table.add_column("Value", style="white")
+
+            info_table.add_row("File Path", str(file_path.absolute()))
+            info_table.add_row(
+                "File Size", f"{file_size:,} bytes ({file_size_mb:.2f} MB)"
+            )
+            info_table.add_row("Detected Format", detected_format.value.upper())
+
+            # Determine backend used and recommended
+            backend_used = "Dask (lazy)" if pf.islazy else "pandas (eager)"
+            backend_recommended = (
+                "Dask (lazy)" if file_size_mb >= 100 else "pandas (eager)"
+            )
+            info_table.add_row("Backend Used", backend_used)
+            info_table.add_row("Recommended Backend", backend_recommended)
+
+            # Data shape information
+            info_table.add_row("Rows", f"{len(pf):,}")
+            info_table.add_row("Columns", str(len(pf.columns)))
+
+            console.print(info_table)
+
+            # Show schema information
+            console.print("\n[bold green]Data Schema:[/bold green]")
             schema_table = Table()
             schema_table.add_column("Column", style="cyan")
             schema_table.add_column("Type", style="yellow")
-            schema_table.add_column("Nullable", style="white")
+            schema_table.add_column("Non-Null Count", style="white")
 
-            for _i, field in enumerate(parquet_file.schema.to_arrow_schema()):
-                nullable = "Yes" if field.nullable else "No"
-                schema_table.add_row(field.name, str(field.type), nullable)
+            # Get DataFrame for analysis
+            df = pf._df if not pf.islazy else pf._df.compute()
+
+            for col in df.columns:
+                dtype = str(df[col].dtype)
+                non_null_count = f"{df[col].count():,}"
+                schema_table.add_row(col, dtype, non_null_count)
 
             console.print(schema_table)
 
-            # Additional parquet metadata
-            console.print("\n[bold green]Parquet Metadata:[/bold green]")
-            meta_table = Table()
-            meta_table.add_column("Property", style="cyan")
-            meta_table.add_column("Value", style="white")
+            # Show sample data
+            console.print("\n[bold green]Sample Data (first 3 rows):[/bold green]")
+            sample_data = df.head(3)
+            _display_dataframe_as_table(sample_data, "Sample")
 
-            meta_table.add_row("Row Groups", str(parquet_file.metadata.num_row_groups))
-            meta_table.add_row("Total Rows", f"{parquet_file.metadata.num_rows:,}")
-            meta_table.add_row("Total Columns", str(parquet_file.metadata.num_columns))
+            # Basic statistics for numeric columns
+            numeric_cols = df.select_dtypes(include=["number"]).columns
+            if len(numeric_cols) > 0:
+                console.print("\n[bold green]Numeric Column Statistics:[/bold green]")
+                stats = df[numeric_cols].describe()
+                _display_dataframe_as_table(stats, "Statistics")
 
-            console.print(meta_table)
-
-        except ImportError:
-            console.print(
-                "[yellow]Install pyarrow for detailed schema information[/yellow]"
-            )
         except Exception as e:
-            console.print(f"[yellow]Could not read parquet metadata: {e}[/yellow]")
+            console.print(f"[yellow]Could not analyze file content: {e}[/yellow]")
+
+            # Fall back to basic file info
+            info_table = Table(title="Basic File Details")
+            info_table.add_column("Property", style="cyan", no_wrap=True)
+            info_table.add_column("Value", style="white")
+
+            info_table.add_row("File Path", str(file_path.absolute()))
+            info_table.add_row(
+                "File Size", f"{file_size:,} bytes ({file_size_mb:.2f} MB)"
+            )
+            info_table.add_row("File Extension", file_path.suffix or "(none)")
+
+            # Try to detect format from extension
+            try:
+                from .core import detect_format
+
+                detected_format = detect_format(filepath, format)
+                info_table.add_row("Likely Format", detected_format.value.upper())
+            except Exception:
+                info_table.add_row("Format", "Unknown")
+                info_table.add_row("Format", "Unknown")
+
+            console.print(info_table)
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
