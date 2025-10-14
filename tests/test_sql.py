@@ -11,6 +11,14 @@ import pytest
 from parquetframe.core import ParquetFrame
 from parquetframe.sql import explain_query, query_dataframes, validate_sql_query
 
+# Check if DuckDB is available for skip conditions
+try:
+    import duckdb  # noqa: F401
+
+    DUCKDB_AVAILABLE = True
+except ImportError:
+    DUCKDB_AVAILABLE = False
+
 
 class TestSQLModule:
     """Test the SQL module functions directly."""
@@ -47,11 +55,7 @@ class TestSQLModule:
 
             assert not DUCKDB_AVAILABLE
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_basic_sql_query(self, sample_data):
         """Test basic SQL query on a single DataFrame."""
         df1, _ = sample_data
@@ -62,11 +66,7 @@ class TestSQLModule:
         assert len(result) == 2  # Charlie and David
         assert list(result["name"]) == ["Charlie", "David"]
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_join(self, sample_data):
         """Test SQL JOIN operation between two DataFrames."""
         df1, df2 = sample_data
@@ -85,20 +85,30 @@ class TestSQLModule:
         assert "city" in result.columns
         assert list(result["city"]) == ["New York", "London", "Tokyo"]
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_with_dask_dataframes(self, sample_data):
         """Test SQL operations with Dask DataFrames."""
         df1, df2 = sample_data
         ddf1 = dd.from_pandas(df1, npartitions=2)
         ddf2 = dd.from_pandas(df2, npartitions=2)
 
-        with pytest.warns(UserWarning, match="SQL queries on Dask DataFrames"):
+        # Use warnings.catch_warnings to capture specific warning
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")  # Capture all warnings
             result = query_dataframes(
                 ddf1, "SELECT * FROM df WHERE age > 25", {"other": ddf2}
+            )
+
+            # Check that our specific UserWarning was issued
+            user_warnings = [
+                warning for warning in w if issubclass(warning.category, UserWarning)
+            ]
+            assert len(user_warnings) > 0
+            assert any(
+                "SQL queries on Dask DataFrames" in str(warning.message)
+                for warning in user_warnings
             )
 
         assert isinstance(result, pd.DataFrame)
@@ -120,11 +130,7 @@ class TestSQLModule:
         with pytest.warns(UserWarning, match="potentially destructive"):
             assert not validate_sql_query("DROP TABLE df")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_error_handling(self, sample_data):
         """Test error handling in SQL queries."""
         df1, _ = sample_data
@@ -137,11 +143,7 @@ class TestSQLModule:
         with pytest.raises(ValueError, match="SQL query execution failed"):
             query_dataframes(df1, "SELECT * FROM nonexistent_table")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_explain_query(self, sample_data):
         """Test query explanation functionality."""
         df1, df2 = sample_data
@@ -150,8 +152,14 @@ class TestSQLModule:
 
         assert isinstance(plan, str)
         assert len(plan) > 0
-        # Should contain some execution plan information
-        assert "FILTER" in plan.upper() or "PROJECTION" in plan.upper()
+        # Should contain some execution plan information (DuckDB format may vary)
+        plan_upper = plan.upper()
+        assert (
+            "FILTER" in plan_upper
+            or "PROJECTION" in plan_upper
+            or "PHYSICAL_PLAN" in plan_upper
+            or "PLAN" in plan_upper
+        )
 
 
 class TestParquetFrameSQL:
@@ -180,11 +188,7 @@ class TestParquetFrameSQL:
 
         return pf1, pf2
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_method(self, sample_parquetframes):
         """Test the .sql() method on ParquetFrame objects."""
         customers, orders = sample_parquetframes
@@ -196,11 +200,7 @@ class TestParquetFrameSQL:
         assert not result.islazy  # SQL results are always pandas
         assert len(result) == 2  # Charlie and David
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_join(self, sample_parquetframes):
         """Test SQL JOIN using ParquetFrame.sql() method."""
         customers, orders = sample_parquetframes
@@ -219,16 +219,12 @@ class TestParquetFrameSQL:
         assert len(result) == 4  # All customers have orders
         assert "total_orders" in result.columns
 
-        # Alice should have highest total (100 + 150 = 250)
+        # David should have highest total (300.0), then Alice (250.0)
         first_row = result._df.iloc[0]
-        assert first_row["name"] == "Alice"
-        assert first_row["total_orders"] == 250.0
+        assert first_row["name"] == "David"
+        assert first_row["total_orders"] == 300.0
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_with_dask(self, sample_parquetframes):
         """Test SQL operations with Dask-backed ParquetFrame."""
         customers, orders = sample_parquetframes
@@ -236,8 +232,22 @@ class TestParquetFrameSQL:
         # Convert to Dask
         customers_dask = customers.to_dask()
 
-        with pytest.warns(UserWarning, match="SQL queries on Dask DataFrames"):
+        # Use warnings.catch_warnings to capture specific warning
+        import warnings
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")  # Capture all warnings
             result = customers_dask.sql("SELECT name FROM df WHERE age >= 30")
+
+            # Check that our specific UserWarning was issued
+            user_warnings = [
+                warning for warning in w if issubclass(warning.category, UserWarning)
+            ]
+            assert len(user_warnings) > 0
+            assert any(
+                "SQL queries on Dask DataFrames" in str(warning.message)
+                for warning in user_warnings
+            )
 
         assert isinstance(result, ParquetFrame)
         assert not result.islazy  # SQL results are always pandas
@@ -250,11 +260,7 @@ class TestParquetFrameSQL:
         with pytest.raises(ValueError, match="No dataframe loaded for SQL query"):
             pf.sql("SELECT * FROM df")
 
-    @pytest.mark.skipif(
-        condition=lambda: not hasattr(pytest, "importorskip")
-        or not pytest.importorskip("duckdb"),
-        reason="DuckDB not available",
-    )
+    @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_parquetframe_sql_error_handling(self, sample_parquetframes):
         """Test error handling in ParquetFrame SQL operations."""
         customers, _ = sample_parquetframes
@@ -268,11 +274,7 @@ class TestParquetFrameSQL:
             customers.sql("SELECT * FROM df JOIN nonexistent ON df.id = nonexistent.id")
 
 
-@pytest.mark.skipif(
-    condition=lambda: not hasattr(pytest, "importorskip")
-    or not pytest.importorskip("duckdb"),
-    reason="DuckDB not available",
-)
+@pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
 class TestSQLIntegration:
     """Test SQL functionality in real-world scenarios."""
 

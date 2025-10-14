@@ -46,7 +46,7 @@ class TestCLIInfo:
         assert "File Information" in result.output
         assert "File Size" in result.output
         assert "Recommended Backend" in result.output
-        assert "Parquet Schema" in result.output
+        assert "Data Schema" in result.output
 
     def test_info_command_nonexistent_file(self, cli_runner):
         """Test info command with nonexistent file."""

@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "parquetframe"
-version = "0.2.3.2"
+version = "0.3.2"
 authors = [
     {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
-description = "A universal wrapper for working with dataframes in Python, seamlessly switching between pandas and Dask based on file size"
+description = "A universal data processing framework with multi-format support (CSV, JSON, Parquet, ORC) and intelligent pandas/Dask backend selection"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
@@ -31,9 +31,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 keywords = [
-    "pandas", "dask", "parquet", "dataframe", "big-data",
-    "sql", "duckdb", "bioframe", "genomics", "cli",
-    "data-science", "analytics", "bioinformatics"
+    "pandas", "dask", "parquet", "csv", "json", "orc", "dataframe", "big-data",
+    "sql", "duckdb", "bioframe", "genomics", "cli", "multi-format",
+    "data-science", "analytics", "bioinformatics", "file-format"
 ]
 dependencies = [
     "pandas>=2.0.0",

@@ -23,7 +23,9 @@
 
 🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics
 
-📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)
+📁 **Multi-Format Support**: Seamlessly work with CSV, JSON, ORC, and Parquet files with automatic format detection
+
+📁 **Smart File Handling**: Reads files without requiring extensions - supports `.parquet`, `.pqt`, `.csv`, `.tsv`, `.json`, `.jsonl`, `.ndjson`, `.orc`
 
 🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods
 
@@ -91,6 +93,38 @@ df.save("output")  # Saves as output.parquet
 # Manual control
 df.to_dask()    # Convert to Dask
 df.to_pandas()  # Convert to pandas
+```
+
+### Multi-Format Support
+
+```python
+import parquetframe as pf
+
+# Automatic format detection - works with all supported formats
+csv_data = pf.read("sales.csv")        # CSV with automatic delimiter detection
+json_data = pf.read("events.json")     # JSON with nested data support
+parquet_data = pf.read("users.pqt")    # Parquet for optimal performance
+orc_data = pf.read("logs.orc")         # ORC for big data ecosystems
+
+# JSON Lines for streaming data
+stream_data = pf.read("events.jsonl")  # Newline-delimited JSON
+
+# TSV files with automatic tab detection
+tsv_data = pf.read("data.tsv")         # Tab-separated values
+
+# Manual format override when needed
+text_as_csv = pf.read("data.txt", format="csv")
+
+# All formats work with the same API
+result = (csv_data
+          .query("amount > 100")
+          .groupby("region")
+          .sum()
+          .save("summary.parquet"))  # Convert to optimal format
+
+# Intelligent backend selection works for all formats
+large_csv = pf.read("huge_dataset.csv")  # Automatically uses Dask if >100MB
+small_json = pf.read("config.json")     # Uses pandas for small files
 ```
 
 ### Advanced Usage
@@ -195,14 +229,19 @@ ParquetFrame includes a powerful command-line interface for data exploration and
 ### Basic Commands
 
 ```bash
-# Get file information
-pframe info data.parquet
+# Get file information - works with any supported format
+pframe info data.parquet    # Parquet files
+pframe info sales.csv       # CSV files
+pframe info events.json     # JSON files
+pframe info logs.orc        # ORC files
 
-# Quick data preview
-pframe run data.parquet
+# Quick data preview with auto-format detection
+pframe run data.csv         # Automatically detects CSV
+pframe run events.jsonl     # JSON Lines format
+pframe run users.tsv        # Tab-separated values
 
-# Interactive mode
-pframe interactive data.parquet
+# Interactive mode with any format
+pframe interactive data.csv
 
 # Interactive mode with AI support
 pframe interactive data.parquet --ai
@@ -332,7 +371,7 @@ pframe workflow --validate my_pipeline.yml
 
 ### Development Status
 
-✅ **Production Ready (v0.2.2)**: 334 passing tests with 54% coverage across comprehensive test suites
+✅ **Production Ready (v0.3.0)**: Multi-format support with comprehensive testing across CSV, JSON, Parquet, and ORC formats
 🧪 **Robust Testing**: Complete test suite for AI, CLI, SQL, bioframe, and workflow functionality
 🔄 **Active Development**: Regular updates with cutting-edge AI and performance optimization features
 🏆 **Quality Excellence**: 9.2/10 assessment score with professional CI/CD pipeline

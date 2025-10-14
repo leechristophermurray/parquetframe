@@ -13,13 +13,15 @@
   <a href="https://codecov.io/gh/leechristophermurray/parquetframe"><img src="https://codecov.io/gh/leechristophermurray/parquetframe/branch/main/graph/badge.svg" alt="Coverage"></a>
 </div>
 
-**A universal wrapper for working with dataframes in Python, seamlessly switching between pandas and Dask based on file size or manual control.**
+**A universal data processing framework with multi-format support (CSV, JSON, Parquet, ORC) and intelligent pandas/Dask backend selection.**
 
 ## ✨ Features
 
 🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics
 
-📁 **Smart File Handling**: Reads parquet files without requiring file extensions (`.parquet`, `.pqt`)
+📁 **Multi-Format Support**: Seamlessly work with CSV, JSON, ORC, and Parquet files with automatic format detection
+
+📁 **Smart File Handling**: Reads files without requiring extensions - supports `.parquet`, `.pqt`, `.csv`, `.tsv`, `.json`, `.jsonl`, `.ndjson`, `.orc`
 
 🔄 **Seamless Switching**: Convert between pandas and Dask with simple methods
 
