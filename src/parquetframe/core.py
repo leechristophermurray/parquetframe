@@ -133,6 +133,18 @@ class IOHandler(ABC):
 class ParquetHandler(IOHandler):
     """Handler for Parquet files (.parquet, .pqt)."""
 
+    def _is_valid_parquet_directory(self, dir_path: Path) -> bool:
+        """Check if directory contains valid parquet files."""
+        try:
+            # Check if directory contains parquet files or has _metadata file
+            parquet_files = list(dir_path.glob("*.parquet"))
+            has_metadata = (dir_path / "_metadata").exists()
+            has_common_metadata = (dir_path / "_common_metadata").exists()
+
+            return len(parquet_files) > 0 or has_metadata or has_common_metadata
+        except (OSError, PermissionError):
+            return False
+
     def read(
         self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
     ) -> Union[pd.DataFrame, dd.DataFrame]:
@@ -158,9 +170,12 @@ class ParquetHandler(IOHandler):
         """Resolve Parquet file path with extension detection."""
         file_path = Path(file)
 
-        # First, check if the file exists exactly as specified and is a file
-        if file_path.exists() and file_path.is_file():
-            return file_path
+        # First, check if the file/directory exists exactly as specified
+        if file_path.exists():
+            if file_path.is_file():
+                return file_path
+            elif file_path.is_dir() and self._is_valid_parquet_directory(file_path):
+                return file_path
 
         # If extension is already present and matches our format, check existence
         if file_path.suffix in (".parquet", ".pqt"):
@@ -169,8 +184,11 @@ class ParquetHandler(IOHandler):
         # Try different extensions
         for ext in [".parquet", ".pqt"]:
             candidate = file_path.with_suffix(ext)
-            if candidate.exists() and candidate.is_file():
-                return candidate
+            if candidate.exists():
+                if candidate.is_file():
+                    return candidate
+                elif candidate.is_dir() and self._is_valid_parquet_directory(candidate):
+                    return candidate
 
         raise FileNotFoundError(
             f"No parquet file found for '{file}' (tried .parquet, .pqt)"
