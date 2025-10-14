@@ -10,6 +10,7 @@ This module provides Parquet-based persistent storage for:
 
 import time
 import uuid
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -187,7 +188,18 @@ class HistoryManager:
         # Append to existing sessions
         if self.sessions_path.exists() and self.sessions_path.stat().st_size > 0:
             existing_sessions = pd.read_parquet(self.sessions_path)
-            sessions_df = pd.concat([existing_sessions, new_session], ignore_index=True)
+            # Ensure consistent dtypes before concatenation
+            if len(existing_sessions) > 0:
+                # Suppress pandas FutureWarning about concat with empty/NA entries
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", category=FutureWarning, message=".*concat.*empty.*"
+                    )
+                    sessions_df = pd.concat(
+                        [existing_sessions, new_session], ignore_index=True
+                    )
+            else:
+                sessions_df = new_session
         else:
             sessions_df = new_session
 
@@ -279,7 +291,18 @@ class HistoryManager:
         # Append to existing queries
         if self.queries_path.exists() and self.queries_path.stat().st_size > 0:
             existing_queries = pd.read_parquet(self.queries_path)
-            queries_df = pd.concat([existing_queries, new_query], ignore_index=True)
+            # Ensure consistent dtypes before concatenation
+            if len(existing_queries) > 0:
+                # Suppress pandas FutureWarning about concat with empty/NA entries
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", category=FutureWarning, message=".*concat.*empty.*"
+                    )
+                    queries_df = pd.concat(
+                        [existing_queries, new_query], ignore_index=True
+                    )
+            else:
+                queries_df = new_query
         else:
             queries_df = new_query
 
@@ -333,7 +356,18 @@ class HistoryManager:
         # Append to existing AI messages
         if self.ai_messages_path.exists() and self.ai_messages_path.stat().st_size > 0:
             existing_messages = pd.read_parquet(self.ai_messages_path)
-            messages_df = pd.concat([existing_messages, new_message], ignore_index=True)
+            # Ensure consistent dtypes before concatenation
+            if len(existing_messages) > 0:
+                # Suppress pandas FutureWarning about concat with empty/NA entries
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", category=FutureWarning, message=".*concat.*empty.*"
+                    )
+                    messages_df = pd.concat(
+                        [existing_messages, new_message], ignore_index=True
+                    )
+            else:
+                messages_df = new_message
         else:
             messages_df = new_message
 
