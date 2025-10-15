@@ -583,6 +583,497 @@ def benchmark(output, quiet, operations, file_sizes):
 
 
 @main.command()
+@click.argument("filepath", type=click.Path(exists=True))
+@click.option(
+    "--column",
+    "-c",
+    help="Specific column to analyze (if not specified, analyzes all numeric columns)",
+)
+@click.option(
+    "--method",
+    type=click.Choice(["pearson", "spearman", "kendall"]),
+    default="pearson",
+    help="Correlation method for correlation matrix",
+)
+@click.option(
+    "--outlier-method",
+    type=click.Choice(["iqr", "zscore"]),
+    default="iqr",
+    help="Method for outlier detection",
+)
+@click.option(
+    "--zscore-threshold",
+    type=float,
+    default=3.0,
+    help="Z-score threshold for outlier detection",
+)
+@click.option(
+    "--iqr-multiplier",
+    type=float,
+    default=1.5,
+    help="IQR multiplier for outlier detection",
+)
+@click.option(
+    "--correlation-test",
+    nargs=2,
+    help="Test correlation between two columns (e.g., --correlation-test col1 col2)",
+)
+@click.option(
+    "--normality-test",
+    help="Test normality of specified column",
+)
+@click.option(
+    "--linear-regression",
+    nargs=2,
+    help="Perform linear regression (e.g., --linear-regression x_col y_col)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["csv", "json", "parquet", "orc"]),
+    help="Manually specify file format",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Save analysis results to file (JSON format)",
+)
+@click.option(
+    "--threshold",
+    type=float,
+    default=100,
+    help="File size threshold in MB for backend selection",
+)
+def analyze(
+    filepath,
+    column,
+    method,
+    outlier_method,
+    zscore_threshold,
+    iqr_multiplier,
+    correlation_test,
+    normality_test,
+    linear_regression,
+    format,
+    output,
+    threshold,
+):
+    """
+    Perform statistical analysis on data files.
+
+    This command provides comprehensive statistical analysis including
+    distribution summaries, correlation analysis, outlier detection,
+    and statistical testing.
+
+    Examples:
+        pframe analyze data.csv --column sales_amount
+        pframe analyze data.parquet --correlation-test price demand
+        pframe analyze data.json --outlier-method zscore --zscore-threshold 2.5
+        pframe analyze data.csv --normality-test revenue --output analysis.json
+        pframe analyze data.parquet --linear-regression advertising sales
+    """
+    try:
+        # Read the file
+        console.print(f"[bold blue]Loading file:[/bold blue] {filepath}")
+        if format:
+            pf = ParquetFrame.read(filepath, format=format, threshold_mb=threshold)
+        else:
+            pf = ParquetFrame.read(filepath, threshold_mb=threshold)
+
+        results = {}
+
+        # Basic distribution analysis
+        if column:
+            console.print(
+                f"[bold green]Distribution Analysis for column '{column}':[/bold green]"
+            )
+            dist_summary = pf.stats.distribution_summary(column)
+            results["distribution_summary"] = {column: dist_summary}
+
+            # Display key statistics
+            key_stats = [
+                ("Count", dist_summary["count"]),
+                ("Mean", f"{dist_summary['mean']:.4f}"),
+                ("Median", f"{dist_summary['median']:.4f}"),
+                ("Std Dev", f"{dist_summary['std']:.4f}"),
+                ("Skewness", f"{dist_summary['skewness']:.4f}"),
+                ("Kurtosis", f"{dist_summary['kurtosis']:.4f}"),
+                ("Distribution Shape", dist_summary["distribution_shape"]),
+                (
+                    "Outliers (IQR)",
+                    f"{dist_summary['outliers_iqr_count']} ({dist_summary['outliers_iqr_percent']:.2f}%)",
+                ),
+                (
+                    "Outliers (Z-score)",
+                    f"{dist_summary['outliers_zscore_count']} ({dist_summary['outliers_zscore_percent']:.2f}%)",
+                ),
+            ]
+
+            stats_table = Table(title=f"Distribution Statistics - {column}")
+            stats_table.add_column("Statistic", style="cyan", no_wrap=True)
+            stats_table.add_column("Value", style="white")
+
+            for stat_name, stat_value in key_stats:
+                stats_table.add_row(stat_name, str(stat_value))
+
+            console.print(stats_table)
+
+        else:
+            # Analyze all numeric columns
+            console.print("[bold green]Extended Statistical Summary:[/bold green]")
+            extended_stats = pf.stats.describe_extended()
+            results["extended_statistics"] = extended_stats.to_dict()
+
+            # Display correlation matrix
+            console.print(
+                f"\n[bold green]Correlation Matrix ({method.title()}):[/bold green]"
+            )
+            corr_matrix = pf.stats.corr_matrix(method=method)
+            results["correlation_matrix"] = corr_matrix.to_dict()
+            _display_dataframe_as_table(
+                corr_matrix, f"Correlation Matrix - {method.title()}"
+            )
+
+        # Outlier detection
+        if column:
+            console.print(
+                f"\n[bold green]Outlier Detection ({outlier_method.upper()}):[/bold green]"
+            )
+            kwargs = {}
+            if outlier_method == "zscore":
+                kwargs["threshold"] = zscore_threshold
+            elif outlier_method == "iqr":
+                kwargs["multiplier"] = iqr_multiplier
+
+            outliers_pf = pf.stats.detect_outliers(
+                column, method=outlier_method, **kwargs
+            )
+            outlier_col = f"{column}_outlier_{outlier_method}"
+            outlier_count = outliers_pf.pandas_df[outlier_col].sum()
+            total_count = len(outliers_pf.pandas_df)
+
+            console.print(
+                f"Found {outlier_count} outliers out of {total_count} records ({outlier_count/total_count*100:.2f}%)"
+            )
+            results["outlier_detection"] = {
+                "method": outlier_method,
+                "column": column,
+                "outlier_count": int(outlier_count),
+                "total_count": int(total_count),
+                "outlier_percentage": float(outlier_count / total_count * 100),
+            }
+
+        # Correlation test
+        if correlation_test:
+            col1, col2 = correlation_test
+            console.print(
+                f"\n[bold green]Correlation Test: {col1} vs {col2}:[/bold green]"
+            )
+            corr_result = pf.stats.correlation_test(col1, col2)
+            results["correlation_test"] = corr_result
+
+            # Display results
+            if "note" not in corr_result:  # Full scipy results
+                pearson_r = corr_result["pearson"]["correlation"]
+                pearson_p = corr_result["pearson"]["p_value"]
+                spearman_r = corr_result["spearman"]["correlation"]
+                spearman_p = corr_result["spearman"]["p_value"]
+
+                console.print(
+                    f"Pearson: r={pearson_r:.4f}, p-value={pearson_p:.4f} ({'significant' if pearson_p < 0.05 else 'not significant'})"
+                )
+                console.print(
+                    f"Spearman: r={spearman_r:.4f}, p-value={spearman_p:.4f} ({'significant' if spearman_p < 0.05 else 'not significant'})"
+                )
+            else:
+                console.print(
+                    f"Correlation: r={corr_result['pearson_correlation']:.4f}"
+                )
+                console.print(corr_result["note"])
+
+        # Normality test
+        if normality_test:
+            console.print(
+                f"\n[bold green]Normality Test for '{normality_test}':[/bold green]"
+            )
+            normality_result = pf.stats.normality_test(normality_test)
+            results["normality_test"] = normality_result
+
+            if "note" not in normality_result:  # Full scipy results
+                console.print(f"Sample size: {normality_result['sample_size']}")
+
+                if "shapiro_wilk" in normality_result:
+                    sw = normality_result["shapiro_wilk"]
+                    console.print(
+                        f"Shapiro-Wilk: statistic={sw['statistic']:.4f}, p-value={sw['p_value']:.4f} ({'normal' if sw['is_normal'] else 'not normal'})"
+                    )
+
+                ks = normality_result["kolmogorov_smirnov"]
+                console.print(
+                    f"Kolmogorov-Smirnov: statistic={ks['statistic']:.4f}, p-value={ks['p_value']:.4f} ({'normal' if ks['is_normal'] else 'not normal'})"
+                )
+
+                dag = normality_result["dagostino"]
+                console.print(
+                    f"D'Agostino: statistic={dag['statistic']:.4f}, p-value={dag['p_value']:.4f} ({'normal' if dag['is_normal'] else 'not normal'})"
+                )
+            else:
+                console.print(f"Skewness: {normality_result['skewness']:.4f}")
+                console.print(f"Kurtosis: {normality_result['kurtosis']:.4f}")
+                console.print(
+                    f"Approximately normal: {normality_result['is_approximately_normal']}"
+                )
+                console.print(normality_result["note"])
+
+        # Linear regression
+        if linear_regression:
+            x_col, y_col = linear_regression
+            console.print(
+                f"\n[bold green]Linear Regression: {x_col} -> {y_col}:[/bold green]"
+            )
+            regression_result = pf.stats.linear_regression(x_col, y_col)
+            results["linear_regression"] = regression_result
+
+            if "note" not in regression_result:  # Full scipy results
+                console.print(f"Equation: {regression_result['equation']}")
+                console.print(f"R²: {regression_result['r_squared']:.4f}")
+                console.print(
+                    f"P-value: {regression_result['p_value']:.4f} ({'significant' if regression_result['significant'] else 'not significant'})"
+                )
+                console.print(f"RMSE: {regression_result['rmse']:.4f}")
+            else:
+                console.print(f"Correlation: {regression_result['correlation']:.4f}")
+                console.print(regression_result["note"])
+
+        # Save results if requested
+        if output:
+            import json
+
+            with open(output, "w") as f:
+                json.dump(results, f, indent=2, default=str)
+            console.print(
+                f"\n[bold blue]Analysis results saved to:[/bold blue] {output}"
+            )
+
+        console.print(
+            "\n[bold green][SUCCESS] Statistical analysis completed![/bold green]"
+        )
+
+    except Exception as e:
+        console.print(f"[bold red]Error during analysis:[/bold red] {e}")
+        sys.exit(1)
+
+
+@main.command()
+@click.argument("filepath", type=click.Path(exists=True))
+@click.option(
+    "--datetime-col",
+    help="Specify datetime column (auto-detected if not provided)",
+)
+@click.option(
+    "--resample",
+    help="Resampling frequency (e.g., '1H', '1D', '1W') - requires --agg",
+)
+@click.option(
+    "--agg",
+    type=click.Choice(["mean", "sum", "max", "min", "std", "count"]),
+    help="Aggregation function for resampling",
+)
+@click.option(
+    "--rolling",
+    help="Rolling window size (e.g., '7', '30D') - requires --agg",
+)
+@click.option(
+    "--shift",
+    type=int,
+    help="Shift time series by N periods (positive=forward, negative=backward)",
+)
+@click.option(
+    "--between-time",
+    nargs=2,
+    help="Filter between times (e.g., --between-time 09:00 17:00)",
+)
+@click.option(
+    "--at-time",
+    help="Filter at specific time (e.g., --at-time 12:00)",
+)
+@click.option(
+    "--detect-datetime",
+    is_flag=True,
+    help="Show detected datetime columns and exit",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["csv", "json", "parquet", "orc"]),
+    help="Manually specify file format",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Save results to output file",
+)
+@click.option(
+    "--threshold",
+    type=float,
+    default=100,
+    help="File size threshold in MB for backend selection",
+)
+def timeseries(
+    filepath,
+    datetime_col,
+    resample,
+    agg,
+    rolling,
+    shift,
+    between_time,
+    at_time,
+    detect_datetime,
+    format,
+    output,
+    threshold,
+):
+    """
+    Perform time-series analysis on data files.
+
+    This command provides time-series specific operations including
+    resampling, rolling windows, time-based filtering, and datetime detection.
+
+    Examples:
+        pframe timeseries data.csv --detect-datetime
+        pframe timeseries data.parquet --resample 1H --agg mean
+        pframe timeseries data.csv --rolling 7 --agg mean --datetime-col timestamp
+        pframe timeseries data.json --between-time 09:00 17:00 --output filtered.csv
+        pframe timeseries data.parquet --shift 1 --output lagged.parquet
+    """
+    try:
+        # Read the file
+        console.print(f"[bold blue]Loading file:[/bold blue] {filepath}")
+        if format:
+            pf = ParquetFrame.read(filepath, format=format, threshold_mb=threshold)
+        else:
+            pf = ParquetFrame.read(filepath, threshold_mb=threshold)
+
+        # Detect datetime columns if requested
+        if detect_datetime:
+            console.print("[bold green]Detecting datetime columns:[/bold green]")
+            detected_cols = pf.ts.detect_datetime_columns()
+
+            if detected_cols:
+                console.print(f"Found {len(detected_cols)} datetime column(s):")
+                for col in detected_cols:
+                    console.print(f"  • {col}")
+            else:
+                console.print("No datetime columns detected.")
+            return
+
+        # Validate operations
+        if (resample or rolling) and not agg:
+            console.print(
+                "[bold red]Error:[/bold red] --resample and --rolling require --agg option"
+            )
+            sys.exit(1)
+
+        result_pf = pf
+        operation_description = []
+
+        # Apply resampling
+        if resample and agg:
+            console.print(
+                f"[bold green]Resampling to {resample} with {agg} aggregation:[/bold green]"
+            )
+            resampler = result_pf.ts.resample(resample, datetime_col=datetime_col)
+
+            if agg == "mean":
+                result_pf = resampler.mean()
+            elif agg == "sum":
+                result_pf = resampler.sum()
+            elif agg == "max":
+                result_pf = resampler.max()
+            elif agg == "min":
+                result_pf = resampler.min()
+            elif agg == "std":
+                result_pf = resampler.std()
+            elif agg == "count":
+                result_pf = resampler.count()
+
+            operation_description.append(f"resampled to {resample} ({agg})")
+
+        # Apply rolling window
+        elif rolling and agg:
+            console.print(
+                f"[bold green]Applying rolling window {rolling} with {agg} aggregation:[/bold green]"
+            )
+            roller = result_pf.ts.rolling(rolling, datetime_col=datetime_col)
+
+            if agg == "mean":
+                result_pf = roller.mean()
+            elif agg == "sum":
+                result_pf = roller.sum()
+            elif agg == "max":
+                result_pf = roller.max()
+            elif agg == "min":
+                result_pf = roller.min()
+            elif agg == "std":
+                result_pf = roller.std()
+
+            operation_description.append(f"rolling {rolling} ({agg})")
+
+        # Apply shift
+        if shift:
+            console.print(
+                f"[bold green]Shifting time series by {shift} periods:[/bold green]"
+            )
+            result_pf = result_pf.ts.shift(shift)
+            operation_description.append(f"shifted by {shift} periods")
+
+        # Apply time filtering
+        if between_time:
+            start_time, end_time = between_time
+            console.print(
+                f"[bold green]Filtering between {start_time} and {end_time}:[/bold green]"
+            )
+            result_pf = result_pf.ts.between_time(
+                start_time, end_time, datetime_col=datetime_col
+            )
+            operation_description.append(f"filtered between {start_time}-{end_time}")
+
+        if at_time:
+            console.print(f"[bold green]Filtering at time {at_time}:[/bold green]")
+            result_pf = result_pf.ts.at_time(at_time, datetime_col=datetime_col)
+            operation_description.append(f"filtered at {at_time}")
+
+        # Show results
+        if operation_description:
+            console.print(
+                f"\n[bold blue]Applied operations:[/bold blue] {', '.join(operation_description)}"
+            )
+
+            # Display sample of results
+            sample_df = result_pf.pandas_df.head(10)
+            _display_dataframe_as_table(
+                sample_df, "Time Series Results (first 10 rows)"
+            )
+
+            console.print(f"Total rows after operations: {len(result_pf.pandas_df)}")
+
+        # Save results if requested
+        if output:
+            result_pf.save(output)
+            console.print(f"\n[bold blue]Results saved to:[/bold blue] {output}")
+
+        console.print(
+            "\n[bold green][SUCCESS] Time-series analysis completed![/bold green]"
+        )
+
+    except Exception as e:
+        console.print(f"[bold red]Error during time-series analysis:[/bold red] {e}")
+        sys.exit(1)
+
+
+@main.command()
 @click.argument("workflow_file", type=click.Path(exists=True), required=False)
 @click.option(
     "--validate", "-v", is_flag=True, help="Validate workflow file without executing"
