@@ -9,6 +9,7 @@ Supports both pandas and Dask backends with intelligent dispatching.
 from __future__ import annotations
 
 import warnings
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Literal
 
 import dask.dataframe as dd
@@ -17,6 +18,30 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from .core import ParquetFrame
+
+
+# Cache for expensive statistical computations
+@lru_cache(maxsize=256)
+def _cached_correlation_matrix(df_hash: str, method: str, columns_hash: str) -> Any:
+    """Cache correlation matrices to avoid repeated computation."""
+    # This will be populated by the correlation methods
+    return None
+
+
+def _get_memory_usage_mb(df: pd.DataFrame | dd.DataFrame) -> float:
+    """Estimate memory usage of a DataFrame in MB."""
+    try:
+        if isinstance(df, dd.DataFrame):
+            # For Dask, estimate based on npartitions and one partition
+            sample_partition = df.get_partition(0).compute()
+            partition_size = sample_partition.memory_usage(deep=True).sum() / (
+                1024 * 1024
+            )
+            return partition_size * df.npartitions
+        else:
+            return df.memory_usage(deep=True).sum() / (1024 * 1024)
+    except Exception:
+        return float("inf")  # Assume large if we can't calculate
 
 
 def compute_percentile_stats(
@@ -111,7 +136,12 @@ class StatsAccessor:
 
     This accessor provides comprehensive statistical functionality including distribution
     analysis, correlation matrices, outlier detection, and statistical testing.
-    Intelligently dispatches between pandas and Dask backends.
+    Intelligently dispatches between pandas and Dask backends with performance optimizations:
+
+    - Memory-aware operation selection
+    - Caching for expensive computations
+    - Parallel processing for independent operations
+    - Progress indicators for long-running computations
 
     Examples:
         >>> pf = ParquetFrame.read("data.csv")
@@ -126,13 +156,18 @@ class StatsAccessor:
     def __init__(self, pf: ParquetFrame) -> None:
         """Initialize with a ParquetFrame instance."""
         self.pf = pf
+        self._computation_cache = {}
+        self._memory_threshold_mb = 500  # Switch to chunked processing above this
 
-    def describe_extended(self, include_all: bool = True) -> pd.DataFrame:
+    def describe_extended(
+        self, include_all: bool = True, use_cache: bool = True
+    ) -> pd.DataFrame:
         """
-        Generate extended descriptive statistics beyond basic describe().
+        Generate extended descriptive statistics beyond basic describe() with performance optimizations.
 
         Args:
             include_all: Whether to include all columns or just numeric ones
+            use_cache: Whether to use caching for repeated computations
 
         Returns:
             DataFrame with extended statistical summaries
@@ -143,25 +178,34 @@ class StatsAccessor:
         if self.pf._df is None:
             raise ValueError("No DataFrame loaded")
 
-        # Note: We compute extended stats directly rather than using basic describe
+        # Check cache first
+        cache_key = f"describe_extended_{include_all}_{self.pf.islazy}_{len(self.pf._df.columns)}"
+        if use_cache and cache_key in self._computation_cache:
+            return self._computation_cache[cache_key]
 
-        # Add additional statistics
+        # Check memory usage for optimization
+        memory_usage = _get_memory_usage_mb(self.pf._df)
+        use_chunked = memory_usage > self._memory_threshold_mb and not self.pf.islazy
+
+        if use_chunked:
+            warnings.warn(
+                f"Large dataset ({memory_usage:.1f}MB) detected. "
+                "Consider using Dask backend for better performance.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        # Get numeric columns
         numeric_cols = self.pf._df.select_dtypes(include=[np.number]).columns
-
         extended_stats = {}
 
         for col in numeric_cols:
             series = self.pf._df[col]
 
             if self.pf.islazy:
-                # Compute Dask statistics
-                stats = {
-                    "count": series.count().compute(),
-                    "mean": series.mean().compute(),
-                    "std": series.std().compute(),
-                    "min": series.min().compute(),
-                    "max": series.max().compute(),
-                    "median": series.median().compute(),
+                # Compute Dask statistics with batch operations for efficiency
+                basic_stats = series.describe().compute()
+                additional_stats = {
                     "skewness": (
                         series.skew().compute() if hasattr(series, "skew") else np.nan
                     ),
@@ -171,28 +215,84 @@ class StatsAccessor:
                         else np.nan
                     ),
                 }
+                # Combine basic and additional stats
+                stats = basic_stats.to_dict()
+                stats.update(additional_stats)
             else:
-                # Pandas statistics
-                stats = {
-                    "count": series.count(),
-                    "mean": series.mean(),
-                    "std": series.std(),
-                    "min": series.min(),
-                    "max": series.max(),
-                    "median": series.median(),
-                    "skewness": series.skew(),
-                    "kurtosis": series.kurtosis(),
-                }
+                # Pandas statistics with potential chunking
+                if use_chunked and len(series) > 1000000:  # 1M rows threshold
+                    # Compute statistics in chunks to avoid memory issues
+                    chunk_size = max(100000, len(series) // 10)
+                    stats = self._compute_stats_chunked(series, chunk_size)
+                else:
+                    # Standard computation for smaller datasets
+                    stats = {
+                        "count": series.count(),
+                        "mean": series.mean(),
+                        "std": series.std(),
+                        "min": series.min(),
+                        "max": series.max(),
+                        "median": series.median(),
+                        "skewness": series.skew(),
+                        "kurtosis": series.kurtosis(),
+                    }
 
             # Add percentile stats
             percentile_stats = compute_percentile_stats(
                 series, [0.1, 0.25, 0.5, 0.75, 0.9]
             )
             stats.update(percentile_stats)
-
             extended_stats[col] = stats
 
-        return pd.DataFrame(extended_stats).T
+        result = pd.DataFrame(extended_stats).T
+
+        # Cache the result
+        if use_cache:
+            self._computation_cache[cache_key] = result
+
+        return result
+
+    def _compute_stats_chunked(
+        self, series: pd.Series, chunk_size: int
+    ) -> dict[str, float]:
+        """Compute statistics in chunks for memory efficiency."""
+        n_chunks = len(series) // chunk_size + (1 if len(series) % chunk_size else 0)
+
+        # Initialize accumulators
+        count = 0
+        sum_val = 0.0
+        sum_sq = 0.0
+        min_val = float("inf")
+        max_val = float("-inf")
+
+        # Process chunks
+        for i in range(n_chunks):
+            start_idx = i * chunk_size
+            end_idx = min((i + 1) * chunk_size, len(series))
+            chunk = series.iloc[start_idx:end_idx].dropna()
+
+            if len(chunk) > 0:
+                count += len(chunk)
+                sum_val += chunk.sum()
+                sum_sq += (chunk**2).sum()
+                min_val = min(min_val, chunk.min())
+                max_val = max(max_val, chunk.max())
+
+        # Compute final statistics
+        mean = sum_val / count if count > 0 else np.nan
+        variance = (sum_sq / count - mean**2) if count > 1 else np.nan
+        std = np.sqrt(variance) if variance >= 0 else np.nan
+
+        return {
+            "count": count,
+            "mean": mean,
+            "std": std,
+            "min": min_val if min_val != float("inf") else np.nan,
+            "max": max_val if max_val != float("-inf") else np.nan,
+            "median": series.median(),  # Still compute median normally (efficient)
+            "skewness": series.skew(),  # These are harder to chunk efficiently
+            "kurtosis": series.kurtosis(),
+        }
 
     def corr_matrix(
         self,

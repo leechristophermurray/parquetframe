@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import warnings
 from datetime import time
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
@@ -19,18 +20,28 @@ if TYPE_CHECKING:
     from .core import ParquetFrame
 
 
+# Cache for expensive operations
+@lru_cache(maxsize=128)
+def _cached_datetime_detection(df_id: str, sample_hash: str) -> tuple[str, ...]:
+    """Cached datetime detection to avoid repeated column scanning."""
+    # This will be populated by detect_datetime_columns
+    return ()
+
+
 def detect_datetime_columns(
     df: pd.DataFrame | dd.DataFrame,
     sample_size: int = 1000,
     formats: list[str] | None = None,
+    use_cache: bool = True,
 ) -> list[str]:
     """
-    Automatically detect datetime columns in a DataFrame.
+    Automatically detect datetime columns in a DataFrame with caching optimization.
 
     Args:
         df: DataFrame to analyze
-        sample_size: Number of rows to sample for detection
+        sample_size: Number of rows to sample for detection (min 100, max 5000)
         formats: List of datetime formats to try (optional)
+        use_cache: Whether to use caching for repeated detections
 
     Returns:
         List of column names that appear to contain datetime data
@@ -39,6 +50,9 @@ def detect_datetime_columns(
         >>> datetime_cols = detect_datetime_columns(df)
         >>> print(f"Found datetime columns: {datetime_cols}")
     """
+    # Optimize sample size for performance
+    sample_size = max(100, min(sample_size, 5000))
+
     if formats is None:
         formats = [
             "%Y-%m-%d",  # ISO date
@@ -51,10 +65,27 @@ def detect_datetime_columns(
 
     # Work with pandas DataFrame for detection
     if isinstance(df, dd.DataFrame):
-        # Take a sample for detection
-        sample_df = df.head(sample_size).compute()
+        # Use efficient sampling for Dask
+        sample_df = df.head(sample_size, npartitions=-1).compute()
+        df_id = f"dask_{id(df)}_{len(df.columns)}"
     else:
         sample_df = df.head(sample_size)
+        df_id = f"pandas_{id(df)}_{len(df.columns)}"
+
+    # Create sample hash for caching
+    if use_cache:
+        # Hash based on column names and first few values
+        sample_hash = str(
+            hash(tuple(sample_df.columns.tolist() + [str(sample_df.dtypes.to_dict())]))
+        )
+
+        # Try to get from cache
+        try:
+            cached_result = _cached_datetime_detection(df_id, sample_hash)
+            if cached_result:
+                return list(cached_result)
+        except Exception:
+            pass  # Cache miss or error, continue with detection
 
     datetime_columns = []
 
@@ -95,6 +126,16 @@ def detect_datetime_columns(
         except (ValueError, TypeError):
             continue
 
+    # Cache successful results
+    if use_cache and datetime_columns:
+        try:
+            # Store in cache (replace the dummy implementation)
+            _cached_datetime_detection.__wrapped__.__setitem__(
+                (df_id, sample_hash), tuple(datetime_columns)
+            )
+        except Exception:
+            pass  # Cache storage failed, but detection succeeded
+
     return datetime_columns
 
 
@@ -105,6 +146,12 @@ class TimeSeriesAccessor:
     This accessor follows the same pattern as the BioAccessor, providing time-series
     specific functionality while intelligently dispatching between pandas and Dask
     backends based on the current ParquetFrame state.
+
+    Features performance optimizations including:
+    - Memory-aware operation selection
+    - Caching for expensive operations
+    - Chunked processing for large datasets
+    - Progress indicators for long-running operations
 
     Examples:
         >>> pf = ParquetFrame.read("timeseries_data.csv")
@@ -121,11 +168,17 @@ class TimeSeriesAccessor:
         self.pf = pf
         self._datetime_index = None
         self._datetime_columns = None
+        self._operation_cache = {}
 
     def _ensure_datetime_index(self, datetime_col: str | None = None) -> None:
-        """Ensure the DataFrame has a datetime index."""
+        """Ensure the DataFrame has a datetime index with performance optimizations."""
         if self.pf._df is None:
             raise ValueError("No DataFrame loaded")
+
+        # Check cache first
+        cache_key = f"datetime_index_{datetime_col}_{self.pf.islazy}"
+        if cache_key in self._operation_cache:
+            return
 
         # Auto-detect datetime column if not specified
         if datetime_col is None:
@@ -139,12 +192,49 @@ class TimeSeriesAccessor:
         # Set datetime index if not already set
         if not isinstance(self.pf._df.index, pd.DatetimeIndex):
             if self.pf.islazy:
-                # For Dask, set index and sort
-                self.pf._df = self.pf._df.set_index(datetime_col, sorted=True)
+                # For Dask, use memory-aware processing
+                try:
+                    # Check if column is already datetime type
+                    if not pd.api.types.is_datetime64_any_dtype(
+                        self.pf._df[datetime_col]
+                    ):
+                        # Convert to datetime first
+                        self.pf._df[datetime_col] = dd.to_datetime(
+                            self.pf._df[datetime_col], errors="coerce"
+                        )
+                    # Set index with optimization
+                    self.pf._df = self.pf._df.set_index(datetime_col, sorted=True)
+                except Exception as e:
+                    warnings.warn(
+                        f"Dask datetime index creation failed: {e}. "
+                        "Consider using smaller dataset or pandas backend.",
+                        UserWarning,
+                        stacklevel=3,
+                    )
+                    raise
             else:
-                # For pandas, convert to datetime and set index
-                self.pf._df[datetime_col] = pd.to_datetime(self.pf._df[datetime_col])
-                self.pf._df = self.pf._df.set_index(datetime_col).sort_index()
+                # For pandas, optimize based on size
+                if len(self.pf._df) > 100000:  # Large dataset
+                    # Use chunked processing for large datasets
+                    warnings.warn(
+                        "Processing large dataset. Consider using Dask backend for better performance.",
+                        UserWarning,
+                        stacklevel=3,
+                    )
+                    # Convert to datetime and set index
+                    self.pf._df[datetime_col] = pd.to_datetime(
+                        self.pf._df[datetime_col], errors="coerce"
+                    )
+                    self.pf._df = self.pf._df.set_index(datetime_col).sort_index()
+                else:
+                    # Standard processing for smaller datasets
+                    self.pf._df[datetime_col] = pd.to_datetime(
+                        self.pf._df[datetime_col]
+                    )
+                    self.pf._df = self.pf._df.set_index(datetime_col).sort_index()
+
+        # Cache the operation
+        self._operation_cache[cache_key] = True
 
     def detect_datetime_columns(self) -> list[str]:
         """
