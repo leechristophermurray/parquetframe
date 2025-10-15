@@ -231,7 +231,9 @@ class TestQueryOptimizationHints:
         # Execute query with context
         result = pf.sql("SELECT name, age FROM df WHERE age > 25", context=ctx)
 
-        assert len(result) == 5  # All users are > 25
+        assert (
+            len(result) == 4
+        )  # Bob, Charlie, Diana, Eve are > 25 (Alice is exactly 25)
         assert isinstance(result, pqf.ParquetFrame)
 
     @patch("parquetframe.sql.duckdb")
@@ -279,7 +281,7 @@ class TestSQLBuilder:
         )
 
         assert isinstance(result, pqf.ParquetFrame)
-        assert len(result) == 5
+        assert len(result) == 4  # Users with age > 25
         assert list(result.pandas_df.columns) == ["name", "age", "salary"]
 
     def test_fluent_api_with_profiling(self, sample_data):

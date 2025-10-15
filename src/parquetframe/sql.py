@@ -689,7 +689,13 @@ def query_dataframes_from_files(
         )
 
     # Execute query using existing dataframe method
-    return main_pf.sql(query, profile=profile, use_cache=use_cache, **other_pfs)
+    result = main_pf.sql(query, profile=profile, use_cache=use_cache, **other_pfs)
+
+    # If not profiling and result is ParquetFrame, return the underlying DataFrame
+    if not profile and hasattr(result, "_df"):
+        return result._df
+
+    return result
 
 
 def query_dataframes(
@@ -947,9 +953,24 @@ def validate_sql_query(
             )
             warnings_list.append(f"Contains potentially destructive keyword: {keyword}")
 
-    # Basic SELECT query check
-    if not query_upper.startswith("SELECT") and not query_upper.startswith("WITH"):
+    # Check for query type - allow basic SQL commands but flag dangerous ones
+    has_dangerous_keywords = any(
+        keyword in query_upper
+        for keyword in ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE"]
+    )
+
+    # Basic SELECT/WITH query check - but allow dangerous queries to be considered "valid" with warnings
+    if (
+        not query_upper.startswith("SELECT")
+        and not query_upper.startswith("WITH")
+        and not has_dangerous_keywords
+    ):
         return False, ["Query must start with SELECT or WITH"]
+
+    # For dangerous queries, mark as invalid but include the warning
+    if has_dangerous_keywords:
+        # We already added the warning above, so just mark as invalid
+        return False, warnings_list
 
     # Basic syntax checks
     if query_upper.count("(") != query_upper.count(")"):

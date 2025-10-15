@@ -116,19 +116,38 @@ class TestSQLModule:
 
     def test_sql_query_validation(self):
         """Test SQL query validation function."""
-        # Valid queries
-        assert validate_sql_query("SELECT * FROM df")
-        assert validate_sql_query("SELECT id, name FROM df WHERE age > 25")
-        assert validate_sql_query("  SELECT * FROM df  ")  # With whitespace
+        # Valid queries - validate_sql_query returns (is_valid, warnings_list)
+        is_valid, warnings = validate_sql_query("SELECT * FROM df")
+        assert is_valid
+
+        is_valid, warnings = validate_sql_query(
+            "SELECT id, name FROM df WHERE age > 25"
+        )
+        assert is_valid
+
+        is_valid, warnings = validate_sql_query(
+            "  SELECT * FROM df  "
+        )  # With whitespace
+        assert is_valid
 
         # Invalid queries
-        assert not validate_sql_query("")
-        assert not validate_sql_query("   ")
-        assert not validate_sql_query("INVALID QUERY")
+        is_valid, warnings = validate_sql_query("")
+        assert not is_valid
+        assert "Query is empty" in warnings
+
+        is_valid, warnings = validate_sql_query("   ")
+        assert not is_valid
+        assert "Query is empty" in warnings
+
+        is_valid, warnings = validate_sql_query("INVALID QUERY")
+        assert not is_valid
+        assert "Query must start with SELECT or WITH" in warnings
 
         # Dangerous queries (should warn but still validate)
         with pytest.warns(UserWarning, match="potentially destructive"):
-            assert not validate_sql_query("DROP TABLE df")
+            is_valid, warnings = validate_sql_query("DROP TABLE df")
+            assert not is_valid
+            assert any("DROP" in w for w in warnings)
 
     @pytest.mark.skipif(not DUCKDB_AVAILABLE, reason="DuckDB not available")
     def test_sql_error_handling(self, sample_data):
