@@ -179,13 +179,17 @@ class StatsAccessor:
             raise ValueError("No DataFrame loaded")
 
         # Check cache first
-        cache_key = f"describe_extended_{include_all}_{self.pf.islazy}_{len(self.pf._df.columns)}"
+        backend_type = "dask" if isinstance(self.pf._df, dd.DataFrame) else "pandas"
+        cache_key = (
+            f"describe_extended_{include_all}_{backend_type}_{len(self.pf._df.columns)}"
+        )
         if use_cache and cache_key in self._computation_cache:
             return self._computation_cache[cache_key]
 
         # Check memory usage for optimization
         memory_usage = _get_memory_usage_mb(self.pf._df)
-        use_chunked = memory_usage > self._memory_threshold_mb and not self.pf.islazy
+        is_dask = isinstance(self.pf._df, dd.DataFrame)
+        use_chunked = memory_usage > self._memory_threshold_mb and not is_dask
 
         if use_chunked:
             warnings.warn(
@@ -202,7 +206,8 @@ class StatsAccessor:
         for col in numeric_cols:
             series = self.pf._df[col]
 
-            if self.pf.islazy:
+            # Check if this is actually a Dask Series (more reliable than islazy flag)
+            if isinstance(series, dd.Series):
                 # Compute Dask statistics with batch operations for efficiency
                 basic_stats = series.describe().compute()
                 additional_stats = {
@@ -318,7 +323,8 @@ class StatsAccessor:
         # Select only numeric columns
         numeric_df = self.pf._df.select_dtypes(include=[np.number])
 
-        if self.pf.islazy:
+        # Check if this is actually a Dask DataFrame (more reliable than islazy flag)
+        if isinstance(numeric_df, dd.DataFrame):
             # For Dask, compute the correlation matrix
             if method == "pearson":
                 corr_matrix = numeric_df.corr().compute()
@@ -364,7 +370,8 @@ class StatsAccessor:
         for col in columns_to_analyze:
             series = self.pf._df[col]
 
-            if self.pf.islazy:
+            # Check if this is actually a Dask Series (more reliable than islazy flag)
+            if isinstance(series, dd.Series):
                 series_computed = series.compute()
             else:
                 series_computed = series
@@ -452,10 +459,7 @@ class StatsAccessor:
             ).columns.tolist()
 
         # Create a copy of the dataframe
-        if self.pf.islazy:
-            result_df = self.pf._df.copy()
-        else:
-            result_df = self.pf._df.copy()
+        result_df = self.pf._df.copy()
 
         for col in columns_to_check:
             outlier_col_name = f"{col}_outlier_{method}"
@@ -586,8 +590,10 @@ class StatsAccessor:
         series1 = self.pf._df[col1]
         series2 = self.pf._df[col2]
 
-        if self.pf.islazy:
+        # Check if these are actually Dask Series (more reliable than islazy flag)
+        if isinstance(series1, dd.Series):
             series1 = series1.compute()
+        if isinstance(series2, dd.Series):
             series2 = series2.compute()
 
         # Remove rows where either value is null
@@ -652,8 +658,10 @@ class StatsAccessor:
         x_series = self.pf._df[x_col]
         y_series = self.pf._df[y_col]
 
-        if self.pf.islazy:
+        # Check if these are actually Dask Series (more reliable than islazy flag)
+        if isinstance(x_series, dd.Series):
             x_series = x_series.compute()
+        if isinstance(y_series, dd.Series):
             y_series = y_series.compute()
 
         # Remove rows where either value is null
