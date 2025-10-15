@@ -37,7 +37,9 @@
 
 🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations
 
-🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing
+📊 **Advanced Analytics**: Comprehensive statistical analysis and time-series operations with `.stats` and `.ts` accessors
+
+🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, analytics, and batch processing
 
 📝 **Script Generation**: Automatic Python script generation from CLI sessions
 
@@ -46,6 +48,10 @@
 📋 **YAML Workflows**: Define complex data processing pipelines in YAML with declarative syntax
 
 🤖 **AI-Powered Queries**: Natural language to SQL conversion using local LLM models (Ollama)
+
+⏱️ **Time-Series Analysis**: Automatic datetime detection, resampling, rolling windows, and temporal filtering
+
+📈 **Statistical Analysis**: Distribution analysis, correlation matrices, outlier detection, and hypothesis testing
 
 📋 **Interactive Terminal**: Rich CLI with command history, autocomplete, and natural language support
 
@@ -222,6 +228,43 @@ overlaps = genes.bio.overlap(peaks, broadcast=True)
 clustered = genes.bio.cluster(min_dist=1000)
 
 # Works efficiently with both small and large datasets
+```
+
+### 📊 Advanced Analytics
+
+```python
+import parquetframe as pf
+
+# Read time-series data
+df = pf.read("stock_prices.parquet")
+
+# Automatic datetime detection and parsing
+ts_cols = df.ts.detect_datetime_columns()
+print(f"Found datetime columns: {ts_cols}")
+
+# Time-series operations
+df_parsed = df.ts.parse_datetime('date', format='%Y-%m-%d')
+daily_avg = df_parsed.ts.resample('D', method='mean')  # Daily averages
+weekly_roll = df_parsed.ts.rolling_window(7, 'mean')   # 7-day moving average
+lagged = df_parsed.ts.shift(periods=1)                 # Previous day values
+
+# Statistical analysis
+stats = df.stats.describe_extended()           # Extended descriptive statistics
+corr_matrix = df.stats.correlation_matrix()    # Correlation analysis
+outliers = df.stats.detect_outliers(           # Outlier detection
+    columns=['price', 'volume'],
+    method='iqr'
+)
+
+# Distribution and hypothesis testing
+normality = df.stats.normality_test(['price'])  # Test for normal distribution
+corr_test = df.stats.correlation_test(          # Correlation significance
+    'price', 'volume'
+)
+
+# Linear regression
+regression = df.stats.linear_regression('price', ['volume', 'market_cap'])
+print(f"R-squared: {regression['r_squared']:.3f}")
 print(f"Found {len(overlaps)} gene-peak overlaps")
 ```
 
@@ -256,6 +299,16 @@ pframe sql --interactive --file data.parquet
 # AI-powered natural language queries
 pframe query "show me users older than 30" --file data.parquet --ai
 pframe query "what is the average age by city?" --file data.parquet --ai
+
+# Analytics operations
+pframe analyze data.parquet --stats describe_extended  # Extended statistics
+pframe analyze data.parquet --outliers iqr            # Outlier detection
+pframe analyze data.parquet --correlation spearman    # Correlation matrix
+
+# Time-series analysis
+pframe timeseries stocks.parquet --resample 'D' --method mean    # Daily resampling
+pframe timeseries stocks.parquet --rolling 7 --method mean       # Moving averages
+pframe timeseries stocks.parquet --shift 1                       # Lag analysis
 ```
 
 ### Data Processing
@@ -343,7 +396,8 @@ pframe workflow --validate my_pipeline.yml
 - **Simplicity**: One consistent API regardless of backend
 - **Flexibility**: Override automatic decisions when needed
 - **Compatibility**: Drop-in replacement for pandas.read_parquet()
-- **CLI Power**: Full command-line interface for data exploration, batch processing, and performance benchmarking
+- **Advanced Analytics**: Built-in statistical analysis and time-series operations with `.stats` and `.ts` accessors
+- **CLI Power**: Full command-line interface for data exploration, analytics, batch processing, and performance benchmarking
 - **Reproducibility**: Automatic Python script generation from CLI sessions
 - **Zero-Configuration Optimization**: Automatic performance improvements with intelligent defaults
 
@@ -395,6 +449,8 @@ pframe workflow --validate my_pipeline.yml
 - `pframe deps` - Check and display dependency status
 - `pframe benchmark [options]` - Run performance benchmarks and analysis
 - `pframe workflow [file] [options]` - Execute or manage YAML workflow files
+- `pframe analyze <file> [options]` - Statistical analysis and data profiling
+- `pframe timeseries <file> [options]` - Time-series analysis and operations
 
 ### Options for `pframe run`
 
@@ -446,6 +502,27 @@ pframe workflow --validate my_pipeline.yml
 - `--list-steps` - List all available workflow step types
 - `--create-example PATH` - Create an example workflow file
 - `--quiet, -q` - Run in quiet mode (minimal output)
+
+### Options for `pframe analyze`
+
+- `--stats` - Statistical analysis type (describe_extended, correlation_matrix, normality_test)
+- `--outliers` - Outlier detection method (zscore, iqr, isolation_forest)
+- `--columns` - Columns to analyze (comma-separated)
+- `--method` - Statistical method for correlations (pearson, spearman, kendall)
+- `--regression` - Perform linear regression (y_col=x_col1,x_col2,...)
+- `--output, -o` - Save results to file
+
+### Options for `pframe timeseries`
+
+- `--resample` - Resample frequency (D, W, M, H, etc.)
+- `--method` - Aggregation method for resampling (mean, sum, max, min, count)
+- `--rolling` - Rolling window size for moving averages
+- `--shift` - Number of periods to shift data (for lag/lead analysis)
+- `--datetime-col` - Column to use as datetime index
+- `--datetime-format` - Format string for datetime parsing
+- `--filter-start` - Start date for time-based filtering
+- `--filter-end` - End date for time-based filtering
+- `--output, -o` - Save results to file
 
 ## Documentation
 
