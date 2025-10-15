@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.4.2] - 2025-01-15
+
+### 🔧 Critical Type System Fixes
+
+### Fixed
+- 🐛 **Union Type Syntax Errors** - Resolved `TypeError: unsupported operand type(s) for |: 'str' and 'NoneType'` in method signatures
+  - Added `from __future__ import annotations` to enable postponed annotation evaluation
+  - Fixed forward reference issues with union types in `QueryContext` and `ParquetFrame` classes
+  - Ensured proper string literal handling for self-references in type annotations
+- 📋 **Pre-commit Hook Compliance** - All linting and formatting checks now pass successfully
+- ✅ **CI/CD Stability** - Resolved type annotation issues that caused build failures
+
+### Technical Details
+- Fixed union type syntax with forward references by using string literals for self-references
+- Added proper TYPE_CHECKING imports to ensure runtime compatibility
+- Enhanced type safety while maintaining backward compatibility
+- All pre-commit hooks (black, ruff, ruff-format) now pass cleanly
+
+### Impact
+- Resolves critical runtime errors that prevented proper module imports
+- Ensures stable CI/CD pipeline execution
+- Maintains full type hint support for development tools and IDEs
+
 ## [0.4.1] - 2025-01-15
 
 ### 🚀 Enhanced SQL Multi-Format Support & Documentation

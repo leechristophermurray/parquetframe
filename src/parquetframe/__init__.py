@@ -83,5 +83,5 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
     return ParquetFrame(islazy=islazy)
 
 
-__version__ = "0.4.0"
+__version__ = "0.4.2"
 __all__ = ["ParquetFrame", "pf", "read", "create_empty"]
