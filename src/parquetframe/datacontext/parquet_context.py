@@ -9,7 +9,7 @@ using DuckDB as the query engine.
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from . import DataContext, DataContextError, SourceType
 
@@ -58,7 +58,7 @@ class ParquetDataContext(DataContext):
         super().__init__(directory_path, SourceType.PARQUET)
         self.directory_path = Path(directory_path).resolve()
         self._discovered_files: list[Path] = []
-        self._unified_schema: Optional[pa.Schema] = None
+        self._unified_schema: pa.Schema | None = None
         self._virtual_table_name = "parquet_data"
         self._engine_type = "duckdb"  # Default to DuckDB
 

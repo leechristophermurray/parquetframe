@@ -10,7 +10,7 @@ import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 try:
     import yaml
@@ -74,7 +74,7 @@ class WorkflowContext:
         """Set a variable in the context."""
         self.variables[name] = value
 
-    def get_dataset(self, name: str) -> Optional[ParquetFrame]:
+    def get_dataset(self, name: str) -> ParquetFrame | None:
         """Get a dataset from the context."""
         return self.datasets.get(name)
 
@@ -363,7 +363,7 @@ class WorkflowEngine:
         self,
         verbose: bool = True,
         enable_history: bool = True,
-        history_dir: Optional[Union[str, Path]] = None,
+        history_dir: str | Path | None = None,
     ):
         self.verbose = verbose
         self.console = Console() if RICH_AVAILABLE and verbose else None
@@ -372,7 +372,7 @@ class WorkflowEngine:
             WorkflowHistoryManager(history_dir) if enable_history else None
         )
 
-    def load_workflow(self, workflow_path: Union[str, Path]) -> dict[str, Any]:
+    def load_workflow(self, workflow_path: str | Path) -> dict[str, Any]:
         """Load a workflow from a YAML file."""
         if not YAML_AVAILABLE:
             raise WorkflowError(
@@ -435,9 +435,9 @@ class WorkflowEngine:
     def execute_workflow(
         self,
         workflow: dict[str, Any],
-        working_dir: Optional[Path] = None,
-        variables: Optional[dict[str, Any]] = None,
-        workflow_file: Optional[str] = None,
+        working_dir: Path | None = None,
+        variables: dict[str, Any | None] = None,
+        workflow_file: str | None = None,
     ) -> WorkflowContext:
         """Execute a workflow."""
 
@@ -588,8 +588,8 @@ class WorkflowEngine:
 
     def run_workflow_file(
         self,
-        workflow_path: Union[str, Path],
-        variables: Optional[dict[str, Any]] = None,
+        workflow_path: str | Path,
+        variables: dict[str, Any | None] = None,
     ) -> WorkflowContext:
         """Load and execute a workflow from a file."""
 

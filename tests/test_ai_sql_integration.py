@@ -171,7 +171,11 @@ class TestAISQLIntegrationSmoke:
 
         # Verify aggregation worked correctly
         dept_counts = dict(
-            zip(result.pandas_df["department"], result.pandas_df["user_count"])
+            zip(
+                result.pandas_df["department"],
+                result.pandas_df["user_count"],
+                strict=True,
+            )
         )
         assert dept_counts["Engineering"] == 2  # Charlie is inactive but still counted
         assert dept_counts["Sales"] == 2
@@ -225,7 +229,11 @@ class TestAISQLIntegrationSmoke:
 
         # Verify averages are calculated correctly
         dept_salaries = dict(
-            zip(result.pandas_df["department"], result.pandas_df["avg_salary"])
+            zip(
+                result.pandas_df["department"],
+                result.pandas_df["avg_salary"],
+                strict=True,
+            )
         )
         assert dept_salaries["Engineering"] == 77500  # (70000 + 85000) / 2
         assert dept_salaries["Sales"] == 62500  # (60000 + 65000) / 2

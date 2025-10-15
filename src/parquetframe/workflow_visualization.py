@@ -7,7 +7,7 @@ dependencies and execution flow using graphviz and networkx.
 
 import warnings
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 try:
     import networkx as nx
@@ -40,7 +40,7 @@ class WorkflowVisualizer:
     def create_dag_from_workflow(
         self,
         workflow: dict[str, Any],
-        execution_data: Optional[WorkflowExecution] = None,
+        execution_data: WorkflowExecution | None = None,
     ) -> "nx.DiGraph":
         """Create a NetworkX directed graph from workflow definition.
 
@@ -113,10 +113,10 @@ class WorkflowVisualizer:
     def visualize_with_graphviz(
         self,
         workflow: dict[str, Any],
-        output_path: Optional[Union[str, Path]] = None,
+        output_path: str | Path | None = None,
         format: str = "svg",
-        execution_data: Optional[WorkflowExecution] = None,
-    ) -> Optional[str]:
+        execution_data: WorkflowExecution | None = None,
+    ) -> str | None:
         """Create a Graphviz visualization of the workflow.
 
         Args:
@@ -214,9 +214,9 @@ class WorkflowVisualizer:
     def visualize_with_networkx(
         self,
         workflow: dict[str, Any],
-        output_path: Optional[Union[str, Path]] = None,
-        execution_data: Optional[WorkflowExecution] = None,
-    ) -> Optional[str]:
+        output_path: str | Path | None = None,
+        execution_data: WorkflowExecution | None = None,
+    ) -> str | None:
         """Create a NetworkX visualization of the workflow.
 
         Args:
@@ -359,7 +359,7 @@ class WorkflowVisualizer:
     def export_to_mermaid(
         self,
         workflow: dict[str, Any],
-        execution_data: Optional[WorkflowExecution] = None,
+        execution_data: WorkflowExecution | None = None,
     ) -> str:
         """Export workflow as Mermaid diagram syntax.
 

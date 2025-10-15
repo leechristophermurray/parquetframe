@@ -5,7 +5,7 @@ This module provides structured exceptions with actionable error messages,
 dependency checking, and graceful fallback suggestions.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class ParquetFrameError(Exception):
@@ -14,9 +14,9 @@ class ParquetFrameError(Exception):
     def __init__(
         self,
         message: str,
-        suggestion: Optional[str] = None,
-        error_code: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        suggestion: str | None = None,
+        error_code: str | None = None,
+        details: dict[str, Any | None] = None,
     ):
         self.message = message
         self.suggestion = suggestion
@@ -40,7 +40,7 @@ class BackendError(ParquetFrameError):
         self,
         backend_type: str,
         operation: str,
-        underlying_error: Optional[Exception] = None,
+        underlying_error: Exception | None = None,
     ):
         message = f"{backend_type} backend failed during {operation}"
         if underlying_error:
@@ -62,7 +62,7 @@ class BackendError(ParquetFrameError):
 class FileNotFoundError(ParquetFrameError):
     """Exception raised when a parquet file is not found."""
 
-    def __init__(self, file_path: str, additional_context: Optional[str] = None):
+    def __init__(self, file_path: str, additional_context: str | None = None):
         message = f"Parquet file not found: {file_path}"
         if additional_context:
             message += f" ({additional_context})"
@@ -87,7 +87,7 @@ class ValidationError(ParquetFrameError):
         self,
         validation_type: str,
         failed_checks: list[str],
-        data_info: Optional[dict[str, Any]] = None,
+        data_info: dict[str, Any | None] = None,
     ):
         message = f"Data validation failed: {validation_type}"
 
@@ -119,8 +119,8 @@ class DependencyError(ParquetFrameError):
         self,
         missing_package: str,
         feature: str,
-        install_command: Optional[str] = None,
-        alternative: Optional[str] = None,
+        install_command: str | None = None,
+        alternative: str | None = None,
     ):
         self.missing_package = missing_package
         self.feature = feature
@@ -147,8 +147,8 @@ class DataSourceError(ParquetFrameError):
         self,
         source_type: str,
         source_location: str,
-        underlying_error: Optional[Exception] = None,
-        troubleshooting_steps: Optional[list[str]] = None,
+        underlying_error: Exception | None = None,
+        troubleshooting_steps: list[str | None] = None,
     ):
         self.source_type = source_type
         self.source_location = source_location
@@ -206,7 +206,7 @@ class QueryError(ParquetFrameError):
         query: str,
         error_message: str,
         query_type: str = "SQL",
-        suggestions: Optional[list[str]] = None,
+        suggestions: list[str | None] = None,
     ):
         self.query = query
         self.query_type = query_type
@@ -255,7 +255,7 @@ class AIError(ParquetFrameError):
         self,
         operation: str,
         error_message: str,
-        natural_language_input: Optional[str] = None,
+        natural_language_input: str | None = None,
         attempts: int = 1,
     ):
         self.operation = operation
@@ -303,7 +303,7 @@ class ConfigurationError(ParquetFrameError):
     """Raised when configuration is invalid or missing."""
 
     def __init__(
-        self, config_item: str, issue: str, expected_format: Optional[str] = None
+        self, config_item: str, issue: str, expected_format: str | None = None
     ):
         self.config_item = config_item
         self.issue = issue

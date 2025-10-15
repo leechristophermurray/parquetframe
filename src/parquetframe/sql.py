@@ -11,7 +11,7 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 
 try:
     import duckdb
@@ -503,7 +503,7 @@ class SQLBuilder:
 
         return " ".join(query_parts)
 
-    def execute(self) -> Union["ParquetFrame", QueryResult]:
+    def execute(self) -> "ParquetFrame" | QueryResult:
         """Execute the built SQL query.
 
         Returns:

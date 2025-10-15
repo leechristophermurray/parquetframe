@@ -10,7 +10,7 @@ import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import dask.dataframe as dd
 import pandas as pd
@@ -858,9 +858,9 @@ class ParquetFrame:
         query: str,
         profile: bool = False,
         use_cache: bool = True,
-        context: Optional["QueryContext"] = None,
+        context: "QueryContext" | None = None,
         **other_frames: "ParquetFrame",
-    ) -> Union["ParquetFrame", "QueryResult"]:
+    ) -> "ParquetFrame" | "QueryResult":
         """
         Execute a SQL query on this ParquetFrame using DuckDB with optional profiling.
 
@@ -943,7 +943,7 @@ class ParquetFrame:
         profile: bool = False,
         use_cache: bool = True,
         **params: Any,
-    ) -> Union["ParquetFrame", "QueryResult"]:
+    ) -> "ParquetFrame" | "QueryResult":
         """
         Execute a parameterized SQL query on this ParquetFrame.
 

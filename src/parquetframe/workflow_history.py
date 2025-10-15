@@ -11,7 +11,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 try:
     import psutil
@@ -29,14 +29,14 @@ class StepExecution:
     step_type: str
     status: str  # "running", "completed", "failed", "skipped"
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_seconds: Optional[float] = None
-    memory_usage_mb: Optional[float] = None
-    cpu_percent: Optional[float] = None
+    end_time: datetime | None = None
+    duration_seconds: float | None = None
+    memory_usage_mb: float | None = None
+    cpu_percent: float | None = None
     input_datasets: list[str] = field(default_factory=list)
     output_datasets: list[str] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
-    error_message: Optional[str] = None
+    error_message: str | None = None
     metrics: dict[str, Any] = field(default_factory=dict)
 
     def start(self) -> None:
@@ -48,7 +48,7 @@ class StepExecution:
             self.memory_usage_mb = process.memory_info().rss / 1024 / 1024
             self.cpu_percent = process.cpu_percent()
 
-    def complete(self, output_datasets: Optional[list[str]] = None) -> None:
+    def complete(self, output_datasets: list[str | None] = None) -> None:
         """Mark the step as completed successfully."""
         self.status = "completed"
         self.end_time = datetime.now()
@@ -85,15 +85,15 @@ class WorkflowExecution:
     workflow_file: str
     execution_id: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_seconds: Optional[float] = None
+    end_time: datetime | None = None
+    duration_seconds: float | None = None
     status: str = "running"  # "running", "completed", "failed", "cancelled"
     steps: list[StepExecution] = field(default_factory=list)
     variables: dict[str, Any] = field(default_factory=dict)
     system_info: dict[str, Any] = field(default_factory=dict)
     working_directory: str = ""
-    total_memory_usage_mb: Optional[float] = None
-    peak_memory_usage_mb: Optional[float] = None
+    total_memory_usage_mb: float | None = None
+    peak_memory_usage_mb: float | None = None
     success_count: int = 0
     failure_count: int = 0
     skip_count: int = 0
@@ -164,7 +164,7 @@ class WorkflowExecution:
 class WorkflowHistoryManager:
     """Manager for workflow execution history and .hist files."""
 
-    def __init__(self, history_dir: Optional[Union[str, Path]] = None):
+    def __init__(self, history_dir: str | Path | None = None):
         """Initialize the history manager.
 
         Args:
@@ -181,7 +181,7 @@ class WorkflowHistoryManager:
         self,
         workflow_name: str,
         workflow_file: str,
-        variables: Optional[dict[str, Any]] = None,
+        variables: dict[str, Any | None] = None,
     ) -> WorkflowExecution:
         """Create a new workflow execution record."""
         execution_id = f"{workflow_name}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
@@ -219,7 +219,7 @@ class WorkflowHistoryManager:
 
         return hist_file
 
-    def load_execution_record(self, hist_file: Union[str, Path]) -> WorkflowExecution:
+    def load_execution_record(self, hist_file: str | Path) -> WorkflowExecution:
         """Load a workflow execution record from a .hist file."""
         with open(hist_file) as f:
             data = json.load(f)
@@ -252,7 +252,7 @@ class WorkflowHistoryManager:
 
         return WorkflowExecution(**data)
 
-    def list_execution_records(self, workflow_name: Optional[str] = None) -> list[Path]:
+    def list_execution_records(self, workflow_name: str | None = None) -> list[Path]:
         """List all .hist files, optionally filtered by workflow name."""
         pattern = f"{workflow_name}_*.hist" if workflow_name else "*.hist"
         return sorted(
@@ -261,7 +261,7 @@ class WorkflowHistoryManager:
             reverse=True,
         )
 
-    def get_execution_summary(self, hist_file: Union[str, Path]) -> dict[str, Any]:
+    def get_execution_summary(self, hist_file: str | Path) -> dict[str, Any]:
         """Get a summary of a workflow execution from its .hist file."""
         execution = self.load_execution_record(hist_file)
         return {
@@ -287,7 +287,7 @@ class WorkflowHistoryManager:
         return removed_count
 
     def get_workflow_statistics(
-        self, workflow_name: Optional[str] = None
+        self, workflow_name: str | None = None
     ) -> dict[str, Any]:
         """Get aggregate statistics for workflow executions."""
         hist_files = self.list_execution_records(workflow_name)

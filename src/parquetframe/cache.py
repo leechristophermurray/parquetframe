@@ -9,7 +9,6 @@ import time
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional, Union
 
 import pandas as pd
 
@@ -20,9 +19,9 @@ class CacheConfig:
 
     enabled: bool = True
     max_size: int = 128
-    ttl_seconds: Optional[int] = None  # Time to live, None for no expiration
+    ttl_seconds: int | None = None  # Time to live, None for no expiration
     persist_to_disk: bool = False
-    cache_directory: Optional[Union[str, Path]] = None
+    cache_directory: str | Path | None = None
     max_memory_mb: int = 512  # Maximum cache memory usage
 
     def __post_init__(self):
@@ -45,8 +44,8 @@ class CacheEntry:
     query: str = ""
     hit_count: int = 0
     memory_usage_mb: float = 0.0
-    duckdb_profile: Optional[dict] = None
-    query_plan: Optional[str] = None
+    duckdb_profile: dict | None = None
+    query_plan: str | None = None
 
     def __post_init__(self):
         """Calculate memory usage after initialization."""
@@ -63,7 +62,7 @@ class CacheEntry:
         """Get the age of this cache entry in seconds."""
         return time.time() - self.timestamp
 
-    def is_expired(self, ttl_seconds: Optional[int]) -> bool:
+    def is_expired(self, ttl_seconds: int | None) -> bool:
         """Check if this cache entry has expired."""
         if ttl_seconds is None:
             return False
@@ -82,7 +81,7 @@ class SQLQueryCache:
     - Optional disk persistence
     """
 
-    def __init__(self, config: Optional[CacheConfig] = None):
+    def __init__(self, config: CacheConfig | None = None):
         """Initialize the cache with given configuration."""
         self.config = config or CacheConfig()
         self._cache: dict[str, CacheEntry] = {}
@@ -99,7 +98,7 @@ class SQLQueryCache:
         self,
         query: str,
         df_characteristics: dict,
-        context_params: Optional[dict] = None,
+        context_params: dict | None = None,
     ) -> str:
         """
         Generate a deterministic cache key.
@@ -213,8 +212,8 @@ class SQLQueryCache:
         self,
         query: str,
         df_characteristics: dict,
-        context_params: Optional[dict] = None,
-    ) -> Optional[CacheEntry]:
+        context_params: dict | None = None,
+    ) -> CacheEntry | None:
         """
         Retrieve a cached query result.
 
@@ -257,9 +256,9 @@ class SQLQueryCache:
         result: pd.DataFrame,
         execution_time: float,
         df_characteristics: dict,
-        context_params: Optional[dict] = None,
-        duckdb_profile: Optional[dict] = None,
-        query_plan: Optional[str] = None,
+        context_params: dict | None = None,
+        duckdb_profile: dict | None = None,
+        query_plan: str | None = None,
     ) -> str:
         """
         Store a query result in the cache.
@@ -337,7 +336,7 @@ class SQLQueryCache:
 
 
 # Global cache instance
-_global_cache: Optional[SQLQueryCache] = None
+_global_cache: SQLQueryCache | None = None
 
 
 def get_cache() -> SQLQueryCache:

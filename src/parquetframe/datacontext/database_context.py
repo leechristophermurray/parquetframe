@@ -7,7 +7,7 @@ a unified query interface.
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from . import DataContext, DataContextError, SourceType
 
@@ -50,9 +50,9 @@ class DatabaseDataContext(DataContext):
         """
         super().__init__(connection_uri, SourceType.DATABASE)
         self.connection_uri = connection_uri
-        self._engine: Optional[Engine] = None
-        self._inspector: Optional[Inspector] = None
-        self._metadata: Optional[MetaData] = None
+        self._engine: Engine | None = None
+        self._inspector: Inspector | None = None
+        self._metadata: MetaData | None = None
         self._table_schemas: dict[str, dict[str, Any]] = {}
 
         # Check dependencies

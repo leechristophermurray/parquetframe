@@ -10,7 +10,7 @@ import tempfile
 import time
 import warnings
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     import psutil
@@ -42,7 +42,7 @@ class BenchmarkResult:
         memory_end: float,
         file_size_mb: float,
         success: bool = True,
-        error: Optional[str] = None,
+        error: str | None = None,
     ):
         self.operation = operation
         self.backend = backend
@@ -473,7 +473,7 @@ class PerformanceBenchmark:
 
     def _analyze_optimal_threshold(
         self, results: list[BenchmarkResult]
-    ) -> Optional[float]:
+    ) -> float | None:
         """Analyze threshold results to find optimal value."""
         # This is a simplified analysis - in practice, you'd want more sophisticated optimization
         threshold_performance = {}
@@ -551,7 +551,7 @@ class PerformanceBenchmark:
 
 
 def run_comprehensive_benchmark(
-    output_file: Optional[str] = None, verbose: bool = True
+    output_file: str | None = None, verbose: bool = True
 ) -> dict[str, Any]:
     """Run a comprehensive performance benchmark suite."""
 

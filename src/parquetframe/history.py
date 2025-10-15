@@ -14,7 +14,7 @@ import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 try:
     import pandas as pd
@@ -34,12 +34,12 @@ class QueryRecord:
     query_text: str
     query_type: str  # 'sql' or 'natural_language'
     timestamp: float
-    execution_time_ms: Optional[float] = None
+    execution_time_ms: float | None = None
     success: bool = True
-    error_message: Optional[str] = None
-    result_rows: Optional[int] = None
+    error_message: str | None = None
+    result_rows: int | None = None
     ai_generated: bool = False
-    natural_language_input: Optional[str] = None
+    natural_language_input: str | None = None
     ai_attempts: int = 1
 
 
@@ -49,9 +49,9 @@ class SessionRecord:
 
     session_id: str
     start_time: float
-    end_time: Optional[float] = None
-    data_source: Optional[str] = None
-    data_source_type: Optional[str] = None  # 'parquet' or 'database'
+    end_time: float | None = None
+    data_source: str | None = None
+    data_source_type: str | None = None  # 'parquet' or 'database'
     ai_enabled: bool = False
     total_queries: int = 0
     successful_queries: int = 0
@@ -65,17 +65,17 @@ class AIMessage:
     message_id: str
     timestamp: float
     natural_language_input: str
-    generated_sql: Optional[str] = None
+    generated_sql: str | None = None
     success: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None
     attempts: int = 1
-    final_result: Optional[str] = None
+    final_result: str | None = None
 
 
 class HistoryManager:
     """Manages persistent history storage using Parquet files."""
 
-    def __init__(self, history_dir: Optional[Path] = None):
+    def __init__(self, history_dir: Path | None = None):
         """
         Initialize history manager.
 
@@ -152,8 +152,8 @@ class HistoryManager:
 
     def create_session(
         self,
-        data_source: Optional[str] = None,
-        data_source_type: Optional[str] = None,
+        data_source: str | None = None,
+        data_source_type: str | None = None,
         ai_enabled: bool = False,
     ) -> str:
         """
@@ -240,12 +240,12 @@ class HistoryManager:
         session_id: str,
         query_text: str,
         query_type: str = "sql",
-        execution_time_ms: Optional[float] = None,
+        execution_time_ms: float | None = None,
         success: bool = True,
-        error_message: Optional[str] = None,
-        result_rows: Optional[int] = None,
+        error_message: str | None = None,
+        result_rows: int | None = None,
         ai_generated: bool = False,
-        natural_language_input: Optional[str] = None,
+        natural_language_input: str | None = None,
         ai_attempts: int = 1,
     ) -> str:
         """
@@ -313,11 +313,11 @@ class HistoryManager:
         self,
         session_id: str,
         natural_language_input: str,
-        generated_sql: Optional[str] = None,
+        generated_sql: str | None = None,
         success: bool = False,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
         attempts: int = 1,
-        final_result: Optional[str] = None,
+        final_result: str | None = None,
     ) -> str:
         """
         Log an AI interaction.
@@ -375,7 +375,7 @@ class HistoryManager:
         return message_id
 
     def get_session_history(
-        self, session_id: Optional[str] = None, limit: int = 50
+        self, session_id: str | None = None, limit: int = 50
     ) -> list[dict[str, Any]]:
         """
         Get query history for a session or all sessions.
