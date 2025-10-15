@@ -13,6 +13,7 @@ import pytest
 
 import parquetframe as pqf
 from parquetframe.sql import QueryContext
+from tests.conftest import skip_orc_on_windows
 
 # Define comprehensive test data
 SAMPLE_USERS = pd.DataFrame(
@@ -122,6 +123,7 @@ class TestSQLOperationsMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_basic_select_all_formats(self, matrix_test_files, format_name):
         """Test basic SELECT operations on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -144,6 +146,7 @@ class TestSQLOperationsMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_where_filtering_all_formats(self, matrix_test_files, format_name):
         """Test WHERE filtering on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -166,6 +169,7 @@ class TestSQLOperationsMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_aggregation_all_formats(self, matrix_test_files, format_name):
         """Test aggregation operations on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -193,6 +197,7 @@ class TestSQLOperationsMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_window_functions_all_formats(self, matrix_test_files, format_name):
         """Test window functions on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["orders"]:
@@ -223,6 +228,8 @@ class TestSQLOperationsMatrix:
     )
     def test_cross_format_joins(self, matrix_test_files, user_format, order_format):
         """Test JOIN operations between different format combinations."""
+        skip_orc_on_windows(user_format)
+        skip_orc_on_windows(order_format)
         temp_dir, files = matrix_test_files
 
         if user_format not in files["users"] or order_format not in files["orders"]:
@@ -255,6 +262,7 @@ class TestSQLOperationsMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_complex_queries_all_formats(self, matrix_test_files, format_name):
         """Test complex SQL queries on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -296,6 +304,7 @@ class TestSQLPerformanceMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_optimization_context_all_formats(self, matrix_test_files, format_name):
         """Test QueryContext optimizations on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -319,6 +328,7 @@ class TestSQLPerformanceMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_profiling_all_formats(self, matrix_test_files, format_name):
         """Test SQL profiling on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -345,6 +355,7 @@ class TestSQLErrorHandlingMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_invalid_column_errors_all_formats(self, matrix_test_files, format_name):
         """Test invalid column error handling on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -358,6 +369,7 @@ class TestSQLErrorHandlingMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_syntax_error_handling_all_formats(self, matrix_test_files, format_name):
         """Test SQL syntax error handling on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:
@@ -408,6 +420,7 @@ class TestSQLCompatibilityMatrix:
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_parameterized_queries_all_formats(self, matrix_test_files, format_name):
         """Test parameterized queries on all formats."""
+        skip_orc_on_windows(format_name)
         temp_dir, files = matrix_test_files
 
         if format_name not in files["users"]:

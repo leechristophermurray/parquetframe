@@ -2,6 +2,7 @@
 Test fixtures and configuration for parquetframe tests.
 """
 
+import os
 import tempfile
 import uuid
 from collections.abc import Iterator
@@ -12,6 +13,19 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
+
+
+def skip_orc_on_windows(format_name: str | None = None) -> None:
+    """Skip ORC tests on Windows due to PyArrow timezone database issues.
+
+    Args:
+        format_name: The format name to check. If None, always skip on Windows.
+                    If provided, only skip if format_name is 'orc'.
+    """
+    if os.name == "nt" and (format_name is None or format_name.lower() == "orc"):
+        pytest.skip(
+            "ORC tests skipped on Windows due to PyArrow timezone database issues"
+        )
 
 
 @pytest.fixture

@@ -196,6 +196,13 @@ class TestMultiFormatSQL:
 
     def test_orc_format_sql(self, temp_files):
         """Test SQL operations on ORC files."""
+        import os
+
+        if os.name == "nt":
+            pytest.skip(
+                "ORC tests skipped on Windows due to PyArrow timezone database issues"
+            )
+
         temp_dir, files = temp_files
 
         if "orc" not in files["users"]:

@@ -37,6 +37,11 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v2
 
+    # TODO: Enable ORC support on Windows by setting timezone database path
+    # env:
+    #   TZDIR: C:\msys64\usr\share\zoneinfo
+    # or install tzdata package when PyArrow Windows timezone lookup is fixed
+
     - name: Create virtual environment (Windows)
       if: runner.os == 'Windows'
       run: |
