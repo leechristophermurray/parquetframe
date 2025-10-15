@@ -11,7 +11,7 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Union
 
 try:
     import duckdb
@@ -52,8 +52,8 @@ class QueryContext:
     predicate_pushdown: bool = True
     projection_pushdown: bool = True
     enable_parallel: bool = True
-    memory_limit: Optional[str] = None
-    temp_directory: Optional[Union[str, Path]] = None
+    memory_limit: str | None = None
+    temp_directory: str | Path | None = None
     enable_statistics: bool = False
     custom_pragmas: dict[str, Any] = field(default_factory=dict)
 
@@ -112,9 +112,9 @@ class QueryResult:
     column_count: int
     query: str
     from_cache: bool = False
-    memory_usage: Optional[float] = None
-    duckdb_profile: Optional[dict] = None
-    query_plan: Optional[str] = None
+    memory_usage: float | None = None
+    duckdb_profile: dict | None = None
+    query_plan: str | None = None
 
     def __post_init__(self):
         """Calculate memory usage after initialization."""
@@ -550,13 +550,13 @@ def parameterize_query(query: str, **params: Any) -> str:
 
 def build_join_query(
     main_table: str = "df",
-    select_cols: Optional[list[str]] = None,
-    joins: Optional[list[dict]] = None,
-    where_conditions: Optional[list[str]] = None,
-    group_by: Optional[list[str]] = None,
-    having_conditions: Optional[list[str]] = None,
-    order_by: Optional[list[str]] = None,
-    limit: Optional[int] = None,
+    select_cols: list[str] | None = None,
+    joins: list[dict] | None = None,
+    where_conditions: list[str] | None = None,
+    group_by: list[str] | None = None,
+    having_conditions: list[str] | None = None,
+    order_by: list[str] | None = None,
+    limit: int | None = None,
 ) -> str:
     """
     Build a SQL query with JOIN operations using a structured approach.
@@ -620,15 +620,15 @@ def build_join_query(
 
 
 def query_dataframes_from_files(
-    main_file: Union[str, Path],
+    main_file: str | Path,
     query: str,
-    other_files: Optional[dict[str, Union[str, Path]]] = None,
-    format_hints: Optional[dict[str, str]] = None,
+    other_files: dict[str, str | Path] | None = None,
+    format_hints: dict[str, str] | None = None,
     profile: bool = False,
     use_cache: bool = True,
     threshold_mb: float = 100.0,
     **kwargs: Any,
-) -> Union[pd.DataFrame, QueryResult]:
+) -> pd.DataFrame | QueryResult:
     """
     Execute a SQL query directly on files of various formats using DuckDB.
 
@@ -699,14 +699,14 @@ def query_dataframes_from_files(
 
 
 def query_dataframes(
-    main_df: Union[pd.DataFrame, dd.DataFrame],
+    main_df: pd.DataFrame | dd.DataFrame,
     query: str,
-    other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
+    other_dfs: dict[str, pd.DataFrame | dd.DataFrame] | None = None,
     profile: bool = False,
     use_cache: bool = True,
-    context: Optional[QueryContext] = None,
+    context: QueryContext | None = None,
     **kwargs: Any,
-) -> Union[pd.DataFrame, QueryResult]:
+) -> pd.DataFrame | QueryResult:
     """
     Execute a SQL query on one or more DataFrames using DuckDB with profiling and caching.
 
@@ -855,7 +855,8 @@ def query_dataframes(
                 if profile_result:
                     duckdb_profile = {
                         "profile_info": [
-                            dict(zip(["query", "time"], row)) for row in profile_result
+                            dict(zip(["query", "time"], row, strict=False))
+                            for row in profile_result
                         ]
                     }
             except Exception:
@@ -919,7 +920,7 @@ class SQLError(Exception):
 
 
 def validate_sql_query(
-    query: str, df_columns: Optional[list[str]] = None
+    query: str, df_columns: list[str] | None = None
 ) -> tuple[bool, list[str]]:
     """
     Enhanced validation of SQL query syntax and column references.
@@ -1046,9 +1047,9 @@ def validate_sql_query(
 
 
 def explain_query(
-    main_df: Union[pd.DataFrame, dd.DataFrame],
+    main_df: pd.DataFrame | dd.DataFrame,
     query: str,
-    other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
+    other_dfs: dict[str, pd.DataFrame | dd.DataFrame] | None = None,
 ) -> str:
     """
     Get the execution plan for a SQL query without executing it.

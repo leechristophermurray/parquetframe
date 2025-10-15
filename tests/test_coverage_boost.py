@@ -65,7 +65,7 @@ class TestCoverageBoosters:
 
         # Test memory usage calculation
         memory_info = pf.memory_usage(deep=True)
-        assert isinstance(memory_info, (pd.Series, dict, int, float))
+        assert isinstance(memory_info, pd.Series | dict | int | float)
 
     def test_sql_context_custom_pragmas(self):
         """Test SQL query context with custom pragmas."""

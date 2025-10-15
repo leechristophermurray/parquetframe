@@ -26,7 +26,6 @@ Examples:
 """
 
 from pathlib import Path
-from typing import Optional, Union
 
 from .core import ParquetFrame
 
@@ -36,9 +35,9 @@ pf = ParquetFrame
 
 # Convenience functions for more ergonomic usage
 def read(
-    file: Union[str, Path],
-    threshold_mb: Optional[float] = None,
-    islazy: Optional[bool] = None,
+    file: str | Path,
+    threshold_mb: float | None = None,
+    islazy: bool | None = None,
     **kwargs,
 ) -> ParquetFrame:
     """

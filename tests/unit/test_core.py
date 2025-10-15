@@ -346,7 +346,7 @@ class TestParquetFrameAttributeDelegation:
 
         # Test aggregation method
         mean_value = pf["id"].mean()
-        assert isinstance(mean_value, (int, float))
+        assert isinstance(mean_value, int | float)
 
     def test_getattr_nonexistent_attribute(self, sample_small_df):
         """Test accessing nonexistent attribute raises error."""

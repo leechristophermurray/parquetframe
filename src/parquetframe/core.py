@@ -29,7 +29,7 @@ class FileFormat(Enum):
 
 
 def detect_format(
-    file_path: Union[str, Path], explicit_format: Optional[str] = None
+    file_path: str | Path, explicit_format: str | None = None
 ) -> FileFormat:
     """
     Detect file format based on extension or explicit format specification.
@@ -85,8 +85,8 @@ class IOHandler(ABC):
 
     @abstractmethod
     def read(
-        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, file_path: str | Path, use_dask: bool = False, **kwargs
+    ) -> pd.DataFrame | dd.DataFrame:
         """
         Read a file into a DataFrame.
 
@@ -103,8 +103,8 @@ class IOHandler(ABC):
     @abstractmethod
     def write(
         self,
-        df: Union[pd.DataFrame, dd.DataFrame],
-        file_path: Union[str, Path],
+        df: pd.DataFrame | dd.DataFrame,
+        file_path: str | Path,
         **kwargs,
     ) -> None:
         """
@@ -118,7 +118,7 @@ class IOHandler(ABC):
         pass
 
     @abstractmethod
-    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+    def resolve_file_path(self, file: str | Path) -> Path:
         """
         Resolve file path and handle extension detection for this format.
 
@@ -150,8 +150,8 @@ class ParquetHandler(IOHandler):
             return False
 
     def read(
-        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, file_path: str | Path, use_dask: bool = False, **kwargs
+    ) -> pd.DataFrame | dd.DataFrame:
         """Read a Parquet file."""
         if use_dask:
             return dd.read_parquet(file_path, **kwargs)
@@ -160,8 +160,8 @@ class ParquetHandler(IOHandler):
 
     def write(
         self,
-        df: Union[pd.DataFrame, dd.DataFrame],
-        file_path: Union[str, Path],
+        df: pd.DataFrame | dd.DataFrame,
+        file_path: str | Path,
         **kwargs,
     ) -> None:
         """Write a DataFrame to a Parquet file."""
@@ -170,7 +170,7 @@ class ParquetHandler(IOHandler):
         else:
             df.to_parquet(file_path, **kwargs)
 
-    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+    def resolve_file_path(self, file: str | Path) -> Path:
         """Resolve Parquet file path with extension detection."""
         file_path = Path(file)
 
@@ -203,8 +203,8 @@ class CsvHandler(IOHandler):
     """Handler for CSV files (.csv, .tsv)."""
 
     def read(
-        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, file_path: str | Path, use_dask: bool = False, **kwargs
+    ) -> pd.DataFrame | dd.DataFrame:
         """Read a CSV file."""
         # Handle TSV files by setting delimiter
         path = Path(file_path)
@@ -222,8 +222,8 @@ class CsvHandler(IOHandler):
 
     def write(
         self,
-        df: Union[pd.DataFrame, dd.DataFrame],
-        file_path: Union[str, Path],
+        df: pd.DataFrame | dd.DataFrame,
+        file_path: str | Path,
         **kwargs,
     ) -> None:
         """Write a DataFrame to a CSV file."""
@@ -240,7 +240,7 @@ class CsvHandler(IOHandler):
         else:
             df.to_csv(file_path, **kwargs)
 
-    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+    def resolve_file_path(self, file: str | Path) -> Path:
         """Resolve CSV file path with extension detection."""
         file_path = Path(file)
 
@@ -265,8 +265,8 @@ class JsonHandler(IOHandler):
     """Handler for JSON files (.json, .jsonl, .ndjson)."""
 
     def read(
-        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, file_path: str | Path, use_dask: bool = False, **kwargs
+    ) -> pd.DataFrame | dd.DataFrame:
         """Read a JSON file."""
         path = Path(file_path)
 
@@ -288,8 +288,8 @@ class JsonHandler(IOHandler):
 
     def write(
         self,
-        df: Union[pd.DataFrame, dd.DataFrame],
-        file_path: Union[str, Path],
+        df: pd.DataFrame | dd.DataFrame,
+        file_path: str | Path,
         **kwargs,
     ) -> None:
         """Write a DataFrame to a JSON file."""
@@ -312,7 +312,7 @@ class JsonHandler(IOHandler):
         else:
             df.to_json(file_path, **kwargs)
 
-    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+    def resolve_file_path(self, file: str | Path) -> Path:
         """Resolve JSON file path with extension detection."""
         file_path = Path(file)
 
@@ -339,8 +339,8 @@ class OrcHandler(IOHandler):
     """Handler for ORC files (.orc) - requires pyarrow with ORC support."""
 
     def read(
-        self, file_path: Union[str, Path], use_dask: bool = False, **kwargs
-    ) -> Union[pd.DataFrame, dd.DataFrame]:
+        self, file_path: str | Path, use_dask: bool = False, **kwargs
+    ) -> pd.DataFrame | dd.DataFrame:
         """Read an ORC file."""
         try:
             import pyarrow.orc as orc
@@ -361,8 +361,8 @@ class OrcHandler(IOHandler):
 
     def write(
         self,
-        df: Union[pd.DataFrame, dd.DataFrame],
-        file_path: Union[str, Path],
+        df: pd.DataFrame | dd.DataFrame,
+        file_path: str | Path,
         **kwargs,
     ) -> None:
         """Write a DataFrame to an ORC file."""
@@ -383,7 +383,7 @@ class OrcHandler(IOHandler):
         table = pa.Table.from_pandas(df)
         orc.write_table(table, file_path)
 
-    def resolve_file_path(self, file: Union[str, Path]) -> Path:
+    def resolve_file_path(self, file: str | Path) -> Path:
         """Resolve ORC file path with extension detection."""
         file_path = Path(file)
 
@@ -444,7 +444,7 @@ class ParquetFrame:
 
     def __init__(
         self,
-        df: Optional[Union[pd.DataFrame, dd.DataFrame]] = None,
+        df: pd.DataFrame | dd.DataFrame | None = None,
         islazy: bool = False,
         track_history: bool = False,
     ) -> None:
@@ -522,7 +522,7 @@ class ParquetFrame:
             self._history.append(f"pf = pf[{key_repr}]")
 
         # If result is a dataframe, wrap it
-        if isinstance(result, (pd.DataFrame, dd.DataFrame)):
+        if isinstance(result, pd.DataFrame | dd.DataFrame):
             new_pf = ParquetFrame(
                 result,
                 isinstance(result, dd.DataFrame),
@@ -563,7 +563,7 @@ class ParquetFrame:
 
                     result = attr(*args, **kwargs)
                     # If the result is a dataframe, wrap it in a new ParquetFrame
-                    if isinstance(result, (pd.DataFrame, dd.DataFrame)):
+                    if isinstance(result, pd.DataFrame | dd.DataFrame):
                         new_pf = ParquetFrame(
                             result,
                             isinstance(result, dd.DataFrame),
@@ -628,7 +628,7 @@ class ParquetFrame:
 
     @classmethod
     def _should_use_dask(
-        cls, file_path: Path, threshold_mb: float, islazy: Optional[bool] = None
+        cls, file_path: Path, threshold_mb: float, islazy: bool | None = None
     ) -> bool:
         """Intelligently determine whether to use Dask based on multiple factors."""
         if islazy is not None:
@@ -666,10 +666,10 @@ class ParquetFrame:
     @classmethod
     def read(
         cls,
-        file: Union[str, Path],
-        threshold_mb: Optional[float] = None,
-        islazy: Optional[bool] = None,
-        format: Optional[str] = None,
+        file: str | Path,
+        threshold_mb: float | None = None,
+        islazy: bool | None = None,
+        format: str | None = None,
         **kwargs,
     ) -> "ParquetFrame":
         """
@@ -755,7 +755,7 @@ class ParquetFrame:
         return instance
 
     def save(
-        self, file: Union[str, Path], save_script: Optional[str] = None, **kwargs
+        self, file: str | Path, save_script: str | None = None, **kwargs
     ) -> "ParquetFrame":
         """
         Save the dataframe to a parquet file.
@@ -831,7 +831,7 @@ class ParquetFrame:
             print("Already a pandas DataFrame.")
         return self
 
-    def to_dask(self, npartitions: Optional[int] = None) -> "ParquetFrame":
+    def to_dask(self, npartitions: int | None = None) -> "ParquetFrame":
         """
         Convert the internal pandas dataframe to a Dask dataframe.
 
@@ -1097,7 +1097,7 @@ class ParquetFrame:
     def join(
         self,
         other: "ParquetFrame",
-        on: Union[str, list[str]],
+        on: str | list[str],
         how: str = "inner",
         suffixes: tuple[str, str] = ("_x", "_y"),
     ) -> "ParquetFrame":
@@ -1184,25 +1184,25 @@ class ParquetFrame:
         return self.sql(query.strip(), other=other)
 
     def left_join(
-        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+        self, other: "ParquetFrame", on: str | list[str], **kwargs
     ) -> "ParquetFrame":
         """Convenience method for LEFT JOIN."""
         return self.join(other, on, how="left", **kwargs)
 
     def right_join(
-        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+        self, other: "ParquetFrame", on: str | list[str], **kwargs
     ) -> "ParquetFrame":
         """Convenience method for RIGHT JOIN."""
         return self.join(other, on, how="right", **kwargs)
 
     def inner_join(
-        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+        self, other: "ParquetFrame", on: str | list[str], **kwargs
     ) -> "ParquetFrame":
         """Convenience method for INNER JOIN."""
         return self.join(other, on, how="inner", **kwargs)
 
     def outer_join(
-        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+        self, other: "ParquetFrame", on: str | list[str], **kwargs
     ) -> "ParquetFrame":
         """Convenience method for FULL OUTER JOIN."""
         return self.join(other, on, how="outer", **kwargs)
@@ -1233,7 +1233,7 @@ class ParquetFrame:
         return BioAccessor(self)
 
     @staticmethod
-    def _resolve_file_path(file: Union[str, Path]) -> Path:
+    def _resolve_file_path(file: str | Path) -> Path:
         """
         Resolve file path and handle extension detection.
 
@@ -1265,7 +1265,7 @@ class ParquetFrame:
             f"No parquet file found for '{file}' (tried .parquet, .pqt)"
         )
 
-    def _save_history_script(self, script_path: Union[str, Path]) -> None:
+    def _save_history_script(self, script_path: str | Path) -> None:
         """
         Save the session history to a Python script.
 
@@ -1292,7 +1292,7 @@ class ParquetFrame:
 
         print(f"Session history saved to '{script_path}'")
 
-    def get_history(self) -> Optional[list]:
+    def get_history(self) -> list | None:
         """
         Get the current session history.
 
@@ -1312,7 +1312,7 @@ class ParquetFrame:
             print("History tracking not enabled.")
 
     @staticmethod
-    def _ensure_parquet_extension(file: Union[str, Path]) -> Path:
+    def _ensure_parquet_extension(file: str | Path) -> Path:
         """
         Ensure the file path has a parquet extension.
 
