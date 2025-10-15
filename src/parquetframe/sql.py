@@ -6,6 +6,8 @@ supporting both pandas and Dask DataFrames with automatic JOIN operations,
 performance profiling, and query optimization.
 """
 
+from __future__ import annotations
+
 import hashlib
 import time
 import warnings
@@ -144,7 +146,7 @@ class QueryResult:
         return self.from_cache
 
     @property
-    def dataframe(self) -> "ParquetFrame":
+    def dataframe(self) -> ParquetFrame:
         """The result data as a ParquetFrame."""
         from .core import ParquetFrame
 
@@ -211,7 +213,7 @@ class SQLBuilder:
     programmatic way than writing raw SQL strings.
     """
 
-    def __init__(self, parent_frame: "ParquetFrame"):
+    def __init__(self, parent_frame: ParquetFrame):
         """Initialize the SQL builder with a parent ParquetFrame."""
         self._parent = parent_frame
         self._select_cols = ["*"]
@@ -225,7 +227,7 @@ class SQLBuilder:
         self._use_cache = True
         self._context = None
 
-    def select(self, *columns: str) -> "SQLBuilder":
+    def select(self, *columns: str) -> SQLBuilder:
         """Set the columns to select.
 
         Args:
@@ -242,7 +244,7 @@ class SQLBuilder:
             self._select_cols = list(columns)
         return self
 
-    def where(self, condition: str) -> "SQLBuilder":
+    def where(self, condition: str) -> SQLBuilder:
         """Add a WHERE condition.
 
         Args:
@@ -258,7 +260,7 @@ class SQLBuilder:
         self._where_conditions.append(condition)
         return self
 
-    def group_by(self, *columns: str) -> "SQLBuilder":
+    def group_by(self, *columns: str) -> SQLBuilder:
         """Add GROUP BY columns.
 
         Args:
@@ -273,7 +275,7 @@ class SQLBuilder:
         self._group_by_cols.extend(columns)
         return self
 
-    def having(self, condition: str) -> "SQLBuilder":
+    def having(self, condition: str) -> SQLBuilder:
         """Add a HAVING condition.
 
         Args:
@@ -288,7 +290,7 @@ class SQLBuilder:
         self._having_conditions.append(condition)
         return self
 
-    def order_by(self, *columns: str) -> "SQLBuilder":
+    def order_by(self, *columns: str) -> SQLBuilder:
         """Add ORDER BY columns.
 
         Args:
@@ -309,7 +311,7 @@ class SQLBuilder:
             self._order_by_clauses.extend(columns)
         return self
 
-    def limit(self, count: int) -> "SQLBuilder":
+    def limit(self, count: int) -> SQLBuilder:
         """Add a LIMIT clause.
 
         Args:
@@ -326,11 +328,11 @@ class SQLBuilder:
 
     def join(
         self,
-        other_frame: "ParquetFrame",
+        other_frame: ParquetFrame,
         condition: str,
         join_type: str = "JOIN",
         alias: str = "other",
-    ) -> "SQLBuilder":
+    ) -> SQLBuilder:
         """Add a JOIN clause.
 
         Args:
@@ -356,8 +358,8 @@ class SQLBuilder:
         return self
 
     def left_join(
-        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
-    ) -> "SQLBuilder":
+        self, other_frame: ParquetFrame, condition: str, alias: str = "other"
+    ) -> SQLBuilder:
         """Add a LEFT JOIN clause.
 
         Args:
@@ -371,8 +373,8 @@ class SQLBuilder:
         return self.join(other_frame, condition, "LEFT", alias)
 
     def right_join(
-        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
-    ) -> "SQLBuilder":
+        self, other_frame: ParquetFrame, condition: str, alias: str = "other"
+    ) -> SQLBuilder:
         """Add a RIGHT JOIN clause.
 
         Args:
@@ -386,8 +388,8 @@ class SQLBuilder:
         return self.join(other_frame, condition, "RIGHT", alias)
 
     def inner_join(
-        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
-    ) -> "SQLBuilder":
+        self, other_frame: ParquetFrame, condition: str, alias: str = "other"
+    ) -> SQLBuilder:
         """Add an INNER JOIN clause.
 
         Args:
@@ -401,8 +403,8 @@ class SQLBuilder:
         return self.join(other_frame, condition, "INNER", alias)
 
     def full_join(
-        self, other_frame: "ParquetFrame", condition: str, alias: str = "other"
-    ) -> "SQLBuilder":
+        self, other_frame: ParquetFrame, condition: str, alias: str = "other"
+    ) -> SQLBuilder:
         """Add a FULL JOIN clause.
 
         Args:
@@ -415,7 +417,7 @@ class SQLBuilder:
         """
         return self.join(other_frame, condition, "FULL", alias)
 
-    def profile(self, enabled: bool = True) -> "SQLBuilder":
+    def profile(self, enabled: bool = True) -> SQLBuilder:
         """Enable query profiling.
 
         Args:
@@ -427,7 +429,7 @@ class SQLBuilder:
         self._profile = enabled
         return self
 
-    def cache(self, enabled: bool = True) -> "SQLBuilder":
+    def cache(self, enabled: bool = True) -> SQLBuilder:
         """Control query caching.
 
         Args:
@@ -439,7 +441,7 @@ class SQLBuilder:
         self._use_cache = enabled
         return self
 
-    def hint(self, **hints: Any) -> "SQLBuilder":
+    def hint(self, **hints: Any) -> SQLBuilder:
         """Add optimization hints to the query.
 
         Args:
@@ -503,7 +505,7 @@ class SQLBuilder:
 
         return " ".join(query_parts)
 
-    def execute(self) -> "ParquetFrame" | QueryResult:
+    def execute(self) -> ParquetFrame | QueryResult:
         """Execute the built SQL query.
 
         Returns:

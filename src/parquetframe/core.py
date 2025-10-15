@@ -17,6 +17,8 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from .sql import QueryContext, QueryResult, SQLBuilder
+else:
+    QueryContext = QueryResult = Any
 
 
 class FileFormat(Enum):
@@ -858,9 +860,9 @@ class ParquetFrame:
         query: str,
         profile: bool = False,
         use_cache: bool = True,
-        context: "QueryContext" | None = None,
+        context: QueryContext | None = None,
         **other_frames: "ParquetFrame",
-    ) -> "ParquetFrame" | "QueryResult":
+    ) -> "ParquetFrame | QueryResult":
         """
         Execute a SQL query on this ParquetFrame using DuckDB with optional profiling.
 
@@ -943,7 +945,7 @@ class ParquetFrame:
         profile: bool = False,
         use_cache: bool = True,
         **params: Any,
-    ) -> "ParquetFrame" | "QueryResult":
+    ) -> "ParquetFrame | QueryResult":
         """
         Execute a parameterized SQL query on this ParquetFrame.
 
