@@ -20,6 +20,7 @@ import yaml
 
 from ...core import ParquetFrame
 from ...exceptions import ParquetFrameError
+from ..data import EdgeSet, VertexSet
 
 if TYPE_CHECKING:
     from .. import GraphFrame
@@ -270,7 +271,7 @@ class GraphArReader:
         islazy: bool | None,
     ) -> ParquetFrame:
         """
-        Load vertex data from GraphAr directory structure.
+        Load vertex data from GraphAr directory structure using VertexSet.
 
         Args:
             graph_dir: Path to GraphAr directory
@@ -280,7 +281,7 @@ class GraphArReader:
             islazy: Force backend selection
 
         Returns:
-            ParquetFrame containing vertex data
+            ParquetFrame containing consolidated vertex data
 
         Raises:
             GraphArError: If vertex data cannot be loaded
@@ -297,29 +298,63 @@ class GraphArReader:
         if not vertices_dir.is_dir():
             raise GraphArError(f"Vertices path is not a directory: {vertices_dir}")
 
-        # Find all parquet files in vertex subdirectories
-        vertex_files = list(vertices_dir.rglob("*.parquet"))
+        # Find vertex type subdirectories
+        vertex_type_dirs = [d for d in vertices_dir.iterdir() if d.is_dir()]
 
-        if not vertex_files:
-            # Create empty vertex data if no parquet files found
+        if not vertex_type_dirs:
+            # Try to load parquet files directly from vertices directory
+            vertex_files = list(vertices_dir.glob("*.parquet"))
+            if vertex_files:
+                try:
+                    return ParquetFrame.read(
+                        vertex_files[0], threshold_mb=threshold_mb, islazy=islazy
+                    )
+                except Exception as e:
+                    raise GraphArError(f"Failed to load vertex data: {e}") from e
+
+            # No vertex data found
             import pandas as pd
 
             empty_df = pd.DataFrame({"vertex_id": pd.Series([], dtype="int64")})
             return ParquetFrame(data=empty_df, islazy=islazy or False)
 
-        # For now, load the first parquet file found
-        # TODO: Implement proper multi-type vertex loading
-        vertex_file = vertex_files[0]
+        # Load vertex types using VertexSet
+        vertex_sets = []
+        for vertex_type_dir in vertex_type_dirs:
+            vertex_type = vertex_type_dir.name
 
-        try:
-            vertices = ParquetFrame.read(
-                vertex_file, threshold_mb=threshold_mb, islazy=islazy
-            )
-            return vertices
-        except Exception as e:
-            raise GraphArError(
-                f"Failed to load vertex data from {vertex_file}: {e}"
-            ) from e
+            # Get schema for this vertex type if available
+            vertex_schema = None
+            if schema and "vertices" in schema:
+                vertex_schema = schema["vertices"].get(vertex_type, {})
+
+            try:
+                vertex_set = VertexSet.from_parquet(
+                    path=vertex_type_dir,
+                    vertex_type=vertex_type,
+                    threshold_mb=threshold_mb,
+                    islazy=islazy,
+                    properties=vertex_schema.get("properties", {}),
+                    schema=vertex_schema,
+                )
+                vertex_sets.append(vertex_set)
+            except Exception as e:
+                warnings.warn(
+                    f"Failed to load vertex type '{vertex_type}': {e}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        if not vertex_sets:
+            # No vertex sets loaded successfully
+            import pandas as pd
+
+            empty_df = pd.DataFrame({"vertex_id": pd.Series([], dtype="int64")})
+            return ParquetFrame(data=empty_df, islazy=islazy or False)
+
+        # For now, return the first vertex set's data
+        # TODO: Implement proper multi-type vertex consolidation
+        return vertex_sets[0].data
 
     def _load_edges(
         self,
@@ -330,7 +365,7 @@ class GraphArReader:
         islazy: bool | None,
     ) -> ParquetFrame:
         """
-        Load edge data from GraphAr directory structure.
+        Load edge data from GraphAr directory structure using EdgeSet.
 
         Args:
             graph_dir: Path to GraphAr directory
@@ -340,7 +375,7 @@ class GraphArReader:
             islazy: Force backend selection
 
         Returns:
-            ParquetFrame containing edge data
+            ParquetFrame containing consolidated edge data
 
         Raises:
             GraphArError: If edge data cannot be loaded
@@ -362,11 +397,21 @@ class GraphArReader:
         if not edges_dir.is_dir():
             raise GraphArError(f"Edges path is not a directory: {edges_dir}")
 
-        # Find all parquet files in edge subdirectories
-        edge_files = list(edges_dir.rglob("*.parquet"))
+        # Find edge type subdirectories
+        edge_type_dirs = [d for d in edges_dir.iterdir() if d.is_dir()]
 
-        if not edge_files:
-            # Create empty edge data if no parquet files found
+        if not edge_type_dirs:
+            # Try to load parquet files directly from edges directory
+            edge_files = list(edges_dir.glob("*.parquet"))
+            if edge_files:
+                try:
+                    return ParquetFrame.read(
+                        edge_files[0], threshold_mb=threshold_mb, islazy=islazy
+                    )
+                except Exception as e:
+                    raise GraphArError(f"Failed to load edge data: {e}") from e
+
+            # No edge data found
             import pandas as pd
 
             empty_df = pd.DataFrame(
@@ -377,17 +422,48 @@ class GraphArReader:
             )
             return ParquetFrame(data=empty_df, islazy=islazy or False)
 
-        # For now, load the first parquet file found
-        # TODO: Implement proper multi-type edge loading
-        edge_file = edge_files[0]
+        # Load edge types using EdgeSet
+        edge_sets = []
+        for edge_type_dir in edge_type_dirs:
+            edge_type = edge_type_dir.name
 
-        try:
-            edges = ParquetFrame.read(
-                edge_file, threshold_mb=threshold_mb, islazy=islazy
+            # Get schema for this edge type if available
+            edge_schema = None
+            if schema and "edges" in schema:
+                edge_schema = schema["edges"].get(edge_type, {})
+
+            try:
+                edge_set = EdgeSet.from_parquet(
+                    path=edge_type_dir,
+                    edge_type=edge_type,
+                    threshold_mb=threshold_mb,
+                    islazy=islazy,
+                    properties=edge_schema.get("properties", {}),
+                    schema=edge_schema,
+                )
+                edge_sets.append(edge_set)
+            except Exception as e:
+                warnings.warn(
+                    f"Failed to load edge type '{edge_type}': {e}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        if not edge_sets:
+            # No edge sets loaded successfully
+            import pandas as pd
+
+            empty_df = pd.DataFrame(
+                {
+                    "src": pd.Series([], dtype="int64"),
+                    "dst": pd.Series([], dtype="int64"),
+                }
             )
-            return edges
-        except Exception as e:
-            raise GraphArError(f"Failed to load edge data from {edge_file}: {e}") from e
+            return ParquetFrame(data=empty_df, islazy=islazy or False)
+
+        # For now, return the first edge set's data
+        # TODO: Implement proper multi-type edge consolidation
+        return edge_sets[0].data
 
     def validate_directory(self, path: str | Path) -> bool:
         """
