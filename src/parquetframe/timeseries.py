@@ -64,13 +64,23 @@ def detect_datetime_columns(
         ]
 
     # Work with pandas DataFrame for detection
-    if isinstance(df, dd.DataFrame):
-        # Use efficient sampling for Dask
-        sample_df = df.head(sample_size, npartitions=-1).compute()
-        df_id = f"dask_{id(df)}_{len(df.columns)}"
-    else:
+    if isinstance(df, pd.DataFrame):
+        # For pandas DataFrame
         sample_df = df.head(sample_size)
         df_id = f"pandas_{id(df)}_{len(df.columns)}"
+    elif hasattr(df, "compute"):
+        # For Dask DataFrame
+        try:
+            sample_df = df.head(sample_size, npartitions=-1).compute()
+            df_id = f"dask_{id(df)}_{len(df.columns)}"
+        except AttributeError:
+            # Fallback if compute() doesn't exist despite hasattr check
+            sample_df = df.head(sample_size)
+            df_id = f"pandas_fallback_{id(df)}_{len(df.columns)}"
+    else:
+        # Fallback for other DataFrame-like objects
+        sample_df = df.head(sample_size)
+        df_id = f"unknown_{id(df)}_{len(df.columns)}"
 
     # Create sample hash for caching
     if use_cache:
@@ -177,6 +187,11 @@ class TimeSeriesAccessor:
         # Check cache first
         cache_key = f"datetime_index_{datetime_col}_{self.pf.islazy}"
         if cache_key in self._operation_cache:
+            return
+
+        # If DataFrame already has a datetime index, we're done
+        if isinstance(self.pf._df.index, pd.DatetimeIndex):
+            self._operation_cache[cache_key] = True
             return
 
         # Auto-detect datetime column if not specified
@@ -515,9 +530,13 @@ class TimeSeriesResampler:
         """Calculate mean for each resampling group."""
         if self.pf.islazy:
             # For Dask, we need to use different approach
-            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).mean()
+            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).mean(
+                numeric_only=True
+            )
         else:
-            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).mean()
+            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).mean(
+                numeric_only=True
+            )
 
         return self.pf.__class__(resampled_df, self.pf.islazy, self.pf._track_history)
 
@@ -551,9 +570,13 @@ class TimeSeriesResampler:
     def std(self) -> ParquetFrame:
         """Calculate standard deviation for each resampling group."""
         if self.pf.islazy:
-            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).std()
+            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).std(
+                numeric_only=True
+            )
         else:
-            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).std()
+            resampled_df = self.pf._df.resample(self.rule, **self.kwargs).std(
+                numeric_only=True
+            )
 
         return self.pf.__class__(resampled_df, self.pf.islazy, self.pf._track_history)
 
@@ -586,12 +609,16 @@ class TimeSeriesRolling:
 
     def mean(self) -> ParquetFrame:
         """Calculate rolling mean."""
-        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).mean()
+        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).mean(
+            numeric_only=True
+        )
         return self.pf.__class__(rolling_df, self.pf.islazy, self.pf._track_history)
 
     def sum(self) -> ParquetFrame:
         """Calculate rolling sum."""
-        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).sum()
+        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).sum(
+            numeric_only=True
+        )
         return self.pf.__class__(rolling_df, self.pf.islazy, self.pf._track_history)
 
     def max(self) -> ParquetFrame:
@@ -606,7 +633,9 @@ class TimeSeriesRolling:
 
     def std(self) -> ParquetFrame:
         """Calculate rolling standard deviation."""
-        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).std()
+        rolling_df = self.pf._df.rolling(self.window, **self.kwargs).std(
+            numeric_only=True
+        )
         return self.pf.__class__(rolling_df, self.pf.islazy, self.pf._track_history)
 
     def apply(self, func) -> ParquetFrame:

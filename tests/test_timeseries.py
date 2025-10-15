@@ -145,12 +145,18 @@ class TestTimeSeriesAccessor:
 
     def test_resample_operations(self):
         """Test time-series resampling operations."""
+        # Use original datetime data directly instead of CSV round-trip
+        dates = pd.date_range("2023-01-01", periods=100, freq="h")
+        ts_data = pd.DataFrame(
+            {"timestamp": dates, "value": range(100), "category": ["A", "B"] * 50}
+        )
         # Set timestamp as index for resampling
-        pf_indexed = ParquetFrame(self.ts_data.set_index("timestamp"))
+        pf_indexed = ParquetFrame(ts_data.set_index("timestamp"))
 
-        # Test daily resampling with mean
+        # Test daily resampling with mean (only numeric columns)
         daily_mean = pf_indexed.ts.resample("1D").mean()
         assert isinstance(daily_mean, ParquetFrame)
+        assert len(daily_mean.pandas_df) > 0  # Should have resampled data
 
         # Test hourly resampling with sum
         hourly_sum = pf_indexed.ts.resample("1h").sum()
@@ -162,8 +168,13 @@ class TestTimeSeriesAccessor:
 
     def test_rolling_operations(self):
         """Test rolling window operations."""
+        # Use original datetime data directly instead of CSV round-trip
+        dates = pd.date_range("2023-01-01", periods=100, freq="h")
+        ts_data = pd.DataFrame(
+            {"timestamp": dates, "value": range(100), "category": ["A", "B"] * 50}
+        )
         # Set timestamp as index
-        pf_indexed = ParquetFrame(self.ts_data.set_index("timestamp"))
+        pf_indexed = ParquetFrame(ts_data.set_index("timestamp"))
 
         # Test rolling window operations
         rolling_mean = pf_indexed.ts.rolling(5).mean()
@@ -218,7 +229,7 @@ class TestTimeSeriesWithDask:
             {
                 "timestamp": dates,
                 "value": range(1000),
-                "category": ["A", "B", "C"] * 334,  # Ensure length matches
+                "category": (["A", "B", "C"] * 334)[:1000],  # Ensure length matches
             }
         )
 
