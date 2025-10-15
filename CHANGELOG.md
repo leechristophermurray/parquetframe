@@ -10,6 +10,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.5.0] - 2025-01-15
+
+### 🧮 Advanced Analytics Features (Phase 0.3)
+
+### Added
+- 📊 **Statistical Analysis Accessor** - New `.stats` property for comprehensive statistical operations:
+  - `describe_extended()` - Extended descriptive statistics beyond pandas describe()
+  - `correlation_matrix()` - Pearson, Spearman, and Kendall correlation analysis
+  - `distribution_summary()` - Distribution analysis with histogram and normality testing
+  - `detect_outliers()` - Multiple outlier detection methods (IQR, Z-score, Isolation Forest)
+  - `normality_test()` and `correlation_test()` - Statistical hypothesis testing
+  - `linear_regression()` - Simple and multiple linear regression analysis
+- ⏱️ **Time-Series Analysis Accessor** - New `.ts` property for temporal data operations:
+  - `detect_datetime_columns()` - Automatic datetime column detection with multiple format support
+  - `parse_datetime()` - Flexible datetime parsing with format inference
+  - `resample()` - Time-based resampling with multiple aggregation methods
+  - `rolling()` - Rolling window operations (mean, std, sum, max, min, custom functions)
+  - `shift()`, `lag()`, `lead()` - Temporal data shifting for lag analysis
+  - `between_time()`, `at_time()` - Time-of-day filtering operations
+- 🔧 **CLI Analytics Commands**:
+  - `pframe analyze` - Statistical analysis with options for correlation, outliers, regression
+  - `pframe timeseries` - Time-series operations with resampling, rolling, shifting
+  - Rich terminal output with formatted results and save options
+- 📚 **Comprehensive Documentation**:
+  - Complete analytics guide (`docs/analytics.md`) with examples and best practices
+  - Dedicated time-series documentation (`docs/timeseries.md`) with workflow patterns
+  - Updated README with analytics examples and CLI reference
+
+### Enhanced
+- ⚡ **Performance Optimizations**:
+  - LRU caching for expensive datetime detection and statistical computations
+  - Memory-aware operation selection with automatic chunking for large datasets
+  - Optimized Dask operations with efficient sampling and batch processing
+  - Progress warnings for large datasets and memory-intensive operations
+  - Chunked processing for statistical calculations on large pandas datasets
+- 🔄 **Backend Intelligence** - Automatic pandas/Dask selection for analytics operations
+- 🧪 **Test Coverage** - 80+ comprehensive tests for statistical and time-series functionality
+- 📖 **Documentation** - Updated feature highlights and CLI commands in README
+
+### Examples
+
+**Statistical Analysis:**
+```python
+# Extended descriptive statistics
+stats = pf.stats.describe_extended()
+
+# Correlation analysis
+corr_matrix = pf.stats.correlation_matrix(method='spearman')
+
+# Outlier detection
+outliers = pf.stats.detect_outliers(['price', 'volume'], method='iqr')
+
+# Linear regression
+regression = pf.stats.linear_regression('price', ['volume', 'market_cap'])
+```
+
+**Time-Series Operations:**
+```python
+# Automatic datetime detection
+ts_cols = pf.ts.detect_datetime_columns()
+
+# Resample to daily averages
+daily_avg = pf.ts.resample('D', method='mean')
+
+# Rolling 7-day window
+rolling = pf.ts.rolling(7, method='mean')
+
+# Lag analysis
+lagged = pf.ts.shift(periods=1)
+```
+
+**CLI Analytics:**
+```bash
+# Statistical analysis
+pframe analyze data.parquet --stats describe_extended --outliers iqr
+
+# Time-series operations
+pframe timeseries stocks.parquet --resample 'D' --method mean --rolling 7
+```
+
+### Technical Details
+- Intelligent backend dispatching for both pandas and Dask workflows
+- Memory usage estimation for optimal processing strategy selection
+- Caching system for repeated computations to improve performance
+- Comprehensive type hints and docstrings for all analytics functions
+- Integration with existing CLI and SQL functionality
+
+### Breaking Changes
+- None - All changes are backwards compatible additions
+
 ## [0.4.2] - 2025-01-15
 
 ### 🔧 Critical Type System Fixes
