@@ -20,7 +20,7 @@ SAMPLE_USERS = pd.DataFrame(
         "id": [1, 2, 3, 4, 5],
         "name": ["Alice", "Bob", "Charlie", "Diana", "Eve"],
         "age": [25, 30, 35, 28, 32],
-        "city": ["NYC", "LA", "Chicago", "NYC", "LA"],
+        "department": ["Engineering", "Sales", "Engineering", "Marketing", "Sales"],
         "salary": [50000, 75000, 60000, 55000, 80000],
         "active": [True, True, False, True, True],
     }
@@ -136,7 +136,7 @@ class TestSQLOperationsMatrix:
             "id",
             "name",
             "age",
-            "city",
+            "department",
             "salary",
             "active",
         }
@@ -157,9 +157,11 @@ class TestSQLOperationsMatrix:
         assert list(result.pandas_df["name"]) == ["Eve", "Charlie"]
 
         # Test string filtering
-        result = pf.sql("SELECT name FROM df WHERE city = 'NYC' ORDER BY name")
-        assert len(result) == 2  # Alice, Diana
-        assert set(result.pandas_df["name"]) == {"Alice", "Diana"}
+        result = pf.sql(
+            "SELECT name FROM df WHERE department = 'Engineering' ORDER BY name"
+        )
+        assert len(result) == 2  # Alice, Charlie
+        assert set(result.pandas_df["name"]) == {"Alice", "Charlie"}
 
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_aggregation_all_formats(self, matrix_test_files, format_name):
@@ -178,15 +180,15 @@ class TestSQLOperationsMatrix:
         # Test GROUP BY with aggregation
         result = pf.sql(
             """
-            SELECT city, COUNT(*) as user_count, AVG(salary) as avg_salary
+            SELECT department, COUNT(*) as user_count, AVG(salary) as avg_salary
             FROM df
-            GROUP BY city
-            ORDER BY city
+            GROUP BY department
+            ORDER BY department
         """
         )
-        assert len(result) == 3  # NYC, LA, Chicago
-        cities = set(result.pandas_df["city"])
-        assert cities == {"NYC", "LA", "Chicago"}
+        assert len(result) == 3  # Engineering, Marketing, Sales
+        departments = set(result.pandas_df["department"])
+        assert departments == {"Engineering", "Marketing", "Sales"}
 
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
     def test_window_functions_all_formats(self, matrix_test_files, format_name):
@@ -234,7 +236,7 @@ class TestSQLOperationsMatrix:
             """
             SELECT
                 u.name,
-                u.city,
+                u.department,
                 o.product,
                 o.amount
             FROM df u
@@ -247,7 +249,7 @@ class TestSQLOperationsMatrix:
         )
 
         assert len(result) > 0
-        expected_cols = {"name", "city", "product", "amount"}
+        expected_cols = {"name", "department", "product", "amount"}
         assert set(result.pandas_df.columns) == expected_cols
 
     @pytest.mark.parametrize("format_name", list(FORMAT_CONFIGS.keys()))
@@ -457,27 +459,27 @@ class TestSQLIntegrationMatrix:
             """
             WITH user_stats AS (
                 SELECT
-                    u.city,
+                    u.department,
                     COUNT(u.id) as user_count,
                     AVG(u.age) as avg_age,
                     AVG(u.salary) as avg_salary
                 FROM df u
                 WHERE u.active = true
-                GROUP BY u.city
+                GROUP BY u.department
             ),
             order_stats AS (
                 SELECT
-                    u.city,
+                    u.department,
                     COUNT(o.order_id) as order_count,
                     SUM(o.amount) as total_revenue,
                     AVG(o.amount) as avg_order_value
                 FROM df u
                 JOIN orders o ON u.id = o.user_id
                 WHERE o.status = 'completed'
-                GROUP BY u.city
+                GROUP BY u.department
             )
             SELECT
-                us.city,
+                us.department,
                 us.user_count,
                 us.avg_age,
                 us.avg_salary,
@@ -485,7 +487,7 @@ class TestSQLIntegrationMatrix:
                 COALESCE(os.total_revenue, 0) as total_revenue,
                 COALESCE(os.avg_order_value, 0) as avg_order_value
             FROM user_stats us
-            LEFT JOIN order_stats os ON us.city = os.city
+            LEFT JOIN order_stats os ON us.department = os.department
             ORDER BY us.avg_salary DESC
         """,
             profile=True,
@@ -499,7 +501,7 @@ class TestSQLIntegrationMatrix:
         assert len(result.data) > 0
 
         expected_cols = {
-            "city",
+            "department",
             "user_count",
             "avg_age",
             "avg_salary",

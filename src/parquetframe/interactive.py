@@ -738,7 +738,7 @@ class InteractiveSession:
             )
             if current_queries > 0:
                 self.console.print(
-                    f"  • Success rate: [green]{successful_current/current_queries:.1%}[/green]"
+                    f"  • Success rate: [green]{successful_current / current_queries:.1%}[/green]"
                 )
             self.console.print(
                 f"  • AI enabled: [{'green' if self.ai_enabled else 'red'}]{'Yes' if self.ai_enabled else 'No'}[/]"

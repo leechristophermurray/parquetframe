@@ -260,7 +260,7 @@ def save_benchmark_results(benchmark: Any, temp_path: Path) -> None:
     print("🔍 Summary:")
     print(f"  • Total benchmarks: {all_results['summary']['total_benchmarks']}")
     print(
-        f"  • Success rate: {all_results['summary']['successful_benchmarks']/all_results['summary']['total_benchmarks']*100:.1f}%"
+        f"  • Success rate: {all_results['summary']['successful_benchmarks'] / all_results['summary']['total_benchmarks'] * 100:.1f}%"
     )
     print(f"  • Average time: {all_results['summary']['average_execution_time']:.3f}s")
 

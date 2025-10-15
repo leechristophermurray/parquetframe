@@ -247,6 +247,112 @@ pframe sql "SELECT * FROM df WHERE complex_condition" \
     --explain
 ```
 
+## Multi-Format SQL Support
+
+ParquetFrame's SQL engine supports queries across multiple file formats with automatic format detection and intelligent backend selection.
+
+### Supported Formats
+
+| Format | Extension | Read Support | Write Support | Special Notes |
+|--------|-----------|--------------|---------------|--------------|
+| **Parquet** | `.parquet`, `.pqt` | ✅ | ✅ | Optimal performance, supports nested data |
+| **CSV** | `.csv` | ✅ | ✅ | Automatic delimiter detection |
+| **TSV** | `.tsv` | ✅ | ✅ | Tab-separated values |
+| **JSON** | `.json` | ✅ | ✅ | Supports nested structures |
+| **JSON Lines** | `.jsonl`, `.ndjson` | ✅ | ✅ | Streaming-friendly format |
+| **ORC** | `.orc` | ✅ | ✅ | Requires pyarrow with ORC support |
+
+### Cross-Format Operations
+
+```python
+import parquetframe as pf
+
+# Load different formats
+users_csv = pf.read("users.csv")        # CSV format
+orders_json = pf.read("orders.json")    # JSON format
+products_pqt = pf.read("products.pqt")  # Parquet format
+
+# Cross-format JOIN query
+result = users_csv.sql("""
+    SELECT
+        u.name,
+        u.email,
+        COUNT(o.order_id) as order_count,
+        SUM(o.amount) as total_spent,
+        AVG(p.price) as avg_product_price
+    FROM df u
+    LEFT JOIN orders o ON u.user_id = o.user_id
+    LEFT JOIN products p ON o.product_id = p.product_id
+    WHERE u.active = true
+    GROUP BY u.name, u.email
+    HAVING order_count > 0
+    ORDER BY total_spent DESC
+""", orders=orders_json, products=products_pqt)
+
+print(f"Analysis across 3 formats: {len(result)} active customers")
+```
+
+### Format-Specific Considerations
+
+#### CSV/TSV Limitations
+- No nested data structures
+- Data type inference may vary
+- NULL values represented as empty strings or "null"
+
+#### JSON Advantages
+- Native support for nested objects and arrays
+- Preserves data types better than CSV
+- Good for semi-structured data
+
+#### Parquet Optimization
+- Columnar storage for analytical queries
+- Built-in compression and encoding
+- Excellent for large datasets
+
+#### ORC Compatibility
+- Optimized for Hadoop ecosystems
+- Strong compression and type system
+- May require additional dependencies
+
+### Performance by Format
+
+```python
+# Benchmark different formats
+import time
+
+formats = {
+    'parquet': pf.read('data.parquet'),
+    'csv': pf.read('data.csv'),
+    'json': pf.read('data.json')
+}
+
+query = "SELECT category, AVG(value) as avg_val FROM df GROUP BY category"
+
+for format_name, df in formats.items():
+    start = time.time()
+    result = df.sql(query)
+    duration = time.time() - start
+    print(f"{format_name}: {duration:.3f}s ({len(result)} results)")
+```
+
+### Intelligent Backend Selection
+
+ParquetFrame automatically chooses the optimal backend based on data size:
+
+```python
+# Small files (< 100MB) → pandas (fast operations)
+small_data = pf.read("small_dataset.csv")
+result = small_data.sql("SELECT COUNT(*) FROM df")  # Uses pandas
+
+# Large files (> 100MB) → Dask (memory efficient)
+large_data = pf.read("huge_dataset.parquet")
+result = large_data.sql("SELECT COUNT(*) FROM df")  # Uses Dask
+
+# Manual backend control
+forced_dask = pf.read("data.csv", islazy=True)      # Force Dask
+forced_pandas = pf.read("data.json", islazy=False)  # Force pandas
+```
+
 ## Performance and Optimization
 
 ### Query Performance Analysis

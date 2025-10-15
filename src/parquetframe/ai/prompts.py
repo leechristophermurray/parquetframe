@@ -27,7 +27,7 @@ class PromptTemplate:
         if self.few_shot_examples:
             examples_text = "\n--- Examples ---\n"
             for example in self.few_shot_examples:
-                examples_text += f"Question: \"{example['question']}\"\n"
+                examples_text += f'Question: "{example["question"]}"\n'
                 examples_text += f"SQL: {example['sql']}\n\n"
 
         return f"{formatted_system}\n\n{examples_text}{self.output_format_instructions}"

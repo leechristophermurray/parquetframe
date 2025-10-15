@@ -341,6 +341,53 @@ class TestAISQLEdgeCases:
     """Test AI SQL generation edge cases and error conditions."""
 
     @pytest.fixture
+    def edge_case_ai_test_files(self):
+        """Create test files specifically for edge case testing."""
+        temp_dir = tempfile.mkdtemp()
+        files = {"users": {}}
+
+        # Create user data for edge case testing
+        users_data = pd.DataFrame(
+            {
+                "id": [1, 2, 3, 4, 5],
+                "name": ["Alice", "Bob", "Charlie", "Diana", "Eve"],
+                "age": [25, 30, 35, 28, 32],
+                "department": [
+                    "Engineering",
+                    "Sales",
+                    "Engineering",
+                    "Marketing",
+                    "Sales",
+                ],
+                "salary": [50000, 75000, 60000, 55000, 80000],
+                "active": [True, True, False, True, True],
+            }
+        )
+
+        # Save in different formats
+        formats = {
+            "parquet": lambda df, path: df.to_parquet(path),
+            "csv": lambda df, path: df.to_csv(path, index=False),
+            "json": lambda df, path: df.to_json(path, orient="records"),
+        }
+
+        for format_name, writer_func in formats.items():
+            ext = ".parquet" if format_name == "parquet" else f".{format_name}"
+            file_path = Path(temp_dir) / f"users{ext}"
+            try:
+                writer_func(users_data, file_path)
+                files["users"][format_name] = file_path
+            except Exception:
+                continue
+
+        yield temp_dir, files
+
+        # Cleanup
+        import shutil
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    @pytest.fixture
     def edge_case_data(self):
         """Create edge case data for testing."""
         # Data with NULL values and edge cases
@@ -397,10 +444,10 @@ class TestAISQLEdgeCases:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_ai_empty_result_handling_smoke(
-        self, ai_test_files, edge_case_mock_ai_agent
+        self, edge_case_ai_test_files, edge_case_mock_ai_agent
     ):
         """Smoke test: AI handles queries with empty results."""
-        temp_dir, files = ai_test_files
+        temp_dir, files = edge_case_ai_test_files
 
         pf = pqf.read(files["users"]["parquet"])
 
@@ -423,9 +470,11 @@ class TestAISQLEdgeCases:
             "active",
         }
 
-    def test_ai_performance_smoke(self, ai_test_files, edge_case_mock_ai_agent):
+    def test_ai_performance_smoke(
+        self, edge_case_ai_test_files, edge_case_mock_ai_agent
+    ):
         """Smoke test: AI queries complete within reasonable time."""
-        temp_dir, files = ai_test_files
+        temp_dir, files = edge_case_ai_test_files
 
         pf = pqf.read(files["users"]["parquet"])
 

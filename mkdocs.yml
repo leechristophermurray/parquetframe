@@ -82,6 +82,7 @@ nav:
     - Prompt Engineering: ai/prompts.md
   - SQL & Database:
     - SQL Support: sql/index.md
+    - SQL Cookbook: sql/cookbook.md
     - DuckDB Integration: sql/duckdb.md
     - Database Connections: sql/databases.md
   - Genomics & BioFrame:

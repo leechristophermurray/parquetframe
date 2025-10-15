@@ -105,7 +105,7 @@ class WorkflowVisualizer:
             # Add sequential dependencies for steps without explicit input
             if not input_name and i > 0:
                 prev_step_config = steps[i - 1]
-                prev_step_name = prev_step_config.get("name", f"step_{i-1}")
+                prev_step_name = prev_step_config.get("name", f"step_{i - 1}")
                 G.add_edge(prev_step_name, step_name, type="sequence")
 
         return G

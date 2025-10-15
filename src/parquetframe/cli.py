@@ -1156,7 +1156,7 @@ def workflow_history(workflow_name, limit, status, details, cleanup, stats):
                     if status and execution.status != status:
                         continue
 
-                    console.print(f"\n{'='*50}")
+                    console.print(f"\n{'=' * 50}")
                     console.print(
                         f"[bold]Execution ID:[/bold] {execution.execution_id}"
                     )
