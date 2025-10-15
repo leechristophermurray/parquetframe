@@ -9,7 +9,8 @@ performance profiling, and query optimization.
 import hashlib
 import time
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 try:
@@ -32,9 +33,66 @@ _MAX_CACHE_SIZE = 100
 
 
 @dataclass
+class QueryContext:
+    """
+    Context object for SQL query execution with optimization hints.
+
+    Attributes:
+        format_hints: Format hints for file reading (e.g., {'df': 'csv'})
+        predicate_pushdown: Enable predicate pushdown optimization
+        projection_pushdown: Enable projection pushdown optimization
+        enable_parallel: Enable parallel query execution
+        memory_limit: Memory limit for query execution (e.g., '1GB')
+        temp_directory: Directory for temporary files
+        enable_statistics: Enable query statistics collection
+        custom_pragmas: Additional DuckDB PRAGMA statements
+    """
+
+    format_hints: dict[str, str] = field(default_factory=dict)
+    predicate_pushdown: bool = True
+    projection_pushdown: bool = True
+    enable_parallel: bool = True
+    memory_limit: Optional[str] = None
+    temp_directory: Optional[Union[str, Path]] = None
+    enable_statistics: bool = False
+    custom_pragmas: dict[str, Any] = field(default_factory=dict)
+
+    def to_duckdb_pragmas(self) -> list[str]:
+        """Convert context to DuckDB PRAGMA statements."""
+        pragmas = []
+
+        if not self.predicate_pushdown:
+            pragmas.append("PRAGMA enable_optimizer=false")
+
+        if not self.enable_parallel:
+            pragmas.append("PRAGMA threads=1")
+
+        if self.memory_limit:
+            pragmas.append(f"PRAGMA memory_limit='{self.memory_limit}'")
+
+        if self.temp_directory:
+            pragmas.append(f"PRAGMA temp_directory='{self.temp_directory}'")
+
+        if self.enable_statistics:
+            pragmas.append("PRAGMA enable_profiling=true")
+            pragmas.append("PRAGMA profiling_output='query_profiling.json'")
+
+        # Add custom pragmas
+        for pragma, value in self.custom_pragmas.items():
+            if value is True:
+                pragmas.append(f"PRAGMA {pragma}=true")
+            elif value is False:
+                pragmas.append(f"PRAGMA {pragma}=false")
+            elif value is not None:
+                pragmas.append(f"PRAGMA {pragma}='{value}'")
+
+        return pragmas
+
+
+@dataclass
 class QueryResult:
     """
-    Enhanced query result with execution metadata.
+    Enhanced query result with execution metadata and profiling information.
 
     Attributes:
         data: The pandas DataFrame result
@@ -44,6 +102,8 @@ class QueryResult:
         query: The original SQL query
         from_cache: Whether the result came from cache
         memory_usage: Approximate memory usage in MB
+        duckdb_profile: Optional DuckDB query profiling information
+        query_plan: Optional query execution plan
     """
 
     data: pd.DataFrame
@@ -53,6 +113,8 @@ class QueryResult:
     query: str
     from_cache: bool = False
     memory_usage: Optional[float] = None
+    duckdb_profile: Optional[dict] = None
+    query_plan: Optional[str] = None
 
     def __post_init__(self):
         """Calculate memory usage after initialization."""
@@ -161,6 +223,7 @@ class SQLBuilder:
         self._joins = []
         self._profile = False
         self._use_cache = True
+        self._context = None
 
     def select(self, *columns: str) -> "SQLBuilder":
         """Set the columns to select.
@@ -376,6 +439,27 @@ class SQLBuilder:
         self._use_cache = enabled
         return self
 
+    def hint(self, **hints: Any) -> "SQLBuilder":
+        """Add optimization hints to the query.
+
+        Args:
+            **hints: Optimization hints (same as QueryContext parameters)
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> pf.select("*").hint(memory_limit='1GB').execute()
+            >>> pf.select("*").hint(enable_parallel=False, predicate_pushdown=True).execute()
+        """
+        if self._context is None:
+            self._context = QueryContext(**hints)
+        else:
+            # Update existing context with new hints
+            for key, value in hints.items():
+                setattr(self._context, key, value)
+        return self
+
     def build(self) -> str:
         """Build the SQL query string.
 
@@ -433,7 +517,11 @@ class SQLBuilder:
             other_frames[join["alias"]] = join["frame"]
 
         return self._parent.sql(
-            query, profile=self._profile, use_cache=self._use_cache, **other_frames
+            query,
+            profile=self._profile,
+            use_cache=self._use_cache,
+            context=self._context,
+            **other_frames,
         )
 
 
@@ -531,12 +619,86 @@ def build_join_query(
     return " ".join(parts)
 
 
+def query_dataframes_from_files(
+    main_file: Union[str, Path],
+    query: str,
+    other_files: Optional[dict[str, Union[str, Path]]] = None,
+    format_hints: Optional[dict[str, str]] = None,
+    profile: bool = False,
+    use_cache: bool = True,
+    threshold_mb: float = 100.0,
+    **kwargs: Any,
+) -> Union[pd.DataFrame, QueryResult]:
+    """
+    Execute a SQL query directly on files of various formats using DuckDB.
+
+    This function reads files into DataFrames and then executes the SQL query,
+    with intelligent backend selection (pandas vs Dask) based on file size.
+
+    Args:
+        main_file: Main file path, available as 'df' in the query
+        query: SQL query string to execute
+        other_files: Additional files for JOINs, keyed by table name
+        format_hints: Optional format hints for ambiguous files (e.g., {'df': 'csv'})
+        profile: If True, return QueryResult with execution metadata
+        use_cache: If True, use cached results for identical queries
+        threshold_mb: File size threshold for Dask vs pandas selection
+        **kwargs: Additional arguments passed to file readers
+
+    Returns:
+        pandas DataFrame with query results, or QueryResult if profile=True
+
+    Raises:
+        ImportError: If DuckDB is not installed
+        FileNotFoundError: If any specified file is not found
+        ValueError: If query execution fails
+
+    Examples:
+        >>> # Query CSV files directly
+        >>> result = query_dataframes_from_files(
+        ...     "sales.csv",
+        ...     "SELECT * FROM df WHERE amount > 100"
+        ... )
+        >>>
+        >>> # Join different format files
+        >>> result = query_dataframes_from_files(
+        ...     "sales.csv",
+        ...     "SELECT * FROM df JOIN customers ON df.customer_id = customers.id",
+        ...     other_files={'customers': 'customers.json'}
+        ... )
+    """
+    from .core import ParquetFrame
+
+    if other_files is None:
+        other_files = {}
+    if format_hints is None:
+        format_hints = {}
+
+    # Read main file
+    main_format = format_hints.get("df")
+    main_pf = ParquetFrame.read(
+        main_file, format=main_format, threshold_mb=threshold_mb, **kwargs
+    )
+
+    # Read other files
+    other_pfs = {}
+    for name, file_path in other_files.items():
+        format_hint = format_hints.get(name)
+        other_pfs[name] = ParquetFrame.read(
+            file_path, format=format_hint, threshold_mb=threshold_mb, **kwargs
+        )
+
+    # Execute query using existing dataframe method
+    return main_pf.sql(query, profile=profile, use_cache=use_cache, **other_pfs)
+
+
 def query_dataframes(
     main_df: Union[pd.DataFrame, dd.DataFrame],
     query: str,
     other_dfs: Optional[dict[str, Union[pd.DataFrame, dd.DataFrame]]] = None,
     profile: bool = False,
     use_cache: bool = True,
+    context: Optional[QueryContext] = None,
     **kwargs: Any,
 ) -> Union[pd.DataFrame, QueryResult]:
     """
@@ -548,6 +710,7 @@ def query_dataframes(
         other_dfs: Additional DataFrames for JOINs, keyed by table name.
         profile: If True, return QueryResult with execution metadata.
         use_cache: If True, use cached results for identical queries.
+        context: Optional QueryContext with optimization hints and settings.
         **kwargs: Additional arguments (reserved for future use).
 
     Returns:
@@ -561,9 +724,14 @@ def query_dataframes(
         >>> df1 = pd.DataFrame({'a': [1, 2], 'b': ['x', 'y']})
         >>> df2 = pd.DataFrame({'a': [1, 2], 'c': ['p', 'q']})
         >>> result = query_dataframes(df1, "SELECT * FROM df JOIN other ON df.a = other.a", {'other': df2})
+        >>>
         >>> # With profiling
         >>> result = query_dataframes(df1, "SELECT COUNT(*) FROM df", profile=True)
         >>> print(result.summary())  # Shows execution time and metadata
+        >>>
+        >>> # With optimization hints
+        >>> ctx = QueryContext(memory_limit='1GB', enable_parallel=False)
+        >>> result = query_dataframes(df1, query, context=ctx)
     """
     if not DUCKDB_AVAILABLE:
         raise ImportError(
@@ -582,7 +750,16 @@ def query_dataframes(
 
         # Check cache
         if cache_key in _QUERY_CACHE:
-            cached_result, cached_time = _QUERY_CACHE[cache_key]
+            cached_data = _QUERY_CACHE[cache_key]
+            if len(cached_data) == 2:
+                # Old cache format (data, time)
+                cached_result, cached_time = cached_data
+                cached_profile = None
+                cached_plan = None
+            else:
+                # New cache format (data, time, profile, plan)
+                cached_result, cached_time, cached_profile, cached_plan = cached_data
+
             if profile:
                 return QueryResult(
                     data=cached_result.copy(),
@@ -591,6 +768,8 @@ def query_dataframes(
                     column_count=len(cached_result.columns),
                     query=query,
                     from_cache=True,
+                    duckdb_profile=cached_profile,
+                    query_plan=cached_plan,
                 )
             else:
                 return cached_result.copy()
@@ -613,7 +792,33 @@ def query_dataframes(
     # Create DuckDB connection
     conn = duckdb.connect(database=":memory:")
 
+    # Apply optimization context if provided
+    if context is None:
+        context = QueryContext()
+
     try:
+        # Apply DuckDB PRAGMAs from context
+        for pragma in context.to_duckdb_pragmas():
+            try:
+                conn.execute(pragma)
+            except Exception as e:
+                warnings.warn(
+                    f"Failed to apply optimization hint '{pragma}': {e}",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        # Enable profiling if requested
+        duckdb_profile = None
+        query_plan = None
+        if profile:
+            try:
+                conn.execute("PRAGMA enable_profiling=true")
+                conn.execute("PRAGMA profiling_mode='detailed'")
+            except Exception:
+                # Profiling not supported in some DuckDB versions
+                pass
+
         # Register main DataFrame
         main_pandas = (
             main_df.compute() if isinstance(main_df, dd.DataFrame) else main_df
@@ -629,9 +834,33 @@ def query_dataframes(
         result = conn.execute(query).fetchdf()
         execution_time = time.time() - start_time
 
+        # Capture profiling information if enabled
+        if profile:
+            try:
+                # Get query plan
+                explain_result = conn.execute(f"EXPLAIN {query}").fetchall()
+                query_plan = "\n".join(str(row[0]) for row in explain_result)
+            except Exception:
+                query_plan = None
+
+            try:
+                # Get profiling information
+                profile_result = conn.execute("PRAGMA profile_info").fetchall()
+                if profile_result:
+                    duckdb_profile = {
+                        "profile_info": [
+                            dict(zip(["query", "time"], row)) for row in profile_result
+                        ]
+                    }
+            except Exception:
+                duckdb_profile = None
+
         # Cache the result if caching is enabled
         if cache_key and _CACHE_ENABLED:
-            _QUERY_CACHE[cache_key] = (result.copy(), execution_time)
+            cache_data = (result.copy(), execution_time)
+            if profile:
+                cache_data = (result.copy(), execution_time, duckdb_profile, query_plan)
+            _QUERY_CACHE[cache_key] = cache_data
             _manage_cache_size()
 
         # Return result with profiling info if requested
@@ -643,12 +872,36 @@ def query_dataframes(
                 column_count=len(result.columns),
                 query=query,
                 from_cache=False,
+                duckdb_profile=duckdb_profile,
+                query_plan=query_plan,
             )
         else:
             return result
 
     except Exception as e:
-        raise ValueError(f"SQL query execution failed: {e}") from e
+        # Enhanced error handling with query context
+        error_msg = f"SQL query execution failed: {str(e)}"
+
+        # Add query fragment for debugging
+        if query and len(query) < 200:
+            error_msg += f"\n\nQuery: {query}"
+        elif query:
+            error_msg += f"\n\nQuery (first 200 chars): {query[:200]}..."
+
+        # Add suggestions based on error type
+        error_str = str(e).lower()
+        if "column" in error_str and "does not exist" in error_str:
+            error_msg += "\n\nSuggestion: Check column names in your query. Available columns can be viewed with df.columns"
+        elif "table" in error_str and (
+            "does not exist" in error_str or "not found" in error_str
+        ):
+            error_msg += "\n\nSuggestion: Make sure you're using 'df' for the main DataFrame and correct aliases for JOINs"
+        elif "syntax error" in error_str:
+            error_msg += "\n\nSuggestion: Check SQL syntax. Common issues: missing commas, unmatched quotes, incorrect keywords"
+        elif "aggregate" in error_str or "group by" in error_str:
+            error_msg += "\n\nSuggestion: When using aggregation functions, ensure all non-aggregated columns are in GROUP BY"
+
+        raise ValueError(error_msg) from e
     finally:
         conn.close()
 
@@ -659,21 +912,26 @@ class SQLError(Exception):
     pass
 
 
-def validate_sql_query(query: str) -> bool:
+def validate_sql_query(
+    query: str, df_columns: Optional[list[str]] = None
+) -> tuple[bool, list[str]]:
     """
-    Basic validation of SQL query syntax.
+    Enhanced validation of SQL query syntax and column references.
 
     Args:
         query: SQL query string to validate.
+        df_columns: Optional list of available DataFrame columns for validation.
 
     Returns:
-        True if query appears valid, False otherwise.
+        Tuple of (is_valid, list_of_warnings)
 
     Note:
         This is a basic validation. DuckDB will perform full validation during execution.
     """
+    warnings_list = []
+
     if not query or not query.strip():
-        return False
+        return False, ["Query is empty"]
 
     query_upper = query.strip().upper()
 
@@ -687,12 +945,83 @@ def validate_sql_query(query: str) -> bool:
                 UserWarning,
                 stacklevel=2,
             )
+            warnings_list.append(f"Contains potentially destructive keyword: {keyword}")
 
     # Basic SELECT query check
     if not query_upper.startswith("SELECT") and not query_upper.startswith("WITH"):
-        return False
+        return False, ["Query must start with SELECT or WITH"]
 
-    return True
+    # Basic syntax checks
+    if query_upper.count("(") != query_upper.count(")"):
+        warnings_list.append("Unmatched parentheses detected")
+
+    # Check for common syntax issues
+    if "SELECT *" in query_upper and "GROUP BY" in query_upper:
+        warnings_list.append("Using SELECT * with GROUP BY may cause issues")
+
+    # Column validation if DataFrame columns provided
+    if df_columns:
+        # Simple column name extraction (basic - could be improved with proper SQL parsing)
+        # Look for patterns like "column_name" or "df.column_name"
+        import re
+
+        # Find potential column references
+        column_pattern = r"\b(?:df\.)?([a-zA-Z_][a-zA-Z0-9_]*)\b"
+        potential_columns = re.findall(column_pattern, query)
+
+        # Filter out SQL keywords and common functions
+        sql_keywords = {
+            "SELECT",
+            "FROM",
+            "WHERE",
+            "GROUP",
+            "BY",
+            "ORDER",
+            "HAVING",
+            "JOIN",
+            "INNER",
+            "LEFT",
+            "RIGHT",
+            "FULL",
+            "ON",
+            "AS",
+            "AND",
+            "OR",
+            "NOT",
+            "NULL",
+            "IS",
+            "IN",
+            "LIKE",
+            "COUNT",
+            "SUM",
+            "AVG",
+            "MIN",
+            "MAX",
+            "CASE",
+            "WHEN",
+            "THEN",
+            "ELSE",
+            "END",
+            "DISTINCT",
+            "DF",
+            "OTHER",  # Common table aliases
+        }
+
+        unknown_columns = []
+        for col in set(potential_columns):
+            if col.upper() not in sql_keywords and col not in df_columns:
+                unknown_columns.append(col)
+
+        if unknown_columns:
+            warnings_list.append(
+                f"Potential unknown columns: {', '.join(unknown_columns)}"
+            )
+
+    return (
+        len(warnings_list) == 0
+        or all("unknown columns" not in w.lower() for w in warnings_list),
+        warnings_list,
+    )
 
 
 def explain_query(

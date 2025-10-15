@@ -6,6 +6,7 @@ DataFrames for seamless operation.
 """
 
 import os
+import warnings
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -15,7 +16,7 @@ import dask.dataframe as dd
 import pandas as pd
 
 if TYPE_CHECKING:
-    from .sql import QueryResult, SQLBuilder
+    from .sql import QueryContext, QueryResult, SQLBuilder
 
 
 class FileFormat(Enum):
@@ -857,6 +858,7 @@ class ParquetFrame:
         query: str,
         profile: bool = False,
         use_cache: bool = True,
+        context: Optional["QueryContext"] = None,
         **other_frames: "ParquetFrame",
     ) -> Union["ParquetFrame", "QueryResult"]:
         """
@@ -869,6 +871,7 @@ class ParquetFrame:
             query: SQL query string to execute.
             profile: If True, return QueryResult with execution metadata instead of ParquetFrame.
             use_cache: If True, use cached results for identical queries.
+            context: Optional QueryContext with optimization hints and settings.
             **other_frames: Additional ParquetFrames to use in JOINs.
 
         Returns:
@@ -896,14 +899,35 @@ class ParquetFrame:
         if self._df is None:
             raise ValueError("No dataframe loaded for SQL query")
 
-        from .sql import query_dataframes
+        from .sql import query_dataframes, validate_sql_query
+
+        # Optional validation with warnings
+        try:
+            is_valid, validation_warnings = validate_sql_query(
+                query, list(self._df.columns)
+            )
+            if validation_warnings:
+                for warning_msg in validation_warnings:
+                    warnings.warn(
+                        f"SQL Query Validation: {warning_msg}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+        except Exception:
+            # If validation fails, continue anyway (DuckDB will catch real errors)
+            pass
 
         # Convert other ParquetFrames to their underlying DataFrames
         other_dfs = {name: pf._df for name, pf in other_frames.items()}
 
         # Execute SQL query with profiling support
         result = query_dataframes(
-            self._df, query, other_dfs, profile=profile, use_cache=use_cache
+            self._df,
+            query,
+            other_dfs,
+            profile=profile,
+            use_cache=use_cache,
+            context=context,
         )
 
         # Return QueryResult directly if profiling is enabled
@@ -945,6 +969,43 @@ class ParquetFrame:
 
         # Execute the parameterized query
         return self.sql(query, profile=profile, use_cache=use_cache)
+
+    def sql_hint(self, **hints: Any) -> "QueryContext":
+        """
+        Create a QueryContext with optimization hints for SQL operations.
+
+        This method provides a convenient way to create SQL optimization hints
+        that can be passed to SQL query methods.
+
+        Args:
+            **hints: Optimization hints including:
+                - predicate_pushdown: bool = Enable predicate pushdown (default: True)
+                - projection_pushdown: bool = Enable projection pushdown (default: True)
+                - enable_parallel: bool = Enable parallel processing (default: True)
+                - memory_limit: str = Memory limit (e.g., '1GB', '512MB')
+                - temp_directory: str = Temporary directory path
+                - enable_statistics: bool = Enable query statistics (default: False)
+                - custom_pragmas: dict = Additional DuckDB PRAGMA statements
+
+        Returns:
+            QueryContext object that can be passed to sql() calls
+
+        Examples:
+            >>> # Basic optimization hints
+            >>> ctx = pf.sql_hint(memory_limit='1GB', enable_parallel=False)
+            >>> result = pf.sql("SELECT * FROM df", context=ctx)
+            >>>
+            >>> # Advanced optimization
+            >>> ctx = pf.sql_hint(
+            ...     predicate_pushdown=True,
+            ...     memory_limit='2GB',
+            ...     custom_pragmas={'enable_object_cache': True}
+            ... )
+            >>> result = pf.sql(complex_query, context=ctx)
+        """
+        from .sql import QueryContext
+
+        return QueryContext(**hints)
 
     def select(self, *columns: str) -> "SQLBuilder":
         """
@@ -1032,6 +1093,119 @@ class ParquetFrame:
         from .sql import SQLBuilder
 
         return SQLBuilder(self).order_by(*columns)
+
+    def join(
+        self,
+        other: "ParquetFrame",
+        on: Union[str, list[str]],
+        how: str = "inner",
+        suffixes: tuple[str, str] = ("_x", "_y"),
+    ) -> "ParquetFrame":
+        """
+        Join this ParquetFrame with another using SQL.
+
+        This method provides a high-level interface for JOIN operations that
+        generates optimized SQL queries under the hood.
+
+        Args:
+            other: ParquetFrame to join with
+            on: Column name(s) to join on. Can be single column or list of columns
+            how: Type of join - 'inner', 'left', 'right', 'outer', 'full'
+            suffixes: Suffixes for overlapping column names
+
+        Returns:
+            New ParquetFrame with joined results
+
+        Examples:
+            >>> # Simple inner join on single column
+            >>> result = users.join(orders, on="user_id")
+            >>>
+            >>> # Left join on multiple columns
+            >>> result = users.join(profiles, on=["user_id", "account_id"], how="left")
+            >>>
+            >>> # Join with custom suffixes
+            >>> result = users.join(addresses, on="user_id", suffixes=("_user", "_addr"))
+        """
+        # Validate join type
+        valid_joins = {"inner", "left", "right", "outer", "full"}
+        if how.lower() not in valid_joins:
+            raise ValueError(f"Invalid join type '{how}'. Must be one of {valid_joins}")
+
+        # Handle column specifications
+        if isinstance(on, str):
+            on_columns = [on]
+        else:
+            on_columns = list(on)
+
+        # Build JOIN condition
+        join_conditions = []
+        for col in on_columns:
+            join_conditions.append(f"df.{col} = other.{col}")
+        join_condition = " AND ".join(join_conditions)
+
+        # Get all columns and handle naming conflicts
+        left_cols = set(self.pandas_df.columns)
+        right_cols = set(other.pandas_df.columns)
+        overlap_cols = left_cols & right_cols - set(on_columns)
+
+        # Build SELECT clause with proper column aliasing
+        select_parts = []
+
+        # Add left table columns
+        for col in left_cols:
+            if col in overlap_cols:
+                select_parts.append(f"df.{col} AS {col}{suffixes[0]}")
+            else:
+                select_parts.append(f"df.{col}")
+
+        # Add right table columns (excluding join keys to avoid duplication)
+        for col in right_cols:
+            if col not in on_columns:
+                if col in overlap_cols:
+                    select_parts.append(f"other.{col} AS {col}{suffixes[1]}")
+                else:
+                    select_parts.append(f"other.{col}")
+
+        select_clause = ", ".join(select_parts)
+
+        # Build and execute SQL query
+        join_type = how.upper()
+        if join_type == "OUTER":
+            join_type = "FULL OUTER"
+        elif join_type != "INNER":
+            join_type = f"{join_type} OUTER"
+
+        query = f"""
+            SELECT {select_clause}
+            FROM df
+            {join_type} JOIN other ON {join_condition}
+        """
+
+        return self.sql(query.strip(), other=other)
+
+    def left_join(
+        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+    ) -> "ParquetFrame":
+        """Convenience method for LEFT JOIN."""
+        return self.join(other, on, how="left", **kwargs)
+
+    def right_join(
+        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+    ) -> "ParquetFrame":
+        """Convenience method for RIGHT JOIN."""
+        return self.join(other, on, how="right", **kwargs)
+
+    def inner_join(
+        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+    ) -> "ParquetFrame":
+        """Convenience method for INNER JOIN."""
+        return self.join(other, on, how="inner", **kwargs)
+
+    def outer_join(
+        self, other: "ParquetFrame", on: Union[str, list[str]], **kwargs
+    ) -> "ParquetFrame":
+        """Convenience method for FULL OUTER JOIN."""
+        return self.join(other, on, how="outer", **kwargs)
 
     @property
     def bio(self):
