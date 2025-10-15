@@ -86,7 +86,7 @@ class TestDatetimeDetection:
                 "2023-01-02",
                 "2023-01-03",
                 "2023-01-04",
-                "invalid",
+                "2023-01-05",
             ],
         }
         df = pd.DataFrame(data)

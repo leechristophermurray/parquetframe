@@ -104,7 +104,6 @@ def detect_datetime_columns(
             # First try pandas' automatic detection
             parsed = pd.to_datetime(
                 sample_df[col].dropna().head(100),
-                infer_datetime_format=True,
                 errors="coerce",
             )
             if parsed.notna().sum() > len(parsed) * 0.8:  # 80% success rate
@@ -296,7 +295,6 @@ class TimeSeriesAccessor:
             new_pf._df[column] = dd.to_datetime(
                 new_pf._df[column],
                 format=format,
-                infer_datetime_format=infer,
                 errors="coerce",
             )
         else:
@@ -304,7 +302,6 @@ class TimeSeriesAccessor:
             new_pf._df[column] = pd.to_datetime(
                 new_pf._df[column],
                 format=format,
-                infer_datetime_format=infer,
                 errors="coerce",
             )
 
