@@ -1234,6 +1234,69 @@ class ParquetFrame:
 
         return BioAccessor(self)
 
+    @property
+    def ts(self):
+        """
+        Access time-series functions with intelligent pandas/Dask dispatching.
+
+        Returns TimeSeriesAccessor that automatically chooses between pandas (eager)
+        and Dask (parallel) implementations based on the current backend.
+
+        Returns:
+            TimeSeriesAccessor instance for time-series operations.
+
+        Examples:
+            >>> # Automatic datetime detection and resampling
+            >>> hourly_avg = pf.ts.resample('1H').mean()
+            >>>
+            >>> # Rolling window operations
+            >>> rolling_7d = pf.ts.rolling('7D').mean()
+            >>>
+            >>> # Time-based filtering
+            >>> business_hours = pf.ts.between_time('09:00', '17:00')
+            >>>
+            >>> # Lag and lead operations
+            >>> lagged = pf.ts.lag(1)
+        """
+        from .timeseries import TimeSeriesAccessor
+
+        return TimeSeriesAccessor(self)
+
+    @property
+    def stats(self):
+        """
+        Access advanced statistical functions with intelligent pandas/Dask dispatching.
+
+        Returns StatsAccessor that automatically chooses between pandas (eager)
+        and Dask (parallel) implementations based on the current backend.
+
+        Returns:
+            StatsAccessor instance for statistical operations.
+
+        Examples:
+            >>> # Extended descriptive statistics
+            >>> extended_desc = pf.stats.describe_extended()
+            >>>
+            >>> # Correlation analysis
+            >>> corr_matrix = pf.stats.corr_matrix(method='spearman')
+            >>>
+            >>> # Distribution analysis
+            >>> dist_summary = pf.stats.distribution_summary('sales_amount')
+            >>>
+            >>> # Outlier detection
+            >>> outliers = pf.stats.detect_outliers('price', method='zscore')
+            >>>
+            >>> # Statistical tests
+            >>> normality = pf.stats.normality_test('revenue')
+            >>> correlation = pf.stats.correlation_test('price', 'demand')
+            >>>
+            >>> # Regression analysis
+            >>> regression = pf.stats.linear_regression('advertising', 'sales')
+        """
+        from .stats import StatsAccessor
+
+        return StatsAccessor(self)
+
     @staticmethod
     def _resolve_file_path(file: str | Path) -> Path:
         """
