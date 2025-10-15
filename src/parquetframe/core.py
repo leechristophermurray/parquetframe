@@ -9,10 +9,13 @@ import os
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import dask.dataframe as dd
 import pandas as pd
+
+if TYPE_CHECKING:
+    from .sql import QueryResult, SQLBuilder
 
 
 class FileFormat(Enum):
@@ -463,6 +466,25 @@ class ParquetFrame:
         """Get the current backend type (True for Dask, False for pandas)."""
         return self._islazy
 
+    @property
+    def pandas_df(self) -> pd.DataFrame:
+        """Get the underlying pandas DataFrame.
+
+        If the current backend is Dask, it will be computed to pandas.
+
+        Returns:
+            The raw pandas DataFrame
+        """
+        if self._df is None:
+            raise ValueError("No dataframe loaded")
+
+        if self._islazy and isinstance(self._df, dd.DataFrame):
+            return self._df.compute()
+        elif isinstance(self._df, pd.DataFrame):
+            return self._df
+        else:
+            raise TypeError(f"Unexpected dataframe type: {type(self._df)}")
+
     @islazy.setter
     def islazy(self, value: bool) -> None:
         """Set the backend type and convert the dataframe if necessary."""
@@ -830,19 +852,28 @@ class ParquetFrame:
             print("Already a Dask DataFrame.")
         return self
 
-    def sql(self, query: str, **other_frames: "ParquetFrame") -> "ParquetFrame":
+    def sql(
+        self,
+        query: str,
+        profile: bool = False,
+        use_cache: bool = True,
+        **other_frames: "ParquetFrame",
+    ) -> Union["ParquetFrame", "QueryResult"]:
         """
-        Execute a SQL query on this ParquetFrame using DuckDB.
+        Execute a SQL query on this ParquetFrame using DuckDB with optional profiling.
 
         The current ParquetFrame is available as 'df' in the query.
         Additional ParquetFrames can be passed as keyword arguments.
 
         Args:
             query: SQL query string to execute.
+            profile: If True, return QueryResult with execution metadata instead of ParquetFrame.
+            use_cache: If True, use cached results for identical queries.
             **other_frames: Additional ParquetFrames to use in JOINs.
 
         Returns:
-            New ParquetFrame with query results (always pandas backend).
+            New ParquetFrame with query results (always pandas backend),
+            or QueryResult with profiling info if profile=True.
 
         Raises:
             ImportError: If DuckDB is not installed.
@@ -851,6 +882,10 @@ class ParquetFrame:
         Examples:
             >>> # Simple query
             >>> result = pf.sql("SELECT * FROM df WHERE age > 25")
+            >>>
+            >>> # With profiling
+            >>> result = pf.sql("SELECT COUNT(*) FROM df", profile=True)
+            >>> print(result.summary())  # Shows execution time and metadata
             >>>
             >>> # JOIN with another ParquetFrame
             >>> orders = pf.sql(
@@ -866,11 +901,137 @@ class ParquetFrame:
         # Convert other ParquetFrames to their underlying DataFrames
         other_dfs = {name: pf._df for name, pf in other_frames.items()}
 
-        # Execute SQL query
-        result_df = query_dataframes(self._df, query, other_dfs)
+        # Execute SQL query with profiling support
+        result = query_dataframes(
+            self._df, query, other_dfs, profile=profile, use_cache=use_cache
+        )
 
-        # Return as pandas-backed ParquetFrame (SQL results are always pandas)
-        return self.__class__(result_df, islazy=False)
+        # Return QueryResult directly if profiling is enabled
+        if profile:
+            return result
+
+        # Otherwise return as pandas-backed ParquetFrame (SQL results are always pandas)
+        return self.__class__(result, islazy=False)
+
+    def sql_with_params(
+        self,
+        query_template: str,
+        profile: bool = False,
+        use_cache: bool = True,
+        **params: Any,
+    ) -> Union["ParquetFrame", "QueryResult"]:
+        """
+        Execute a parameterized SQL query on this ParquetFrame.
+
+        Args:
+            query_template: SQL query string with {param_name} placeholders
+            profile: If True, return QueryResult with execution metadata
+            use_cache: If True, use cached results for identical queries
+            **params: Named parameters to substitute in the query
+
+        Returns:
+            New ParquetFrame with query results or QueryResult if profile=True
+
+        Examples:
+            >>> result = pf.sql_with_params(
+            ...     "SELECT * FROM df WHERE age > {min_age} AND salary < {max_salary}",
+            ...     min_age=25, max_salary=100000
+            ... )
+        """
+        from .sql import parameterize_query
+
+        # Substitute parameters
+        query = parameterize_query(query_template, **params)
+
+        # Execute the parameterized query
+        return self.sql(query, profile=profile, use_cache=use_cache)
+
+    def select(self, *columns: str) -> "SQLBuilder":
+        """
+        Start building a fluent SQL query with SELECT.
+
+        Args:
+            *columns: Column names to select
+
+        Returns:
+            SQLBuilder instance for method chaining
+
+        Examples:
+            >>> # Fluent SQL API
+            >>> result = (pf.select("name", "age")
+            ...             .where("age > 25")
+            ...             .order_by("name")
+            ...             .execute())
+            >>>
+            >>> # Aggregation with grouping
+            >>> summary = (pf.select("category", "COUNT(*) as count", "AVG(value) as avg_val")
+            ...              .group_by("category")
+            ...              .having("count > 10")
+            ...              .order_by("avg_val", "DESC")
+            ...              .execute())
+        """
+        from .sql import SQLBuilder
+
+        return SQLBuilder(self).select(*columns)
+
+    def where(self, condition: str) -> "SQLBuilder":
+        """
+        Start building a fluent SQL query with WHERE.
+
+        Args:
+            condition: SQL WHERE condition
+
+        Returns:
+            SQLBuilder instance for method chaining
+
+        Examples:
+            >>> result = pf.where("age > 30").select("name", "salary").execute()
+        """
+        from .sql import SQLBuilder
+
+        return SQLBuilder(self).where(condition)
+
+    def group_by(self, *columns: str) -> "SQLBuilder":
+        """
+        Start building a fluent SQL query with GROUP BY.
+
+        Args:
+            *columns: Column names to group by
+
+        Returns:
+            SQLBuilder instance for method chaining
+
+        Examples:
+            >>> # Aggregation query starting with GROUP BY
+            >>> result = (pf.group_by("category")
+            ...             .select("category", "COUNT(*) as count", "AVG(price) as avg_price")
+            ...             .having("count > 5")
+            ...             .execute())
+        """
+        from .sql import SQLBuilder
+
+        return SQLBuilder(self).group_by(*columns)
+
+    def order_by(self, *columns: str) -> "SQLBuilder":
+        """
+        Start building a fluent SQL query with ORDER BY.
+
+        Args:
+            *columns: Column names/expressions to order by
+
+        Returns:
+            SQLBuilder instance for method chaining
+
+        Examples:
+            >>> # Simple ordering
+            >>> result = pf.order_by("name").select("*").execute()
+            >>>
+            >>> # Multiple columns with explicit direction
+            >>> result = pf.order_by("age DESC", "name").select("*").execute()
+        """
+        from .sql import SQLBuilder
+
+        return SQLBuilder(self).order_by(*columns)
 
     @property
     def bio(self):
