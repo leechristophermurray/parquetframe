@@ -103,7 +103,7 @@ class TestTimeSeriesAccessor:
     def setup_method(self):
         """Set up test data."""
         # Create sample time-series data
-        dates = pd.date_range("2023-01-01", periods=100, freq="H")
+        dates = pd.date_range("2023-01-01", periods=100, freq="h")
         self.ts_data = pd.DataFrame(
             {"timestamp": dates, "value": range(100), "category": ["A", "B"] * 50}
         )
@@ -153,7 +153,7 @@ class TestTimeSeriesAccessor:
         assert isinstance(daily_mean, ParquetFrame)
 
         # Test hourly resampling with sum
-        hourly_sum = pf_indexed.ts.resample("1H").sum()
+        hourly_sum = pf_indexed.ts.resample("1h").sum()
         assert isinstance(hourly_sum, ParquetFrame)
 
         # Test resampling with max
@@ -192,7 +192,7 @@ class TestTimeSeriesAccessor:
     def test_time_filtering_operations(self):
         """Test time-based filtering operations."""
         # Create data with datetime index
-        dates = pd.date_range("2023-01-01 08:00", periods=24, freq="H")
+        dates = pd.date_range("2023-01-01 08:00", periods=24, freq="h")
         data_with_index = pd.DataFrame(
             {"value": range(24), "category": ["A", "B"] * 12}, index=dates
         )
@@ -213,7 +213,7 @@ class TestTimeSeriesWithDask:
     def setup_method(self):
         """Set up test data for Dask testing."""
         # Create larger dataset that would trigger Dask usage
-        dates = pd.date_range("2023-01-01", periods=1000, freq="H")
+        dates = pd.date_range("2023-01-01", periods=1000, freq="h")
         large_data = pd.DataFrame(
             {
                 "timestamp": dates,
@@ -273,7 +273,7 @@ class TestTimeSeriesEdgeCases:
     def test_time_filtering_with_string_inputs(self):
         """Test time filtering with string time inputs."""
         # Create data with datetime index
-        dates = pd.date_range("2023-01-01 00:00", periods=24, freq="H")
+        dates = pd.date_range("2023-01-01 00:00", periods=24, freq="h")
         data = pd.DataFrame({"value": range(24)}, index=dates)
         pf = ParquetFrame(data)
 
@@ -309,7 +309,7 @@ class TestTimeSeriesIntegration:
 
     def test_time_series_with_save_restore(self):
         """Test that time-series operations work after save/restore cycle."""
-        dates = pd.date_range("2023-01-01", periods=50, freq="H")
+        dates = pd.date_range("2023-01-01", periods=50, freq="h")
         data = pd.DataFrame({"timestamp": dates, "value": range(50)})
 
         # Create temporary file

@@ -323,7 +323,7 @@ class TimeSeriesAccessor:
 
         Examples:
             >>> # Hourly averages
-            >>> hourly = pf.ts.resample('1H').mean()
+            >>> hourly = pf.ts.resample('1h').mean()
             >>> # Daily max values
             >>> daily_max = pf.ts.resample('1D').max()
             >>> # Weekly aggregation with multiple functions

@@ -1247,7 +1247,7 @@ class ParquetFrame:
 
         Examples:
             >>> # Automatic datetime detection and resampling
-            >>> hourly_avg = pf.ts.resample('1H').mean()
+            >>> hourly_avg = pf.ts.resample('1h').mean()
             >>>
             >>> # Rolling window operations
             >>> rolling_7d = pf.ts.rolling('7D').mean()
