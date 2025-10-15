@@ -10,6 +10,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.4.0] - 2025-01-15
+
+### 🚀 Enhanced SQL Method Integration (Phase 0.2)
+
+### Added
+- 🔗 **Fluent SQL API** with method chaining support:
+  - `select()`, `where()`, `group_by()`, `order_by()` methods on ParquetFrame
+  - Complete SQL query building with method chaining: `pf.select().where().group_by().execute()`
+  - SQLBuilder class for complex query construction
+- ⚡ **Query Performance Optimization**:
+  - Query result caching with configurable cache size and automatic management
+  - Execution profiling with timing, memory usage, and metadata tracking
+  - QueryResult dataclass with convenience properties (`rows`, `columns`, `cached`, `dataframe`)
+- 🔧 **Query Utilities and Builder Patterns**:
+  - `parameterize_query()` function for safe parameter substitution
+  - `sql_with_params()` method for parameterized queries with {param} syntax
+  - `build_join_query()` utility for programmatic SQL construction
+- 🤝 **Enhanced JOIN Operations**:
+  - Convenience JOIN methods: `left_join()`, `right_join()`, `inner_join()`, `full_join()`
+  - Proper table aliasing and JOIN syntax handling
+  - Support for complex multi-table JOINs with chaining
+- 📊 **Direct DataFrame Access**:
+  - Added `pandas_df` property for direct access to underlying pandas DataFrame
+  - Improved type annotations with proper TYPE_CHECKING imports
+
+### Enhanced
+- 🗃️ **Multi-Format SQL Integration** - Verified SQL queries work seamlessly across CSV, JSON, ORC, and Parquet formats
+- 🎯 **Backward Compatibility** - All existing `sql()` method functionality preserved
+- 🛡️ **Error Handling** - Enhanced parameter validation and missing parameter detection
+- 🧪 **Comprehensive Testing** - 27 new tests covering fluent API, profiling, caching, and utilities
+
+### Examples
+
+**Fluent SQL API:**
+```python
+result = (pf.select("name", "age", "salary")
+         .where("age > 25")
+         .group_by("department")
+         .having("COUNT(*) > 1")
+         .order_by("salary", "DESC")
+         .limit(10)
+         .execute())
+```
+
+**Parameterized Queries:**
+```python
+result = pf.sql_with_params(
+    "SELECT * FROM df WHERE age > {min_age} AND salary < {max_salary}",
+    min_age=25, max_salary=100000
+)
+```
+
+**Enhanced JOINs:**
+```python
+result = (pf.select("df.name", "dept.name")
+         .left_join(departments, "df.dept_id = dept.id", "dept")
+         .where("dept.budget > 500000")
+         .execute())
+```
+
+**Query Profiling:**
+```python
+result = (pf.select("COUNT(*) as total")
+         .profile(True)
+         .cache(True)
+         .execute())
+
+print(f"Executed in {result.execution_time:.3f}s")
+print(f"Cached: {result.cached}")
+```
+
+### Technical Details
+- Implemented SQLBuilder class with full SQL clause support
+- Added query result caching with SHA256-based cache keys
+- Enhanced type safety with proper forward references
+- Memory-efficient caching with automatic size management
+- Thread-safe implementation using immutable cache keys
+- Comprehensive error handling for SQL syntax and parameter validation
+
 ## [0.2.3.2] - 2025-09-27
 
 ### 🐛 Additional AI Interactive Mode Fixes
