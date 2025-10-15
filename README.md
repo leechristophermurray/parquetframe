@@ -16,7 +16,9 @@
 **The ultimate Python data processing framework combining intelligent pandas/Dask switching with AI-powered exploration, genomic computing support, and advanced workflow orchestration.**
 
 > 🏆 **Production-Ready**: Successfully published to PyPI with 334 passing tests, 54% coverage, and comprehensive CI/CD pipeline
+
 > 🤖 **AI-First**: Pioneering local LLM integration for privacy-preserving natural language data queries
+
 > ⚡ **Performance-Optimized**: Shows 7-90% speed improvements with intelligent memory-aware backend selection
 
 ## Features
@@ -130,6 +132,7 @@ small_json = pf.read("config.json")     # Uses pandas for small files
 ### Advanced Usage
 
 ```python
+
 import parquetframe as pf
 
 # Custom threshold
@@ -372,6 +375,7 @@ pframe workflow --validate my_pipeline.yml
 ### Development Status
 
 ✅ **Production Ready (v0.3.0)**: Multi-format support with comprehensive testing across CSV, JSON, Parquet, and ORC formats
+
 🧪 **Robust Testing**: Complete test suite for AI, CLI, SQL, bioframe, and workflow functionality
 🔄 **Active Development**: Regular updates with cutting-edge AI and performance optimization features
 🏆 **Quality Excellence**: 9.2/10 assessment score with professional CI/CD pipeline
