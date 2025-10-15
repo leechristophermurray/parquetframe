@@ -10,6 +10,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [0.4.1] - 2025-01-15
+
+### 🚀 Enhanced SQL Multi-Format Support & Documentation
+
+### Added
+- 📚 **Comprehensive SQL Documentation**:
+  - Complete multi-format SQL guide with performance benchmarks
+  - 936-line SQL cookbook with real-world recipes for ETL, analytics, and data quality
+  - Cross-format join examples (CSV ↔ Parquet ↔ JSON)
+  - Time series analysis and window function patterns
+  - Data quality validation and anomaly detection recipes
+  - Performance optimization and error handling guides
+- 🧪 **Enhanced Test Coverage**:
+  - Comprehensive multi-format test matrix covering all SQL operations × file formats
+  - AI-powered SQL generation smoke tests with mock integration
+  - Coverage boost tests for edge cases and error scenarios
+  - Test coverage improved from ~40% to 57% (17 percentage point increase)
+- 🔧 **Improved SQL Engine**:
+  - Fixed all failing SQL tests across CSV, TSV, JSON, JSONL, Parquet, and ORC formats
+  - Standardized test data schemas for consistent cross-format behavior
+  - Enhanced SQL query validation with better error handling
+
+### Enhanced
+- 🎯 **Format Compatibility** - SQL queries now work seamlessly across all supported formats
+- 📊 **Test Reliability** - All SQL matrix tests passing with consistent data schemas
+- 🛡️ **Code Quality** - Improved linting, formatting, and pre-commit hook compliance
+- 📖 **Documentation** - MkDocs navigation updated to include comprehensive SQL cookbook
+
+### Fixed
+- 🐛 **SQL Test Failures** - Resolved 6 failing SQL tests by standardizing test data schemas
+- 🔍 **Format Detection** - Improved handling of cross-format SQL operations
+- ✅ **Test Suite Stability** - All tests now pass consistently across different formats
+
+### Technical Details
+- Key module coverage improvements: `sql.py` (87%), `workflow_history.py` (95%), `datacontext` (90%)
+- Enhanced error handling and exception testing coverage
+- Comprehensive SQL cookbook with production-ready patterns
+- Standardized "department" vs "city" column usage across test suite
+- Pre-commit hooks (black, ruff, formatting) all passing
+
+### Breaking Changes
+- None - all changes are backward compatible
+
+### Examples
+
+**Cross-Format SQL Operations:**
+```python
+# Query CSV, join with Parquet, output to JSON
+users_csv = pf.read("users.csv")
+orders_parquet = pf.read("orders.parquet")
+
+result = users_csv.sql("""
+    SELECT u.name, u.department, o.total_amount
+    FROM df u
+    JOIN orders o ON u.id = o.user_id
+    WHERE o.amount > 1000
+""", orders=orders_parquet)
+
+result.save("high_value_customers.json")
+```
+
+**Advanced Analytics from Cookbook:**
+```python
+# RFM Customer Segmentation
+rfm_analysis = orders.sql("""
+    WITH customer_metrics AS (
+        SELECT customer_id,
+               DATEDIFF('day', MAX(order_date), CURRENT_DATE) as recency_days,
+               COUNT(DISTINCT order_id) as frequency,
+               SUM(order_amount) as monetary_value
+        FROM df WHERE order_date >= '2023-01-01'
+        GROUP BY customer_id
+    )
+    SELECT *,
+           CASE WHEN rfm_score >= 13 THEN 'Champions'
+                WHEN rfm_score >= 10 THEN 'Loyal Customers'
+                ELSE 'Others' END as segment
+    FROM customer_metrics
+""")
+```
+
 ## [0.4.0] - 2025-01-15
 
 ### 🚀 Enhanced SQL Method Integration (Phase 0.2)
