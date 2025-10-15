@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-commit hooks (black, ruff, formatting) all passing
 
 ### Breaking Changes
-- None - all changes are backward compatible
+- 🐍 **Python 3.9 Support Removed** - Minimum Python version is now 3.10+ due to modern type hinting syntax requirements
 
 ### Examples
 

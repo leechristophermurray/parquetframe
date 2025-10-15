@@ -15,7 +15,7 @@ import pandas as pd
 import pytest
 
 
-def skip_orc_on_windows(format_name: str | None = None) -> None:
+def skip_orc_on_windows(format_name=None):
     """Skip ORC tests on Windows due to PyArrow timezone database issues.
 
     Args:

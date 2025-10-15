@@ -16,11 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         exclude:
           # Reduce matrix size by excluding some combinations
-          - os: windows-latest
-            python-version: "3.9"
           - os: macos-latest
             python-version: "3.10"
           - os: windows-latest
@@ -338,7 +336,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'  # Test minimum supported version
+        python-version: '3.10'  # Test minimum supported version
     - name: Install uv
       uses: astral-sh/setup-uv@v2
     - name: Install minimum requirements

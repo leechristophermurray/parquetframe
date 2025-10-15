@@ -349,7 +349,7 @@ pframe workflow --validate my_pipeline.yml
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - pandas >= 2.0.0
 - dask[dataframe] >= 2023.1.0
 - pyarrow >= 10.0.0
