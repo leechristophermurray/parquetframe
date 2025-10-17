@@ -69,6 +69,14 @@ try:
 except ImportError:
     WORKFLOW_VISUALIZATION_AVAILABLE = False
 
+try:
+    from .graph import read_graph
+    from .graph.io.graphar import GraphArError, GraphArValidationError
+
+    GRAPH_AVAILABLE = True
+except ImportError:
+    GRAPH_AVAILABLE = False
+
 # Global console for rich output
 console = Console(force_terminal=False, color_system="auto")
 
@@ -1811,6 +1819,270 @@ def interactive(path, db_uri, no_ai):
     except Exception as e:
         console.print(f"[bold red]Failed to start interactive session:[/bold red] {e}")
         sys.exit(1)
+
+
+@main.group()
+def graph():
+    """
+    Graph processing utilities for GraphAr format data.
+
+    GraphAr is Apache's standardized columnar format for graph data that
+    organizes vertices and edges in Parquet files with metadata and schema files.
+
+    Examples:
+        pframe graph info ./social_network/
+        pframe graph info ./web_graph/ --format json --degree-stats
+    """
+    if not GRAPH_AVAILABLE:
+        console.print(
+            "[bold red]Error:[/bold red] Graph functionality is not available."
+        )
+        console.print("Graph module failed to import. Please check installation.")
+        sys.exit(1)
+
+
+@graph.command(name="info")
+@click.argument("path", type=click.Path(exists=True), required=True)
+@click.option(
+    "--backend",
+    type=click.Choice(["auto", "pandas", "dask"]),
+    default="auto",
+    help="Backend to use for processing (auto selects based on size)",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json", "yaml"]),
+    default="text",
+    help="Output format for graph information",
+)
+@click.option(
+    "--validate/--no-validate",
+    default=True,
+    help="Whether to validate GraphAr schema compliance",
+)
+@click.option(
+    "--degree-stats/--no-degree-stats",
+    default=False,
+    help="Compute and display degree statistics",
+)
+@click.option(
+    "--limit-rows",
+    type=int,
+    default=0,
+    help="Limit number of sample rows to display (0 for no limit)",
+)
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Show detailed error messages and tracebacks"
+)
+def graph_info(
+    path,
+    backend,
+    format,
+    validate,
+    degree_stats,
+    limit_rows,
+    verbose,
+):
+    """
+    Display information about a GraphAr format graph directory.
+
+    Shows graph metadata, schema information, vertex/edge counts,
+    and optionally degree statistics. Supports multiple output formats.
+
+    GraphAr directory structure:
+        graph_directory/
+        ├── _metadata.yaml      # Graph-level metadata
+        ├── _schema.yaml        # Schema definitions
+        ├── vertices/           # Vertex data directory
+        │   └── type_name/      # Vertex type subdirectories
+        │       └── *.parquet   # Vertex property files
+        └── edges/              # Edge data directory
+            └── type_name/      # Edge type subdirectories
+                └── *.parquet   # Edge property files
+
+    Examples:
+        pframe graph info ./social_network/
+        pframe graph info ./web_graph/ --format json
+        pframe graph info ./large_graph/ --backend dask --degree-stats
+        pframe graph info ./graph/ --no-validate --limit-rows 1000
+    """
+    import json
+    from pathlib import Path
+
+    graph_path = Path(path)
+
+    try:
+        # Validate path exists and looks like a GraphAr directory
+        if not graph_path.is_dir():
+            console.print(
+                f"[bold red]Error:[/bold red] Path is not a directory: {graph_path}"
+            )
+            sys.exit(2)
+
+        metadata_path = graph_path / "_metadata.yaml"
+        if not metadata_path.exists():
+            console.print(
+                f"[bold red]Error:[/bold red] GraphAr metadata file not found: {metadata_path}\n"
+                "Expected GraphAr directory structure with _metadata.yaml file."
+            )
+            sys.exit(2)
+
+        # Determine backend selection
+        islazy = None
+        if backend == "dask":
+            islazy = True
+        elif backend == "pandas":
+            islazy = False
+        # backend == "auto" leaves islazy as None for automatic selection
+
+        # Load graph
+        console.print(f"[bold blue]Loading GraphAr graph:[/bold blue] {graph_path}")
+        if not validate:
+            console.print("[dim]Schema validation disabled[/dim]")
+
+        graph = read_graph(
+            path=graph_path,
+            islazy=islazy,
+            validate_schema=validate,
+            load_adjacency=degree_stats,  # Only load adjacency if we need stats
+        )
+
+        # Collect graph information
+        info_data = {
+            "path": str(graph_path.absolute()),
+            "metadata": graph.metadata,
+            "num_vertices": graph.num_vertices,
+            "num_edges": graph.num_edges,
+            "is_directed": graph.is_directed,
+            "backend_used": "dask" if graph.vertices.islazy else "pandas",
+            "vertex_properties": graph.vertex_properties,
+            "edge_properties": graph.edge_properties,
+        }
+
+        # Add degree statistics if requested
+        if degree_stats:
+            console.print("[dim]Computing degree statistics...[/dim]")
+            try:
+                # Sample some vertices to compute average degree
+                sample_vertices = list(range(min(1000, graph.num_vertices)))
+                degrees = []
+                for vid in sample_vertices:
+                    try:
+                        deg = graph.degree(vid)
+                        degrees.append(deg)
+                    except (IndexError, KeyError):
+                        # Skip vertices that don't exist
+                        continue
+
+                if degrees:
+                    info_data["degree_stats"] = {
+                        "avg_degree": sum(degrees) / len(degrees),
+                        "max_degree": max(degrees),
+                        "min_degree": min(degrees),
+                        "sample_size": len(degrees),
+                    }
+                else:
+                    info_data["degree_stats"] = "Unable to compute degree statistics"
+
+            except Exception as e:
+                info_data["degree_stats"] = f"Error computing degree stats: {str(e)}"
+
+        # Format and display output
+        if format == "json":
+            console.print(json.dumps(info_data, indent=2, default=str))
+        elif format == "yaml":
+            try:
+                import yaml
+
+                console.print(yaml.dump(info_data, default_flow_style=False))
+            except ImportError:
+                console.print(
+                    "[bold red]Error:[/bold red] YAML output requires PyYAML. "
+                    "Use --format json instead or install with: pip install pyyaml"
+                )
+                sys.exit(1)
+        else:  # format == "text"
+            _display_graph_info_text(info_data, limit_rows)
+
+    except (GraphArError, GraphArValidationError) as e:
+        console.print(f"[bold red]GraphAr Error:[/bold red] {e}")
+        if verbose:
+            import traceback
+
+            console.print("[dim]" + traceback.format_exc() + "[/dim]")
+        sys.exit(2)
+    except Exception as e:
+        console.print(f"[bold red]Unexpected Error:[/bold red] {e}")
+        if verbose:
+            import traceback
+
+            console.print("[dim]" + traceback.format_exc() + "[/dim]")
+        sys.exit(1)
+
+    console.print(
+        "\n[bold green][SUCCESS] Graph information displayed successfully![/bold green]"
+    )
+
+
+def _display_graph_info_text(info_data: dict, limit_rows: int = 0) -> None:
+    """Display graph information in text format using Rich tables."""
+
+    # Main information table
+    info_table = Table(title="GraphAr Graph Information")
+    info_table.add_column("Property", style="cyan", no_wrap=True)
+    info_table.add_column("Value", style="white")
+
+    info_table.add_row("Graph Path", info_data["path"])
+    info_table.add_row("Graph Name", info_data["metadata"].get("name", "Unknown"))
+    info_table.add_row(
+        "Graph Version", str(info_data["metadata"].get("version", "Unknown"))
+    )
+    info_table.add_row("Directed", "Yes" if info_data["is_directed"] else "No")
+    info_table.add_row("Vertices", f"{info_data['num_vertices']:,}")
+    info_table.add_row("Edges", f"{info_data['num_edges']:,}")
+    info_table.add_row("Backend Used", info_data["backend_used"].capitalize())
+
+    console.print(info_table)
+
+    # Vertex properties
+    if info_data["vertex_properties"]:
+        console.print("\n[bold green]Vertex Properties:[/bold green]")
+        vertex_table = Table()
+        vertex_table.add_column("Property Name", style="cyan")
+        for prop in info_data["vertex_properties"]:
+            vertex_table.add_row(prop)
+        console.print(vertex_table)
+    else:
+        console.print("\n[yellow]No vertex properties found[/yellow]")
+
+    # Edge properties
+    if info_data["edge_properties"]:
+        console.print("\n[bold green]Edge Properties:[/bold green]")
+        edge_table = Table()
+        edge_table.add_column("Property Name", style="cyan")
+        for prop in info_data["edge_properties"]:
+            edge_table.add_row(prop)
+        console.print(edge_table)
+    else:
+        console.print("\n[yellow]No edge properties found[/yellow]")
+
+    # Degree statistics
+    if "degree_stats" in info_data:
+        console.print("\n[bold green]Degree Statistics:[/bold green]")
+        if isinstance(info_data["degree_stats"], dict):
+            degree_table = Table()
+            degree_table.add_column("Metric", style="cyan")
+            degree_table.add_column("Value", style="white")
+
+            stats = info_data["degree_stats"]
+            degree_table.add_row("Average Degree", f"{stats['avg_degree']:.2f}")
+            degree_table.add_row("Maximum Degree", f"{stats['max_degree']:,}")
+            degree_table.add_row("Minimum Degree", f"{stats['min_degree']:,}")
+            degree_table.add_row("Sample Size", f"{stats['sample_size']:,}")
+            console.print(degree_table)
+        else:
+            console.print(f"[yellow]{info_data['degree_stats']}[/yellow]")
 
 
 @main.command()
