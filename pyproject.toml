@@ -180,7 +180,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config --cov=src/parquetframe --cov-fail-under=40 --cov-report=term-missing --cov-report=html"
+addopts = "-ra -q --strict-markers --strict-config --cov=src/parquetframe --cov-fail-under=45 --cov-report=term-missing --cov-report=html"
 testpaths = ["tests"]
 filterwarnings = [
     "error",
@@ -193,6 +193,9 @@ markers = [
     "asyncio: marks tests as async tests",
     "ai: marks tests as AI/LLM related tests",
     "db: marks tests as database related tests",
+    "graph: marks tests as graph processing related tests",
+    "cli: marks tests as CLI related tests",
+    "dask: marks tests that require Dask backend",
 ]
 
 [tool.coverage.run]
