@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from ..core import ParquetFrame
+from .adjacency import CSCAdjacency, CSRAdjacency
 
 
 class GraphFrame:
@@ -90,6 +91,10 @@ class GraphFrame:
         self.metadata = metadata
         self._adjacency_data = adjacency_data or {}
 
+        # Lazy-loaded adjacency structures
+        self._csr_adjacency = None
+        self._csc_adjacency = None
+
     @property
     def num_vertices(self) -> int:
         """Number of vertices in the graph."""
@@ -125,7 +130,7 @@ class GraphFrame:
 
     def degree(self, vertex_id: int, mode: Literal["in", "out", "all"] = "all") -> int:
         """
-        Calculate vertex degree.
+        Calculate vertex degree using efficient adjacency structures.
 
         Args:
             vertex_id: The vertex ID to calculate degree for
@@ -142,28 +147,22 @@ class GraphFrame:
             >>> graph.degree(123, mode="in")   # Incoming edges only
             7
         """
-        # This is a placeholder implementation - will be properly implemented
-        # when adjacency structures are built
-        if mode == "out" or mode == "all":
-            out_count = len(self.edges.query(f"src == {vertex_id}"))
-            if mode == "out":
-                return out_count
-
-        if mode == "in" or mode == "all":
-            in_count = len(self.edges.query(f"dst == {vertex_id}"))
-            if mode == "in":
-                return in_count
-
-        if mode == "all":
-            return out_count + in_count
-
-        return 0
+        if mode == "out":
+            csr = self._get_csr_adjacency()
+            return csr.degree(vertex_id)
+        elif mode == "in":
+            csc = self._get_csc_adjacency()
+            return csc.degree(vertex_id)
+        else:  # mode == "all"
+            out_degree = self.degree(vertex_id, mode="out")
+            in_degree = self.degree(vertex_id, mode="in")
+            return out_degree + in_degree
 
     def neighbors(
         self, vertex_id: int, mode: Literal["in", "out", "all"] = "out"
     ) -> list[int]:
         """
-        Get neighboring vertex IDs.
+        Get neighboring vertex IDs using efficient adjacency structures.
 
         Args:
             vertex_id: The vertex to find neighbors for
@@ -178,18 +177,16 @@ class GraphFrame:
             >>> graph.neighbors(123, mode="in")  # Incoming neighbors
             [13, 14, 15]
         """
-        # Placeholder implementation - will be optimized with adjacency structures
-        neighbors = []
-
-        if mode in ("out", "all"):
-            out_edges = self.edges.query(f"src == {vertex_id}")
-            neighbors.extend(out_edges["dst"].tolist())
-
-        if mode in ("in", "all"):
-            in_edges = self.edges.query(f"dst == {vertex_id}")
-            neighbors.extend(in_edges["src"].tolist())
-
-        return list(set(neighbors))  # Remove duplicates for "all" mode
+        if mode == "out":
+            csr = self._get_csr_adjacency()
+            return csr.neighbors(vertex_id).tolist()
+        elif mode == "in":
+            csc = self._get_csc_adjacency()
+            return csc.predecessors(vertex_id).tolist()
+        else:  # mode == "all"
+            out_neighbors = set(self.neighbors(vertex_id, mode="out"))
+            in_neighbors = set(self.neighbors(vertex_id, mode="in"))
+            return list(out_neighbors | in_neighbors)
 
     def subgraph(self, vertex_ids: list[int]) -> "GraphFrame":
         """
@@ -235,6 +232,94 @@ class GraphFrame:
     def __str__(self) -> str:
         """User-friendly string representation."""
         return self.__repr__()
+
+    def _get_csr_adjacency(self) -> CSRAdjacency:
+        """
+        Get or create CSR adjacency structure for outgoing edges.
+
+        Returns:
+            CSRAdjacency instance for this graph
+        """
+        if self._csr_adjacency is None:
+            from .data import EdgeSet
+
+            # Create EdgeSet from edges DataFrame
+            edge_set = EdgeSet(
+                data=self.edges, edge_type="default", properties={}, schema=None
+            )
+            self._csr_adjacency = CSRAdjacency.from_edge_set(edge_set)
+        return self._csr_adjacency
+
+    def _get_csc_adjacency(self) -> CSCAdjacency:
+        """
+        Get or create CSC adjacency structure for incoming edges.
+
+        Returns:
+            CSCAdjacency instance for this graph
+        """
+        if self._csc_adjacency is None:
+            from .data import EdgeSet
+
+            # Create EdgeSet from edges DataFrame
+            edge_set = EdgeSet(
+                data=self.edges, edge_type="default", properties={}, schema=None
+            )
+            self._csc_adjacency = CSCAdjacency.from_edge_set(edge_set)
+        return self._csc_adjacency
+
+    @property
+    def csr_adjacency(self) -> CSRAdjacency:
+        """
+        CSR (Compressed Sparse Row) adjacency structure for outgoing edges.
+
+        This property provides efficient neighbor lookups and out-degree calculations.
+        The structure is built lazily on first access.
+
+        Returns:
+            CSRAdjacency instance
+
+        Examples:
+            >>> csr = graph.csr_adjacency
+            >>> neighbors = csr.neighbors(vertex_id=123)
+            >>> out_degree = csr.degree(vertex_id=123)
+        """
+        return self._get_csr_adjacency()
+
+    @property
+    def csc_adjacency(self) -> CSCAdjacency:
+        """
+        CSC (Compressed Sparse Column) adjacency structure for incoming edges.
+
+        This property provides efficient predecessor lookups and in-degree calculations.
+        The structure is built lazily on first access.
+
+        Returns:
+            CSCAdjacency instance
+
+        Examples:
+            >>> csc = graph.csc_adjacency
+            >>> predecessors = csc.predecessors(vertex_id=123)
+            >>> in_degree = csc.degree(vertex_id=123)
+        """
+        return self._get_csc_adjacency()
+
+    def has_edge(self, source: int, target: int) -> bool:
+        """
+        Check if an edge exists between two vertices.
+
+        Args:
+            source: Source vertex ID
+            target: Target vertex ID
+
+        Returns:
+            True if edge exists, False otherwise
+
+        Examples:
+            >>> if graph.has_edge(123, 456):
+            ...     print("Edge 123 -> 456 exists")
+        """
+        csr = self._get_csr_adjacency()
+        return csr.has_edge(source, target)
 
 
 def read_graph(
