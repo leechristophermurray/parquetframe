@@ -149,11 +149,18 @@ def build_empty_graphar(tmp_path: Path) -> dict[str, Any]:
     with open(graph_dir / "_metadata.yaml", "w", encoding="utf-8") as f:
         yaml.dump(metadata, f, default_flow_style=False)
 
+    # Create empty schema file
+    schema = {"version": "1.0", "vertices": {}, "edges": {}}
+
+    with open(graph_dir / "_schema.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(schema, f, default_flow_style=False)
+
     return {
         "graph_path": graph_dir,
         "expected_vertices": 0,
         "expected_edges": 0,
         "metadata": metadata,
+        "schema": schema,
     }
 
 
@@ -267,11 +274,38 @@ def build_large_graphar(tmp_path: Path, num_vertices: int = 1000) -> dict[str, A
     with open(graph_dir / "_metadata.yaml", "w", encoding="utf-8") as f:
         yaml.dump(metadata, f, default_flow_style=False)
 
+    # Create schema file
+    schema = {
+        "version": "1.0",
+        "vertices": {
+            "user": {
+                "properties": {
+                    "id": {"type": "int64", "primary": True},
+                    "name": {"type": "string"},
+                    "category": {"type": "string"},
+                }
+            }
+        },
+        "edges": {
+            "connection": {
+                "properties": {
+                    "src": {"type": "int64", "source": True},
+                    "dst": {"type": "int64", "target": True},
+                    "weight": {"type": "float64"},
+                }
+            }
+        },
+    }
+
+    with open(graph_dir / "_schema.yaml", "w", encoding="utf-8") as f:
+        yaml.dump(schema, f, default_flow_style=False)
+
     return {
         "graph_path": graph_dir,
         "expected_vertices": num_vertices,
         "expected_edges": len(edge_data),
         "metadata": metadata,
+        "schema": schema,
         "vertex_data": vertex_data,
         "edge_data": edge_data,
         "expected_backend": (

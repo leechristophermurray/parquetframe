@@ -98,16 +98,12 @@ class GraphFrame:
     @property
     def num_vertices(self) -> int:
         """Number of vertices in the graph."""
-        if hasattr(self.vertices.data, "__len__"):
-            return len(self.vertices.data)
-        return self.vertices.data.index.max() + 1  # Fallback for lazy evaluation
+        return len(self.vertices)
 
     @property
     def num_edges(self) -> int:
         """Number of edges in the graph."""
-        if hasattr(self.edges.data, "__len__"):
-            return len(self.edges.data)
-        return len(self.edges.data.index)  # For lazy evaluation
+        return len(self.edges)
 
     @property
     def is_directed(self) -> bool:

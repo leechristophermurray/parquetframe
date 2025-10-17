@@ -293,7 +293,7 @@ class GraphArReader:
             import pandas as pd
 
             empty_df = pd.DataFrame({"vertex_id": pd.Series([], dtype="int64")})
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         if not vertices_dir.is_dir():
             raise GraphArError(f"Vertices path is not a directory: {vertices_dir}")
@@ -316,7 +316,7 @@ class GraphArReader:
             import pandas as pd
 
             empty_df = pd.DataFrame({"vertex_id": pd.Series([], dtype="int64")})
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         # Load vertex types using VertexSet
         vertex_sets = []
@@ -350,7 +350,7 @@ class GraphArReader:
             import pandas as pd
 
             empty_df = pd.DataFrame({"vertex_id": pd.Series([], dtype="int64")})
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         # For now, return the first vertex set's data
         # TODO: Implement proper multi-type vertex consolidation
@@ -392,7 +392,7 @@ class GraphArReader:
                     "dst": pd.Series([], dtype="int64"),
                 }
             )
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         if not edges_dir.is_dir():
             raise GraphArError(f"Edges path is not a directory: {edges_dir}")
@@ -420,7 +420,7 @@ class GraphArReader:
                     "dst": pd.Series([], dtype="int64"),
                 }
             )
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         # Load edge types using EdgeSet
         edge_sets = []
@@ -459,7 +459,7 @@ class GraphArReader:
                     "dst": pd.Series([], dtype="int64"),
                 }
             )
-            return ParquetFrame(data=empty_df, islazy=islazy or False)
+            return ParquetFrame(empty_df, islazy=islazy or False)
 
         # For now, return the first edge set's data
         # TODO: Implement proper multi-type edge consolidation
