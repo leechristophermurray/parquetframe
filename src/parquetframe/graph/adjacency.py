@@ -66,18 +66,23 @@ class CSRAdjacency:
         self.indices = np.asarray(indices, dtype=np.int64)
         self.indptr = np.asarray(indptr, dtype=np.int64)
         self.data = np.asarray(data) if data is not None else None
+        self._num_vertices = num_vertices or (len(self.indptr) - 1)
 
         # Validate array dimensions
-        if len(self.indptr) < 2:
-            raise ValueError("indptr must have at least 2 elements")
+        if len(self.indptr) < 1:
+            raise ValueError("indptr must have at least 1 element")
         if self.indptr[0] != 0:
             raise ValueError("indptr[0] must be 0")
         if self.indptr[-1] != len(self.indices):
             raise ValueError("indptr[-1] must equal len(indices)")
+        # For standard CSR: len(indptr) should be num_vertices + 1
+        expected_indptr_len = self._num_vertices + 1 if self._num_vertices > 0 else 1
+        if len(self.indptr) != expected_indptr_len:
+            raise ValueError(
+                f"indptr length {len(self.indptr)} != {expected_indptr_len} (num_vertices + 1)"
+            )
         if self.data is not None and len(self.data) != len(self.indices):
             raise ValueError("data and indices must have same length")
-
-        self._num_vertices = num_vertices or (len(self.indptr) - 1)
 
     @classmethod
     def from_edge_set(
@@ -120,7 +125,7 @@ class CSRAdjacency:
             )
             edge_data = edge_data.to_pandas()
 
-        df = edge_data.data
+        df = edge_data
         sources = df[src_col].values.astype(np.int64)
         targets = df[dst_col].values.astype(np.int64)
 
@@ -147,9 +152,21 @@ class CSRAdjacency:
                     )
 
         # Determine vertex range
-        num_vertices = max(sources.max(), targets.max()) + 1
+        if len(sources) == 0:
+            num_vertices = 0
+        else:
+            num_vertices = max(sources.max(), targets.max()) + 1
 
         # Build CSR format
+        if num_vertices == 0:
+            # Handle empty graph case
+            return cls(
+                indices=np.array([], dtype=np.int64),
+                indptr=np.array([0], dtype=np.int64),
+                data=None,
+                num_vertices=0,
+            )
+
         # Sort edges by source vertex for efficient construction
         sort_idx = np.argsort(sources)
         sources_sorted = sources[sort_idx]
@@ -396,18 +413,23 @@ class CSCAdjacency:
         self.indices = np.asarray(indices, dtype=np.int64)
         self.indptr = np.asarray(indptr, dtype=np.int64)
         self.data = np.asarray(data) if data is not None else None
+        self._num_vertices = num_vertices or (len(self.indptr) - 1)
 
         # Validate array dimensions
-        if len(self.indptr) < 2:
-            raise ValueError("indptr must have at least 2 elements")
+        if len(self.indptr) < 1:
+            raise ValueError("indptr must have at least 1 element")
         if self.indptr[0] != 0:
             raise ValueError("indptr[0] must be 0")
         if self.indptr[-1] != len(self.indices):
             raise ValueError("indptr[-1] must equal len(indices)")
+        # For standard CSC: len(indptr) should be num_vertices + 1
+        expected_indptr_len = self._num_vertices + 1 if self._num_vertices > 0 else 1
+        if len(self.indptr) != expected_indptr_len:
+            raise ValueError(
+                f"indptr length {len(self.indptr)} != {expected_indptr_len} (num_vertices + 1)"
+            )
         if self.data is not None and len(self.data) != len(self.indices):
             raise ValueError("data and indices must have same length")
-
-        self._num_vertices = num_vertices or (len(self.indptr) - 1)
 
     @classmethod
     def from_edge_set(
@@ -445,7 +467,7 @@ class CSCAdjacency:
             )
             edge_data = edge_data.to_pandas()
 
-        df = edge_data.data
+        df = edge_data
         sources = df[src_col].values.astype(np.int64)
         targets = df[dst_col].values.astype(np.int64)
 
@@ -472,9 +494,22 @@ class CSCAdjacency:
                     )
 
         # Determine vertex range
-        num_vertices = max(sources.max(), targets.max()) + 1
+        if len(sources) == 0:
+            num_vertices = 0
+        else:
+            num_vertices = max(sources.max(), targets.max()) + 1
 
-        # Build CSC format - sort by target vertex
+        # Build CSC format
+        if num_vertices == 0:
+            # Handle empty graph case
+            return cls(
+                indices=np.array([], dtype=np.int64),
+                indptr=np.array([0], dtype=np.int64),
+                data=None,
+                num_vertices=0,
+            )
+
+        # Sort by target vertex
         sort_idx = np.argsort(targets)
         sources_sorted = sources[sort_idx]
         targets_sorted = targets[sort_idx]
