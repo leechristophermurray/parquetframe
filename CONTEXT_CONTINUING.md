@@ -213,7 +213,7 @@ This order allows us to:
 
 ### **1.1 Apache GraphAr Foundation**
 
-**Status**: 🔄 PLANNED
+**Status**: 🚧 IN PROGRESS
 **Priority**: HIGH
 **Estimated Time**: 4-6 weeks
 
@@ -221,17 +221,31 @@ This order allows us to:
 
 Based on detailed analysis in `CONTEXT_GRAPH.md`, implement:
 
-- [ ] GraphAr directory structure and metadata
-- [ ] Vertex and edge data organization
-- [ ] CSR/CSC adjacency list representations
-- [ ] Basic graph I/O operations
+- [x] GraphAr directory structure and metadata
+- [x] Vertex and edge data organization
+- [x] CSR/CSC adjacency list representations
+- [x] Basic graph I/O operations (GraphArReader -> GraphFrame)
 
 #### Key Deliverables
 
-- [ ] `pf.read_graph("my_social_graph/")` functionality
-- [ ] Graph data validation and schema checking
-- [ ] Basic vertex/edge property access
-- [ ] Foundation for graph algorithms
+- [x] `pf.read_graph("my_social_graph/")` functionality
+- [x] Graph data validation and schema checking
+- [x] Basic vertex/edge property access
+- [x] Foundation for graph algorithms (CSR/CSC ready)
+
+#### Progress Update (2025-10-17)
+
+Completed:
+- Implemented `GraphFrame` with efficient degree/neighbor/has_edge methods using lazy CSR/CSC
+- Added `VertexSet` and `EdgeSet` with schema/type validation and flexible column handling
+- Implemented `GraphArReader` with metadata/schema validation and multi-type loading
+- Added `CSRAdjacency` and `CSCAdjacency` with NumPy-backed sparse structures, subgraph extraction, and optional weights
+
+Remaining for 1.1:
+- [ ] CLI integration: `pf graph info <path>`, expose schema/summary in CLI
+- [ ] Tests: unit/integration for GraphArReader, GraphFrame, CSR/CSC, VertexSet/EdgeSet (≥45% coverage)
+- [ ] Docs: `docs/graph/overview.md`, `docs/graph/usage.md` with examples
+- [ ] PR: open, review, CI green, squash-merge
 
 ---
 
@@ -368,23 +382,68 @@ Based on detailed analysis in `CONTEXT_GRAPH.md`, implement:
 4. [ ] Performance benchmarking across formats (moved to next phase)
 5. ✅ **COMPLETED**: README and docs updated with multi-format examples
 
-### **Current Status: Planning Phase 0.2**
+### **Active Sprint: Phase 1.1 GraphAr Foundation (Major Milestone)**
 
-**Date**: 2025-10-14
-**Status**: Phase 0.1 Multi-Format Support FULLY COMPLETED
+**Status**: 🚧 **IN PROGRESS**
+**Duration**: 3 days active development (Oct 15-17, 2025)
+**Start Date**: 2025-10-15
+**Target Completion**: 2025-10-20
+**Branch**: `feature/graph-engine-phase1.1-graphar`
 
-#### Recent Achievements (Oct 14, 2025)
+#### Sprint Progress: 70% Complete
 
-- ✅ **Multi-Format Architecture**: Complete handler-based system
-- ✅ **Cross-Platform Compatibility**: Windows, macOS, Linux support
-- ✅ **Comprehensive Testing**: 382/383 tests passing (99.7%)
-- ✅ **Documentation**: Updated guides, examples, changelog
-- ✅ **Version Releases**: v0.3.0, v0.3.1, v0.3.2 tagged and released
+**✅ COMPLETED (Core Engine - 7/11 tasks):**
+1. ✅ Repository reconnaissance & environment bootstrap
+2. ✅ Feature branch creation with tracking
+3. ✅ Public API surface definition (GraphFrame, read_graph)
+4. ✅ GraphAr directory & schema validation (GraphArReader)
+5. ✅ Vertex & edge parquet loading utilities (VertexSet, EdgeSet)
+6. ✅ Adjacency list creation (CSRAdjacency, CSCAdjacency)
+7. ✅ GraphFrame core object with efficient operations
+
+**🔄 REMAINING (Polish Phase - 4/11 tasks):**
+8. [ ] CLI integration (`pf graph info <path>`, schema summary)
+9. [ ] Testing & coverage ≥45% (unit/integration test suite)
+10. [ ] Documentation (MkDocs pages with examples)
+11. [ ] Pull request & branch cleanup
+
+#### Technical Achievements (Major Milestone)
+
+**🏗️ Graph Processing Engine:**
+- **GraphFrame**: Complete graph object with lazy CSR/CSC adjacency
+- **CSRAdjacency/CSCAdjacency**: NumPy-backed O(V+E) sparse structures
+- **VertexSet/EdgeSet**: Schema-validated data with flexible column naming
+- **GraphArReader**: Apache GraphAr compliance with metadata validation
+
+**⚡ Performance Features:**
+- O(degree) neighbor/predecessor lookups for sparse graphs
+- Lazy adjacency loading with memory-efficient representations
+- Pandas/Dask backend selection with automatic conversion warnings
+- Subgraph extraction preserving adjacency structure
+
+**🔧 Integration & Quality:**
+- Seamless ParquetFrame ecosystem integration
+- Comprehensive error handling with descriptive messages
+- 100% linting compliance (Black, Ruff) across 1,700+ lines
+- Type-safe implementations with full docstring coverage
+
+#### Files Created/Modified
+
+**New Modules:**
+- `src/parquetframe/graph/__init__.py` - GraphFrame API (305 lines)
+- `src/parquetframe/graph/data.py` - VertexSet/EdgeSet classes (485 lines)
+- `src/parquetframe/graph/adjacency.py` - CSR/CSC structures (573 lines)
+- `src/parquetframe/graph/io/graphar.py` - GraphAr reader (467 lines)
+- `src/parquetframe/graph/io/__init__.py` - I/O module interface
+
+**Enhanced Modules:**
+- `src/parquetframe/__init__.py` - Added graph module exposure
 
 #### Next Development Phase
 
-**Planned Start**: Phase 0.2 Enhanced SQL Method Integration
-**Focus**: Multi-format SQL capabilities, performance optimization, fluent API
+**Current Focus**: Polish & finalization for Phase 1.1
+**Immediate Next**: CLI integration with `pf graph` commands
+**After 1.1**: Phase 1.2 Graph Traversal Algorithms (BFS, DFS, shortest paths)
 
 ### **Phase 0.1 Multi-Format Support - COMPLETION SUMMARY**
 
@@ -452,7 +511,7 @@ Based on detailed analysis in `CONTEXT_GRAPH.md`, implement:
 
 ### **Phase 1 Completion Criteria**
 
-- [ ] Functional graph processing engine (pfg)
+- [x] Functional graph processing engine (pfg) — foundation implemented (GraphAr + CSR/CSC)
 - [ ] Core graph algorithms (BFS, DFS, shortest path)
 - [ ] Basic Zanzibar-style permission checking
 - [ ] Graph CLI commands and examples
@@ -506,6 +565,12 @@ Based on detailed analysis in `CONTEXT_GRAPH.md`, implement:
 - [ ] 0.2 Enhanced SQL Method: 0% complete (NEXT)
 - [ ] 0.3 Advanced Analytics: 0% complete
 
+### **Phase 1 Progress**
+
+- 🟢 1.1 GraphAr Foundation: 70% complete (Reader, GraphFrame, Vertex/Edge sets, CSR/CSC done)
+- [ ] 1.2 Graph Traversal Algorithms: 0% complete
+- [ ] 1.3 Zanzibar-Style Permissions: 0% complete
+
 ### **Overall Roadmap Progress**
 
 - ✅ **Completed Features**: 32/37 (86%)
@@ -533,6 +598,6 @@ Major technical decisions and their rationale will be documented here as we prog
 
 ---
 
-**Last Updated**: 2025-10-14
-**Next Update**: Upon completion of Phase 0.1 (Multi-Format Support)
-**Status**: ✅ Ready to begin Phase 0.1 development
+**Last Updated**: 2025-10-17
+**Next Update**: After completing Phase 1.1 CLI, tests, and docs
+**Status**: 🚧 Phase 1.1 in progress — core graph engine implemented; polishing (CLI/tests/docs) remaining
