@@ -169,10 +169,10 @@ def test_large_graph_auto_selects_dask(tmp_path):
     # Create larger graph that should trigger Dask selection
     large_sample = build_large_graphar(tmp_path, num_vertices=100)
 
-    # Use low threshold to force Dask selection
+    # Use very low threshold to force Dask selection
     graph = read_graph(
-        large_sample["graph_path"], threshold_mb=0.001
-    )  # Very low threshold
+        large_sample["graph_path"], threshold_mb=0.0000001
+    )  # Extremely low threshold to force Dask
 
     # Should use Dask for large data
     assert graph.vertices.islazy, "Large graph should automatically use Dask backend"

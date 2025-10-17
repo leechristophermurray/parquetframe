@@ -334,7 +334,9 @@ class GraphArReader:
                     vertex_type=vertex_type,
                     threshold_mb=threshold_mb,
                     islazy=islazy,
-                    properties=vertex_schema.get("properties", {}),
+                    properties=(
+                        vertex_schema.get("properties", {}) if vertex_schema else {}
+                    ),
                     schema=vertex_schema,
                 )
                 vertex_sets.append(vertex_set)
@@ -438,7 +440,7 @@ class GraphArReader:
                     edge_type=edge_type,
                     threshold_mb=threshold_mb,
                     islazy=islazy,
-                    properties=edge_schema.get("properties", {}),
+                    properties=edge_schema.get("properties", {}) if edge_schema else {},
                     schema=edge_schema,
                 )
                 edge_sets.append(edge_set)
