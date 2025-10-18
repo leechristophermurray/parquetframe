@@ -37,6 +37,8 @@
 
 🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations
 
+🕸️ **Graph Processing**: Apache GraphAr format support with efficient adjacency structures and intelligent backend selection for graph data
+
 📊 **Advanced Analytics**: Comprehensive statistical analysis and time-series operations with `.stats` and `.ts` accessors
 
 🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, analytics, and batch processing
@@ -212,6 +214,38 @@ result = await agent.generate_query(
 )
 ```
 
+### Graph Data Processing
+
+```python
+import parquetframe as pf
+
+# Load graph data in Apache GraphAr format
+graph = pf.read_graph("social_network/")
+print(f"Loaded graph: {graph.num_vertices} vertices, {graph.num_edges} edges")
+
+# Access vertex and edge data with pandas/Dask APIs
+users = graph.vertices.data
+friendships = graph.edges.data
+
+# Standard DataFrame operations on graph data
+active_users = users.query("status == 'active'")
+strong_connections = friendships.query("weight > 0.8")
+
+# Efficient adjacency structures for graph algorithms
+from parquetframe.graph.adjacency import CSRAdjacency
+
+csr = CSRAdjacency.from_edge_set(graph.edges)
+neighbors = csr.neighbors(user_id=123)  # O(degree) lookup
+user_degree = csr.degree(user_id=123)   # O(1) degree calculation
+
+# Automatic backend selection based on graph size
+small_graph = pf.read_graph("test_network/")      # Uses pandas
+large_graph = pf.read_graph("web_crawl/")         # Uses Dask automatically
+
+# CLI for graph inspection
+# pf graph info social_network/ --detailed --format json
+```
+
 ### Genomic Data Analysis
 
 ```python
@@ -309,6 +343,11 @@ pframe analyze data.parquet --correlation spearman    # Correlation matrix
 pframe timeseries stocks.parquet --resample 'D' --method mean    # Daily resampling
 pframe timeseries stocks.parquet --rolling 7 --method mean       # Moving averages
 pframe timeseries stocks.parquet --shift 1                       # Lag analysis
+
+# Graph data analysis
+pf graph info social_network/                    # Basic graph information
+pf graph info social_network/ --detailed         # Detailed statistics
+pf graph info web_crawl/ --backend dask --format json  # Force backend and JSON output
 ```
 
 ### Data Processing
@@ -397,6 +436,7 @@ pframe workflow --validate my_pipeline.yml
 - **Flexibility**: Override automatic decisions when needed
 - **Compatibility**: Drop-in replacement for pandas.read_parquet()
 - **Advanced Analytics**: Built-in statistical analysis and time-series operations with `.stats` and `.ts` accessors
+- **Graph Processing**: Native Apache GraphAr support with efficient adjacency structures and intelligent pandas/Dask backend selection
 - **CLI Power**: Full command-line interface for data exploration, analytics, batch processing, and performance benchmarking
 - **Reproducibility**: Automatic Python script generation from CLI sessions
 - **Zero-Configuration Optimization**: Automatic performance improvements with intelligent defaults
