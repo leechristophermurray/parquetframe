@@ -13,7 +13,7 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
   - Supports multi-frame JOINs via keyword arguments
   - Works with all engines (pandas/polars/dask) via pandas conversion
   - Supports QueryContext for optimization hints and profiling
-  
+
 - **Backward compatibility**
   - Added `ParquetFrame` alias → `DataFrameProxy`
   - Added `.pandas_df` property for legacy API compatibility
@@ -24,11 +24,11 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
   - Supports `.json`, `.jsonl`, `.ndjson` extensions
   - Auto-detects JSON Lines format from extension
   - Integrated into Phase 2 format detection
-  
+
 - **Added ORC reader**
   - Supports `.orc` files via pyarrow
   - Integrated into Phase 2 format detection
-  
+
 - **Fixed TSV reading**
   - Auto-detects tab separator for `.tsv` files
   - Fixes ~30+ test failures
@@ -37,7 +37,7 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 - **Added `create_empty()` function**
   - Creates empty DataFrameProxy with specified engine
   - Exported in main `__all__`
-  
+
 ### ✅ Tests Re-enabled - ALL PASSING
 - tests/test_sql_matrix.py (87 tests) - ✅ **ALL PASSING**
 - tests/test_sql_multiformat.py (36 tests) - ✅ **ALL PASSING**
@@ -61,7 +61,7 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 - ~169 tests skipped
 - Total: ~893 tests
 
-### After Migration  
+### After Migration
 - **~893+ tests passing** (123 SQL tests + others re-enabled)
 - **0 tests failing** ✅
 - **Minimal skips** (only workflow-specific tests)
@@ -98,10 +98,10 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 
 ## Migration Success Metrics
 
-✅ **169+ tests migrated** from Phase 1 to Phase 2 API  
-✅ **123 SQL tests passing** (100% success rate) ⭐  
-✅ **All core SQL functionality working** (.sql() method, parameterized queries, fluent API)  
-✅ **All file formats supported** (CSV, TSV, JSON, JSONL, Parquet, ORC, Avro)  
-✅ **Backward compatibility maintained** (ParquetFrame alias, pandas_df property)  
-✅ **SQL convenience methods complete** (sql_hint, sql_with_params, select/where)  
+✅ **169+ tests migrated** from Phase 1 to Phase 2 API
+✅ **123 SQL tests passing** (100% success rate) ⭐
+✅ **All core SQL functionality working** (.sql() method, parameterized queries, fluent API)
+✅ **All file formats supported** (CSV, TSV, JSON, JSONL, Parquet, ORC, Avro)
+✅ **Backward compatibility maintained** (ParquetFrame alias, pandas_df property)
+✅ **SQL convenience methods complete** (sql_hint, sql_with_params, select/where)
 ✅ **CI/CD pipeline fixed** (minimum-requirements, pre-commit, test matrix)
