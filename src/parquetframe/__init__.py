@@ -46,15 +46,9 @@ from typing import Any
 from .config import config_context, get_config, reset_config, set_config
 
 # Phase 2 multi-engine core (default as of v1.0.0)
-from .core_v2 import (
-    DataFrameProxy,
-    Engine,
-    EngineCapabilities,
-    read_avro,
-    read_csv,
-    read_parquet,
-)
+from .core_v2 import DataFrameProxy, Engine, EngineCapabilities
 from .core_v2 import read as _read_v2
+from .core_v2 import read_avro, read_csv, read_parquet
 
 # Phase 2 multi-engine components (available for direct import)
 try:
@@ -86,6 +80,10 @@ try:
     from . import legacy  # Phase 1 API with deprecation warnings
 except ImportError:
     legacy = None
+
+
+# Backward compatibility: ParquetFrame is now DataFrameProxy
+ParquetFrame = DataFrameProxy
 
 
 # Convenience function for backward-compatible reading
@@ -160,6 +158,7 @@ __version__ = "1.0.0"
 __all__ = [
     # Main Phase 2 API
     "DataFrameProxy",
+    "ParquetFrame",  # Backward compatibility alias
     "read",
     "read_csv",
     "read_parquet",

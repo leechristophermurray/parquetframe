@@ -6,10 +6,13 @@ with intelligent backend selection and seamless engine switching.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .base import DataFrameLike, Engine
 from .registry import EngineRegistry
+
+if TYPE_CHECKING:
+    from ..sql import QueryContext, QueryResult
 
 try:
     from ..io_new.avro import AvroWriter
@@ -72,6 +75,16 @@ class DataFrameProxy:
     def native(self) -> DataFrameLike | None:
         """Access to underlying native DataFrame object."""
         return self._data
+
+    @property
+    def pandas_df(self) -> "DataFrameLike | None":
+        """Backward compatibility: get pandas DataFrame representation."""
+        if self._data is None:
+            return None
+        if self.engine_name == "pandas":
+            return self._data
+        # Convert to pandas if using a different engine
+        return self._engine.to_pandas(self._data)
 
     def head(self, n: int = 5) -> "DataFrameProxy":
         """Return the first n rows."""
@@ -198,6 +211,77 @@ class DataFrameProxy:
         writer.write(self._data, path, schema=schema, codec=codec)
 
         return self
+
+    def sql(
+        self,
+        query: str,
+        profile: bool = False,
+        use_cache: bool = True,
+        context: "QueryContext | None" = None,
+        **other_frames: "DataFrameProxy",
+    ) -> "DataFrameProxy | QueryResult":
+        """
+        Execute SQL query on this DataFrameProxy using DuckDB.
+
+        The current DataFrameProxy is available as 'df' in the SQL query.
+        Additional DataFrameProxy objects can be passed as keyword arguments.
+
+        Args:
+            query: SQL query string (main frame available as 'df')
+            profile: If True, return QueryResult with execution metadata
+            use_cache: Enable query result caching
+            context: QueryContext with optimization hints
+            **other_frames: Additional DataFrameProxy objects for JOINs
+
+        Returns:
+            DataFrameProxy with query results, or QueryResult if profile=True
+
+        Examples:
+            >>> df = pf.read("data.csv")
+            >>> result = df.sql("SELECT * FROM df WHERE age > 25")
+            >>> # Multi-frame join:
+            >>> df1 = pf.read("users.csv")
+            >>> df2 = pf.read("orders.csv")
+            >>> result = df1.sql(
+            ...     "SELECT * FROM df JOIN orders ON df.id = orders.user_id",
+            ...     orders=df2
+            ... )
+        """
+        from ..sql import query_dataframes
+
+        if self._data is None:
+            raise ValueError("Cannot execute SQL on empty DataFrameProxy")
+
+        # Convert main DataFrame to pandas for DuckDB
+        # DuckDB also supports dask, but we'll standardize on pandas conversion
+        if self.engine_name == "pandas":
+            main_df = self._data
+        else:
+            # Convert to pandas via engine
+            main_df = self._engine.to_pandas(self._data)  # type: ignore[attr-defined]
+
+        # Convert other DataFrameProxy objects to pandas DataFrames
+        other_dfs = {}
+        for name, proxy in other_frames.items():
+            if proxy._data is not None:
+                if proxy.engine_name == "pandas":
+                    other_dfs[name] = proxy._data
+                else:
+                    other_dfs[name] = proxy._engine.to_pandas(proxy._data)  # type: ignore[attr-defined]
+
+        # Execute query using existing SQL infrastructure
+        result = query_dataframes(
+            main_df, query, other_dfs, profile, use_cache, context
+        )
+
+        # Return QueryResult directly if profiling
+        if profile:
+            return result  # type: ignore[return-value]
+
+        # Wrap result in DataFrameProxy (always pandas from DuckDB)
+        from ..engines.pandas_engine import PandasEngine
+
+        return DataFrameProxy(data=result, engine=PandasEngine())
 
     def _estimate_data_size(self, data: DataFrameLike) -> int:
         """Estimate data size in bytes using engine."""
