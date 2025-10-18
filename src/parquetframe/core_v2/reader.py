@@ -181,13 +181,118 @@ class DataReader:
 
         return DataFrameProxy(data=native_df, engine=selected_engine)
 
+    def read_json(
+        self, path: str | Path, engine: str | None = None, **kwargs: Any
+    ) -> DataFrameProxy:
+        """
+        Read JSON or JSON Lines file with intelligent engine selection.
+
+        Args:
+            path: Path to JSON file (.json, .jsonl, .ndjson)
+            engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+            **kwargs: Additional arguments (e.g., lines=True for JSON Lines)
+
+        Returns:
+            DataFrameProxy with optimal engine selected
+        """
+        path = Path(path)
+
+        # Check file existence first
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        data_size = self._estimate_file_size(path)
+
+        # Select engine
+        if engine and engine != "auto":
+            selected_engine = self._registry.get_engine(engine)
+        else:
+            selected_engine = self._registry.select_optimal_engine(
+                data_size_bytes=data_size
+            )
+
+        # Auto-detect JSON Lines format from extension
+        suffix = path.suffix.lower()
+        is_jsonl = suffix in (".jsonl", ".ndjson")
+        if is_jsonl and "lines" not in kwargs:
+            kwargs["lines"] = True
+
+        logger.info(
+            f"Reading JSON{'L' if is_jsonl else ''} file "
+            f"({data_size / 1024 / 1024:.2f} MB) "
+            f"with {selected_engine.name} engine"
+        )
+
+        # Read using pandas (most reliable for JSON), then convert if needed
+        import pandas as pd
+
+        native_df = pd.read_json(path, **kwargs)
+
+        # Convert to selected engine if not pandas
+        if selected_engine.name != "pandas":
+            native_df = selected_engine.from_pandas(native_df)  # type: ignore[attr-defined]
+
+        return DataFrameProxy(data=native_df, engine=selected_engine)
+
+    def read_orc(
+        self, path: str | Path, engine: str | None = None, **kwargs: Any
+    ) -> DataFrameProxy:
+        """
+        Read ORC file with intelligent engine selection.
+
+        Args:
+            path: Path to ORC file
+            engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+            **kwargs: Additional arguments
+
+        Returns:
+            DataFrameProxy with optimal engine selected
+        """
+        path = Path(path)
+
+        # Check file existence first
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        data_size = self._estimate_file_size(path)
+
+        # Select engine
+        if engine and engine != "auto":
+            selected_engine = self._registry.get_engine(engine)
+        else:
+            selected_engine = self._registry.select_optimal_engine(
+                data_size_bytes=data_size
+            )
+
+        logger.info(
+            f"Reading ORC file ({data_size / 1024 / 1024:.2f} MB) "
+            f"with {selected_engine.name} engine"
+        )
+
+        # Read ORC using pyarrow, then convert if needed
+        try:
+            import pyarrow.orc as orc
+        except ImportError as err:
+            raise ImportError(
+                "pyarrow with ORC support required. Install with: pip install pyarrow"
+            ) from err
+
+        table = orc.read_table(path)
+        native_df = table.to_pandas()
+
+        # Convert to selected engine if not pandas
+        if selected_engine.name != "pandas":
+            native_df = selected_engine.from_pandas(native_df)  # type: ignore[attr-defined]
+
+        return DataFrameProxy(data=native_df, engine=selected_engine)
+
     def read(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
     ) -> DataFrameProxy:
         """
         Read data file with automatic format detection and engine selection.
 
-        Supports: .parquet, .pqt, .csv, .tsv, .avro
+        Supports: .parquet, .pqt, .csv, .tsv, .json, .jsonl, .ndjson, .avro, .orc
 
         Args:
             path: Path to data file
@@ -209,12 +314,16 @@ class DataReader:
             return self.read_parquet(path, engine=engine, **kwargs)
         elif suffix in (".csv", ".tsv"):
             return self.read_csv(path, engine=engine, **kwargs)
+        elif suffix in (".json", ".jsonl", ".ndjson"):
+            return self.read_json(path, engine=engine, **kwargs)
         elif suffix == ".avro":
             return self.read_avro(path, engine=engine, **kwargs)
+        elif suffix == ".orc":
+            return self.read_orc(path, engine=engine, **kwargs)
         else:
             raise ValueError(
                 f"Unsupported file format: {suffix}. "
-                f"Supported: .parquet, .pqt, .csv, .tsv, .avro"
+                f"Supported: .parquet, .pqt, .csv, .tsv, .json, .jsonl, .ndjson, .avro, .orc"
             )
 
     def _estimate_file_size(self, path: Path) -> int:
@@ -327,11 +436,45 @@ def read_avro(
     return _reader.read_avro(path, engine=engine, **kwargs)
 
 
+def read_json(
+    path: str | Path, engine: str | None = None, **kwargs: Any
+) -> DataFrameProxy:
+    """
+    Read JSON or JSON Lines file with intelligent engine selection.
+
+    Args:
+        path: Path to JSON file (.json, .jsonl, .ndjson)
+        engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+        **kwargs: Additional arguments (e.g., lines=True for JSON Lines)
+
+    Returns:
+        DataFrameProxy with optimal engine selected
+    """
+    return _reader.read_json(path, engine=engine, **kwargs)
+
+
+def read_orc(
+    path: str | Path, engine: str | None = None, **kwargs: Any
+) -> DataFrameProxy:
+    """
+    Read ORC file with intelligent engine selection.
+
+    Args:
+        path: Path to ORC file
+        engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+        **kwargs: Additional arguments
+
+    Returns:
+        DataFrameProxy with optimal engine selected
+    """
+    return _reader.read_orc(path, engine=engine, **kwargs)
+
+
 def read(path: str | Path, engine: str | None = None, **kwargs: Any) -> DataFrameProxy:
     """
     Read data file with automatic format detection and engine selection.
 
-    Supports: .parquet, .pqt, .csv, .tsv, .avro
+    Supports: .parquet, .pqt, .csv, .tsv, .json, .jsonl, .ndjson, .avro, .orc
 
     Args:
         path: Path to data file

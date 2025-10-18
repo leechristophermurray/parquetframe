@@ -48,7 +48,7 @@ from .config import config_context, get_config, reset_config, set_config
 # Phase 2 multi-engine core (default as of v1.0.0)
 from .core_v2 import DataFrameProxy, Engine, EngineCapabilities
 from .core_v2 import read as _read_v2
-from .core_v2 import read_avro, read_csv, read_parquet
+from .core_v2 import read_avro, read_csv, read_json, read_orc, read_parquet
 
 # Phase 2 multi-engine components (available for direct import)
 try:
@@ -162,6 +162,8 @@ __all__ = [
     "read",
     "read_csv",
     "read_parquet",
+    "read_json",
+    "read_orc",
     "read_avro",
     # Engine types
     "Engine",
