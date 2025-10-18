@@ -1,43 +1,61 @@
 """
 ParquetFrame: A universal data processing framework with multi-format support.
 
-This package provides seamless switching between pandas and Dask DataFrames
-based on file size thresholds, with automatic format detection for multiple
-file types including CSV, JSON, Parquet, and ORC.
+This package provides seamless switching between pandas, Polars, and Dask DataFrames
+based on intelligent engine selection, with automatic format detection for multiple
+file types including CSV, JSON, Parquet, ORC, and Avro.
 
 Supported formats:
     - CSV (.csv, .tsv) - Comma or tab-separated values
     - JSON (.json, .jsonl, .ndjson) - Regular or JSON Lines format
     - Parquet (.parquet, .pqt) - Columnar format (optimal performance)
     - ORC (.orc) - Optimized Row Columnar format
+    - Avro (.avro) - Schema-rich serialization format (Phase 2+)
     - GraphAr - Graph data in Apache GraphAr format (Phase 1.1+)
 
+Engines:
+    - pandas - Eager execution for small datasets (<100MB)
+    - Polars - Lazy evaluation for medium datasets (100MB-10GB)
+    - Dask - Distributed processing for large datasets (>10GB)
+
 Examples:
-    Multi-format data processing:
-        >>> import parquetframe as pqf
-        >>> csv_df = pqf.read("sales.csv")  # Auto-detects CSV
-        >>> json_df = pqf.read("events.jsonl")  # Auto-detects JSON Lines
-        >>> parquet_df = pqf.read("data.parquet")  # Auto-detects Parquet
-        >>> result = csv_df.groupby("region").sum().save("output.parquet")
+    Multi-engine data processing:
+        >>> import parquetframe as pf
+        >>> df = pf.read("sales.csv")  # Auto-selects optimal engine
+        >>> print(f"Using {df.engine_name} engine")  # pandas, polars, or dask
+        >>> result = df[df["price"] > 100].groupby("category")["revenue"].sum()
 
     Graph processing (Phase 1.1+):
-        >>> import parquetframe as pqf
-        >>> graph = pqf.graph.read_graph("social_network/")  # GraphAr format
+        >>> import parquetframe as pf
+        >>> graph = pf.graph.read_graph("social_network/")  # GraphAr format
         >>> print(f"Graph: {graph.num_vertices} vertices, {graph.num_edges} edges")
         >>> neighbors = graph.neighbors(vertex_id=123)
 
-    Manual control:
-        >>> df = pqf.read("data.txt", format="csv")  # Force CSV format
-        >>> df = pqf.read("large_data.csv", islazy=True)  # Force Dask
-        >>> print(df.islazy)  # True
+    Manual engine control:
+        >>> df = pf.read("data.csv", engine="polars")  # Force Polars engine
+        >>> df = pf.read("large_data.csv", engine="dask")  # Force Dask
+
+    Configuration:
+        >>> pf.set_config(pandas_threshold_mb=50.0, polars_threshold_mb=100.0)
+        >>> df = pf.read("data.csv")  # Uses configured thresholds
 """
 
 from pathlib import Path
+from typing import Any
 
 from .config import config_context, get_config, reset_config, set_config
-from .core import ParquetFrame
 
-# Phase 2 multi-engine components (available for advanced usage)
+# Phase 2 multi-engine core (default as of v1.0.0)
+from .core_v2 import (
+    DataFrameProxy,
+    read as _read_v2,
+    read_avro,
+    read_csv,
+    read_parquet,
+)
+from .core_v2 import Engine, EngineCapabilities
+
+# Phase 2 multi-engine components (available for direct import)
 try:
     from . import core_v2  # New multi-engine core
 except ImportError:
@@ -47,7 +65,7 @@ except ImportError:
 try:
     from . import graph
 except ImportError:
-    # Graph module not available - will be implemented in Phase 1.1
+    # Graph module not available
     graph = None
 
 try:
@@ -56,72 +74,108 @@ except ImportError:
     # Permissions module not available
     permissions = None
 
-# Make ParquetFrame available as 'pf' for convenience
-pf = ParquetFrame
+try:
+    from . import entity
+except ImportError:
+    # Entity framework not available
+    entity = None
+
+# Legacy Phase 1 support (deprecated as of v1.0.0)
+try:
+    from . import legacy  # Phase 1 API with deprecation warnings
+except ImportError:
+    legacy = None
 
 
-# Convenience functions for more ergonomic usage
+# Convenience function for backward-compatible reading
 def read(
     file: str | Path,
-    threshold_mb: float | None = None,
-    islazy: bool | None = None,
-    **kwargs,
-) -> ParquetFrame:
+    engine: str | None = None,
+    **kwargs: Any,
+) -> DataFrameProxy:
     """
-    Read a data file into a ParquetFrame with automatic format detection.
+    Read a data file with automatic format detection and intelligent engine selection.
 
-    This is a convenience function that wraps ParquetFrame.read().
-    Supports CSV, JSON, Parquet, and ORC formats with automatic detection.
+    This function provides the Phase 2 multi-engine API with automatic selection
+    between pandas, Polars, and Dask based on dataset characteristics.
 
     Args:
         file: Path to the data file. Format auto-detected from extension.
-        threshold_mb: Size threshold in MB for backend selection. Defaults to 100MB.
-        islazy: Force backend selection (True=Dask, False=pandas, None=auto).
-        **kwargs: Additional keyword arguments (format="csv|json|parquet|orc", etc.).
+        engine: Force specific engine ("pandas", "polars", or "dask").
+                If None, automatically selects optimal engine.
+        **kwargs: Additional keyword arguments passed to format-specific readers.
 
     Returns:
-        ParquetFrame instance with loaded data.
+        DataFrameProxy: Unified DataFrame interface with intelligent backend.
+
+    Supported Formats:
+        - CSV (.csv, .tsv)
+        - JSON (.json, .jsonl, .ndjson)
+        - Parquet (.parquet, .pqt)
+        - ORC (.orc)
+        - Avro (.avro)
+
+    Engine Selection (when engine=None):
+        - pandas: < 100MB (eager, rich ecosystem)
+        - Polars: 100MB - 10GB (lazy, high performance)
+        - Dask: > 10GB (distributed, scalable)
 
     Examples:
-        >>> import parquetframe as pqf
-        >>> df = pqf.read("sales.csv")  # Auto-detect CSV format and backend
-        >>> df = pqf.read("events.jsonl")  # Auto-detect JSON Lines format
-        >>> df = pqf.read("data.parquet", threshold_mb=50)  # Custom threshold
-        >>> df = pqf.read("data.txt", format="csv")  # Manual format override
+        >>> import parquetframe as pf
+        >>> # Automatic engine selection
+        >>> df = pf.read("sales.csv")
+        >>> print(f"Using {df.engine_name} engine")
+        >>>
+        >>> # Force specific engine
+        >>> df = pf.read("data.parquet", engine="polars")
+        >>>
+        >>> # Configure thresholds globally
+        >>> pf.set_config(pandas_threshold_mb=50.0)
+        >>> df = pf.read("medium.csv")  # Uses configured threshold
+
+    Migration from Phase 1:
+        Phase 1 code using `islazy` parameter should migrate to `engine` parameter:
+
+        Before (Phase 1):
+            >>> df = pf.read("data.csv", islazy=True)  # Force Dask
+            >>> if df.islazy:
+            >>>     result = df.df.compute()
+
+        After (Phase 2):
+            >>> df = pf.read("data.csv", engine="dask")  # Force Dask
+            >>> if df.engine_name == "dask":
+            >>>     result = df.native.compute()
+
+    See Also:
+        - read_csv(): Read CSV files specifically
+        - read_parquet(): Read Parquet files specifically
+        - read_avro(): Read Avro files specifically
+        - parquetframe.legacy: Phase 1 API (deprecated)
     """
-    return ParquetFrame.read(file, threshold_mb=threshold_mb, islazy=islazy, **kwargs)
+    return _read_v2(file, engine=engine, **kwargs)
 
 
-def create_empty(islazy: bool = False) -> ParquetFrame:
-    """
-    Create an empty ParquetFrame.
-
-    Args:
-        islazy: Whether to initialize as Dask (True) or pandas (False).
-
-    Returns:
-        Empty ParquetFrame instance.
-
-    Examples:
-        >>> import parquetframe as pqf
-        >>> empty_pf = pqf.create_empty()
-        >>> empty_pf = pqf.create_empty(islazy=True)
-    """
-    return ParquetFrame(islazy=islazy)
-
-
-__version__ = "0.5.3"
+__version__ = "1.0.0"
 __all__ = [
-    "ParquetFrame",
-    "pf",
+    # Main Phase 2 API
+    "DataFrameProxy",
     "read",
-    "create_empty",
-    "graph",
-    "permissions",
-    "core_v2",
+    "read_csv",
+    "read_parquet",
+    "read_avro",
+    # Engine types
+    "Engine",
+    "EngineCapabilities",
     # Configuration
     "get_config",
     "set_config",
     "reset_config",
     "config_context",
+    # Submodules
+    "graph",
+    "permissions",
+    "entity",
+    "core_v2",
+    # Legacy (deprecated)
+    "legacy",
 ]
