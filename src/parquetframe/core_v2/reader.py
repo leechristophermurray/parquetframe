@@ -101,7 +101,7 @@ class DataReader:
         Read CSV file with intelligent engine selection.
 
         Args:
-            path: Path to CSV file
+            path: Path to CSV file (.csv, .tsv)
             engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
             **kwargs: Additional arguments passed to engine's read function
 
@@ -115,6 +115,11 @@ class DataReader:
             raise FileNotFoundError(f"File not found: {path}")
 
         data_size = self._estimate_file_size(path)
+
+        # Auto-detect TSV files and set separator if not explicitly provided
+        suffix = path.suffix.lower()
+        if suffix == ".tsv" and "sep" not in kwargs and "separator" not in kwargs:
+            kwargs["sep"] = "\t"
 
         # Select engine
         if engine and engine != "auto":
