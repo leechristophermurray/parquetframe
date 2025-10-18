@@ -86,6 +86,33 @@ except ImportError:
 ParquetFrame = DataFrameProxy
 
 
+def create_empty(engine: str = "pandas", **kwargs: Any) -> DataFrameProxy:
+    """
+    Create an empty DataFrameProxy.
+
+    Args:
+        engine: Engine to use ("pandas", "polars", or "dask"). Defaults to "pandas".
+        **kwargs: Additional arguments passed to the engine.
+
+    Returns:
+        Empty DataFrameProxy with the specified engine.
+
+    Examples:
+        >>> import parquetframe as pf
+        >>> empty_df = pf.create_empty()
+        >>> print(f"Engine: {empty_df.engine_name}")
+        Engine: pandas
+        >>>
+        >>> empty_polars = pf.create_empty(engine="polars")
+        >>> print(f"Engine: {empty_polars.engine_name}")
+        Engine: polars
+    """
+    import pandas as pd
+
+    empty_pandas = pd.DataFrame()
+    return DataFrameProxy(data=empty_pandas, engine=engine, **kwargs)
+
+
 # Convenience function for backward-compatible reading
 def read(
     file: str | Path,
@@ -160,6 +187,7 @@ __all__ = [
     "DataFrameProxy",
     "ParquetFrame",  # Backward compatibility alias
     "read",
+    "create_empty",
     "read_csv",
     "read_parquet",
     "read_json",
