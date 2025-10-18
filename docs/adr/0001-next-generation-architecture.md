@@ -263,7 +263,6 @@ This ADR relates to and will be followed by:
 
 ## References
 
-- [CONTEXT_ENHANCEMENTS_1.md](../CONTEXT_ENHANCEMENTS_1.md) - Detailed technical requirements
 - [Apache Arrow Specification](https://arrow.apache.org/docs/format/Columnar.html) - Columnar format standards
 - [Apache Avro Specification](https://avro.apache.org/docs/current/spec.html) - Schema-rich serialization format
 - [Polars User Guide](https://pola-rs.github.io/polars-book/) - Lazy evaluation patterns

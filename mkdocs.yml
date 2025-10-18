@@ -75,8 +75,11 @@ nav:
     - Performance Tips: performance.md
     - Backend Selection: backends.md
     - File Formats: formats.md
+    - Analytics: analytics.md
+    - Time Series: timeseries.md
   - AI Features:
     - AI Overview: ai-features.md
+    - AI Usage Guide: AI_USAGE.md
     - Natural Language Queries: ai/queries.md
     - Local LLM Setup: ai/setup.md
     - Prompt Engineering: ai/prompts.md
@@ -89,6 +92,17 @@ nav:
     - BioFrame Integration: bio/index.md
     - Genomic Operations: bio/operations.md
     - Parallel Processing: bio/parallel.md
+  - Graph Processing:
+    - Graph Overview: graph/index.md
+    - Graph CLI: graph/cli.md
+    - Graph Tutorial: graph/tutorial.md
+  - Permissions System:
+    - Permissions Overview: permissions/index.md
+    - CLI Reference: permissions/cli-reference.md
+  - Phase 2 Guide:
+    - Overview: phase2/README.md
+    - Migration Guide: phase2/MIGRATION_GUIDE.md
+    - User Guide: phase2/USER_GUIDE.md
   - CLI Guide:
     - CLI Overview: cli/index.md
     - CLI Installation: cli/installation.md
@@ -121,6 +135,11 @@ nav:
     - Release Notes: changelog.md
     - Benchmarks: benchmarks.md
     - Architecture: architecture.md
+    - Architecture Decisions:
+      - Phase 2 Architecture: adr/0001-next-generation-architecture.md
+      - Default API Change: adr/0002-make-phase2-default-api.md
+    - Issues:
+      - Phase 2 Test Migration: issues/phase2-test-migration.md
   - Project Assessment:
     - Comprehensive Report: reports/parquetframe_assessment.md
     - Feature Matrix: feature_implementation_matrix.md

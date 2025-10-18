@@ -167,6 +167,7 @@ class Task:
     priority: str = "medium"  # low, medium, high
     list_id: str = ""
     assigned_to: str | None = None
+    position: int = 0  # Position within the list
     created_at: datetime = None
     updated_at: datetime = None
 

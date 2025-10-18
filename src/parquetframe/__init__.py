@@ -46,15 +46,9 @@ from typing import Any
 from .config import config_context, get_config, reset_config, set_config
 
 # Phase 2 multi-engine core (default as of v1.0.0)
-from .core_v2 import (
-    DataFrameProxy,
-    Engine,
-    EngineCapabilities,
-    read_avro,
-    read_csv,
-    read_parquet,
-)
+from .core_v2 import DataFrameProxy, Engine, EngineCapabilities
 from .core_v2 import read as _read_v2
+from .core_v2 import read_avro, read_csv, read_json, read_orc, read_parquet
 
 # Phase 2 multi-engine components (available for direct import)
 try:
@@ -86,6 +80,37 @@ try:
     from . import legacy  # Phase 1 API with deprecation warnings
 except ImportError:
     legacy = None
+
+
+# Backward compatibility: ParquetFrame is now DataFrameProxy
+ParquetFrame = DataFrameProxy
+
+
+def create_empty(engine: str = "pandas", **kwargs: Any) -> DataFrameProxy:
+    """
+    Create an empty DataFrameProxy.
+
+    Args:
+        engine: Engine to use ("pandas", "polars", or "dask"). Defaults to "pandas".
+        **kwargs: Additional arguments passed to the engine.
+
+    Returns:
+        Empty DataFrameProxy with the specified engine.
+
+    Examples:
+        >>> import parquetframe as pf
+        >>> empty_df = pf.create_empty()
+        >>> print(f"Engine: {empty_df.engine_name}")
+        Engine: pandas
+        >>>
+        >>> empty_polars = pf.create_empty(engine="polars")
+        >>> print(f"Engine: {empty_polars.engine_name}")
+        Engine: polars
+    """
+    import pandas as pd
+
+    empty_pandas = pd.DataFrame()
+    return DataFrameProxy(data=empty_pandas, engine=engine, **kwargs)
 
 
 # Convenience function for backward-compatible reading
@@ -160,9 +185,13 @@ __version__ = "1.0.0"
 __all__ = [
     # Main Phase 2 API
     "DataFrameProxy",
+    "ParquetFrame",  # Backward compatibility alias
     "read",
+    "create_empty",
     "read_csv",
     "read_parquet",
+    "read_json",
+    "read_orc",
     "read_avro",
     # Engine types
     "Engine",

@@ -203,3 +203,4 @@ output_*.parquet
 # uv
 .uv/
 uv.lock
+CI_FIX_SUMMARY.md

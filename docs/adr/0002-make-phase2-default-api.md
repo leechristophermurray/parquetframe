@@ -283,7 +283,6 @@ This ADR builds on:
 
 ## References
 
-- [CONTEXT_CONTINUING.md](../../CONTEXT_CONTINUING.md) - Development roadmap
 - [Phase 2 Migration Guide](../phase2/MIGRATION_GUIDE.md) - Existing Phase 1→2 migration guide
 - [Semantic Versioning 2.0.0](https://semver.org/) - Version number conventions
 - [Conventional Commits](https://www.conventionalcommits.org/) - Commit message format

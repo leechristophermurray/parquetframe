@@ -7,7 +7,12 @@ engine based on data size, operation type, system resources, and user preference
 
 import logging
 
-import psutil
+try:
+    import psutil
+
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
 
 from ..config import get_config
 from .base import Engine, EngineCapabilities
@@ -193,6 +198,11 @@ class EngineHeuristics:
 
     def _get_available_memory(self) -> int:
         """Get available system memory in bytes."""
+        if not HAS_PSUTIL:
+            # Conservative fallback: assume 4GB available
+            # This ensures core functionality works without psutil
+            logger.debug("psutil not available, using 4GB conservative fallback")
+            return 4 * 1024 * 1024 * 1024  # 4GB in bytes
         try:
             memory = psutil.virtual_memory()
             return memory.available

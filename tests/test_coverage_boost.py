@@ -64,7 +64,12 @@ class TestCoverageBoosters:
         pf = pqf.ParquetFrame(df)
 
         # Test memory usage calculation
-        memory_info = pf.memory_usage(deep=True)
+        # Phase 2: access via pandas_df property
+        if hasattr(pf, "pandas_df") and pf.pandas_df is not None:
+            memory_info = pf.pandas_df.memory_usage(deep=True)
+        else:
+            # Phase 1 fallback
+            memory_info = pf.memory_usage(deep=True)
         assert isinstance(memory_info, pd.Series | dict | int | float)
 
     def test_sql_context_custom_pragmas(self):
