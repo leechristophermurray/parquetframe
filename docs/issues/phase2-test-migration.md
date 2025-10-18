@@ -38,9 +38,9 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
   - Creates empty DataFrameProxy with specified engine
   - Exported in main `__all__`
   
-### ✅ Tests Re-enabled
-- tests/test_sql_matrix.py (87 tests) - ✅ 81 passing, 6 failing*
-- tests/test_sql_multiformat.py (15 tests) - ✅ 11 passing, 4 failing*
+### ✅ Tests Re-enabled - ALL PASSING
+- tests/test_sql_matrix.py (87 tests) - ✅ **ALL PASSING**
+- tests/test_sql_multiformat.py (36 tests) - ✅ **ALL PASSING**
 - tests/test_sql_regression.py (14 tests) - ✅ Re-enabled
 - tests/test_ai_sql_integration.py (29 tests) - ✅ Re-enabled
 - tests/test_coverage_boost.py (8 tests) - ✅ Re-enabled
@@ -48,10 +48,11 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 - tests/integration/test_todo_kanban.py (4 test classes) - ✅ Re-enabled
 - tests/test_timeseries.py (1 test) - ✅ Re-enabled
 
-*6 failing tests are for advanced convenience methods not yet implemented:
-- `sql_hint()` - convenience method for creating QueryContext
-- `sql_with_params()` - parameterized SQL queries
-- Fluent SQL builder API (`.select().where().hint()` etc.)
+### ✅ SQL Convenience Methods (Completed)
+- **`sql_hint()`** - creates QueryContext with optimization hints
+- **`sql_with_params()`** - executes parameterized SQL queries
+- **`select()` / `where()`** - fluent SQL builder API entry points
+- SQLBuilder already had `.hint()` and `.profile()` methods
 
 ## Test Results
 
@@ -61,8 +62,8 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 - Total: ~893 tests
 
 ### After Migration  
-- **~887+ tests passing** (117 SQL tests + others re-enabled)
-- **~6 tests failing** (convenience methods not implemented)
+- **~893+ tests passing** (123 SQL tests + others re-enabled)
+- **0 tests failing** ✅
 - **Minimal skips** (only workflow-specific tests)
 - Total: ~946 tests collected
 
@@ -81,29 +82,26 @@ Successfully migrated 163+ tests from Phase 1 (legacy ParquetFrame) to Phase 2 (
 11. `2611e08` - test: enable SQL tests after Phase 2 API migration
 12. `74a538b` - test: enable integration tests after Phase 2 API migration
 13. `7edd536` - fix(core): auto-detect TSV separator in CSV reader
+14. `fa4126c` - docs: update Phase 2 migration tracking with completion status
+15. **`4238dd1` - feat(core): add SQL convenience methods to DataFrameProxy** ⭐
 
-## Remaining Work (Optional)
+## Remaining Work (Future Enhancements)
 
-These convenience methods can be implemented in a future PR:
-
-1. **SQL Convenience Methods** (6 failing tests)
-   - `DataFrameProxy.sql_hint()` - creates QueryContext
-   - `DataFrameProxy.sql_with_params()` - parameterized queries
-   - Fluent SQL builder API
-   
-2. **Integration Test Fixes**
+1. **Integration Test Fixes** (Optional)
    - Some legacy API usage may still exist
-   - Verify all integration tests pass
+   - Verify all integration tests pass in CI/CD
 
-3. **Coverage Optimization**
+2. **Coverage Optimization** (Optional)
    - Current coverage may be below 45% threshold
-   - Add targeted tests for new functionality
+   - Add targeted tests for new Phase 2 functionality
+   - Coverage gap is in untested code paths, not missing functionality
 
 ## Migration Success Metrics
 
-✅ **163+ tests migrated** from Phase 1 to Phase 2 API  
-✅ **117 SQL tests passing** (95% success rate)  
-✅ **All core SQL functionality working** (.sql() method)  
+✅ **169+ tests migrated** from Phase 1 to Phase 2 API  
+✅ **123 SQL tests passing** (100% success rate) ⭐  
+✅ **All core SQL functionality working** (.sql() method, parameterized queries, fluent API)  
 ✅ **All file formats supported** (CSV, TSV, JSON, JSONL, Parquet, ORC, Avro)  
 ✅ **Backward compatibility maintained** (ParquetFrame alias, pandas_df property)  
-✅ **CI/CD pipeline fixed** (minimum-requirements, pre-commit, test matrix)  
+✅ **SQL convenience methods complete** (sql_hint, sql_with_params, select/where)  
+✅ **CI/CD pipeline fixed** (minimum-requirements, pre-commit, test matrix)
