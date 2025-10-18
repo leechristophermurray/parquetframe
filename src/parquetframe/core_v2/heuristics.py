@@ -9,6 +9,7 @@ import logging
 
 import psutil
 
+from ..config import get_config
 from .base import Engine, EngineCapabilities
 
 logger = logging.getLogger(__name__)
@@ -18,9 +19,10 @@ class EngineHeuristics:
     """Intelligent engine selection based on data characteristics and system resources."""
 
     def __init__(self):
-        # Default thresholds (can be configured)
-        self.pandas_threshold_bytes = 1024 * 1024 * 100  # 100MB
-        self.dask_threshold_bytes = 1024 * 1024 * 1024 * 10  # 10GB
+        # Load thresholds from config
+        config = get_config()
+        self.pandas_threshold_bytes = int(config.pandas_threshold_mb * 1024 * 1024)
+        self.dask_threshold_bytes = int(config.polars_threshold_mb * 1024 * 1024)
 
         # Memory considerations
         self.memory_safety_factor = 0.8  # Use 80% of available memory
@@ -48,6 +50,15 @@ class EngineHeuristics:
         """
         if not engines:
             raise ValueError("No engines available")
+
+        # Check for config override
+        config = get_config()
+        if config.default_engine and config.default_engine in engines:
+            if engines[config.default_engine].is_available:
+                logger.debug(
+                    f"Using configured default engine: {config.default_engine}"
+                )
+                return config.default_engine
 
         # Get system information
         available_memory = self._get_available_memory()

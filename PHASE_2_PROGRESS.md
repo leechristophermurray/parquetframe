@@ -131,18 +131,18 @@ df = pf2.read("data.avro").filter(pl.col("age") > 30)
 | **2.1 Multi-Engine Core** | ✅ COMPLETE | 42 | 100% |
 | **2.2 Avro Integration** | ✅ COMPLETE | 16 | 100% |
 || **2.3 Entity-Graph Framework** | ✅ COMPLETE | 21 | 100% |
-| **2.4 Configuration & UX** | ⏳ PENDING | - | 0% |
+|| **2.4 Configuration & UX** | ✅ COMPLETE | 31 | 100% |
 | **2.5 Testing & QA** | ⏳ PENDING | - | 0% |
 | **2.6 Documentation** | ⏳ PENDING | - | 0% |
 
-**Overall**: **50% Complete** (3 of 6 components)
+**Overall**: **67% Complete** (4 of 6 components)
 
 ### Statistics
 
-- **Total Commits**: 4
-- **Total Tests**: 79 (78 passing, 1 skipped)
-- **New Files Created**: 15
-- **Lines Added**: ~3,500
+- **Total Commits**: 5
+- **Total Tests**: 110 (109 passing, 1 skipped)
+- **New Files Created**: 18
+- **Lines Added**: ~4,500
 - **Test Coverage**: TBD (need full test run)
 
 ### Key Technical Decisions
@@ -241,6 +241,65 @@ author = post.author()  # Returns User entity
 
 ---
 
+## ✅ **Phase 2.4: Configuration & UX** (COMPLETE)
+
+**Duration**: ~1 hour
+**Completion Date**: 2025-10-18
+**Commits**: 1
+
+### Key Achievements
+
+**1. Configuration System** (`config.py`)
+```python
+from parquetframe import set_config, get_config, config_context
+
+# Set global configuration
+set_config(default_engine="polars", verbose=True)
+
+# Get current configuration
+config = get_config()
+print(config.to_dict())
+
+# Temporary configuration changes
+with config_context(default_engine="dask"):
+    df = read("large_file.parquet")  # Uses Dask
+# Automatically reverts to polars
+```
+
+**2. Environment Variable Support**
+- `PARQUETFRAME_ENGINE`: Override default engine ("pandas", "polars", "dask")
+- `PARQUETFRAME_PANDAS_THRESHOLD_MB`: Pandas size threshold
+- `PARQUETFRAME_POLARS_THRESHOLD_MB`: Polars size threshold
+- `PARQUETFRAME_ENTITY_FORMAT`: Default entity storage format
+- `PARQUETFRAME_ENTITY_BASE_PATH`: Base path for entity storage
+- `PARQUETFRAME_VERBOSE`: Enable verbose logging
+- `PARQUETFRAME_QUIET`: Suppress warnings
+- `PARQUETFRAME_PROGRESS`: Enable progress bars
+
+**3. Integration with Engine Selection**
+- `EngineHeuristics` reads thresholds from configuration
+- `default_engine` config bypasses automatic selection
+- Configuration affects all Phase 2 readers
+
+**4. Configuration Features**
+- Global singleton with `get_config()`
+- Programmatic updates with `set_config()`
+- Context manager for temporary changes
+- Dictionary serialization/deserialization
+- Automatic environment variable loading
+
+### Testing
+- **31 new tests** (total: 110)
+- 109 passing, 1 skipped
+- Comprehensive coverage of:
+  - `test_config.py`: Core configuration features (22 tests)
+  - `test_config_integration.py`: Integration with engines and entities (9 tests)
+  - Environment variable loading
+  - Configuration context manager
+  - Serialization round-trips
+
+---
+
 ## 📈 **Quality Metrics**
 
 ### Code Quality
@@ -250,7 +309,7 @@ author = post.author()  # Returns User entity
 - ⏳ MyPy: TBD (existing project has ~200 errors to address)
 
 ### Testing
-- ✅ Test Pass Rate: 98.7% (78/79)
+- ✅ Test Pass Rate: 99.1% (109/110)
 - ✅ Test Coverage: TBD
 - ✅ Multi-engine tests: pandas/Polars/Dask
 - ✅ Integration tests: Format detection, engine switching, entity relationships
@@ -266,13 +325,13 @@ author = post.author()  # Returns User entity
 
 ### Short Term (Next 1-2 weeks)
 1. ✅ ~~Complete Phase 2.3: Entity-Graph Framework~~
-2. Add comprehensive benchmarks
-3. Write migration guide from Phase 1 to Phase 2
+2. ✅ ~~Complete Phase 2.4: Configuration & UX~~
+3. Add comprehensive benchmarks
+4. Write migration guide from Phase 1 to Phase 2
 
 ### Medium Term (2-4 weeks)
-1. Complete Phase 2.4: Configuration system
-2. Complete Phase 2.5: Testing & QA
-3. Complete Phase 2.6: Documentation
+1. Complete Phase 2.5: Testing & QA
+2. Complete Phase 2.6: Documentation
 
 ### Long Term (1-2 months)
 1. Integrate Phase 2 with existing Phase 1 features
@@ -283,4 +342,4 @@ author = post.author()  # Returns User entity
 ---
 
 **Last Updated**: 2025-10-18
-**Next Review**: After Phase 2.4 completion
+**Next Review**: After Phase 2.5 completion

@@ -34,6 +34,7 @@ Examples:
 
 from pathlib import Path
 
+from .config import config_context, get_config, reset_config, set_config
 from .core import ParquetFrame
 
 # Phase 2 multi-engine components (available for advanced usage)
@@ -118,4 +119,9 @@ __all__ = [
     "graph",
     "permissions",
     "core_v2",
+    # Configuration
+    "get_config",
+    "set_config",
+    "reset_config",
+    "config_context",
 ]
