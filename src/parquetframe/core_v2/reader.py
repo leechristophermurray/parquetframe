@@ -25,7 +25,7 @@ try:
 
     AVRO_AVAILABLE = True
 except ImportError:
-    AvroReader = None
+    AvroReader = None  # type: ignore[assignment,misc]
     AVRO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -264,6 +264,8 @@ class DataReader:
                         metadata = pq.read_metadata(file_path)
                         total_rows += metadata.num_rows
                 return total_rows if total_rows > 0 else None
+            else:
+                return None
         except Exception as e:
             logger.debug(f"Could not read Parquet metadata: {e}")
             return None

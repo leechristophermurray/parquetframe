@@ -16,7 +16,7 @@ try:
 
     AVRO_AVAILABLE = True
 except ImportError:
-    AvroWriter = None
+    AvroWriter = None  # type: ignore[assignment,misc]
     AVRO_AVAILABLE = False
 
 
@@ -69,7 +69,7 @@ class DataFrameProxy:
         return self._engine.is_lazy
 
     @property
-    def native(self) -> DataFrameLike:
+    def native(self) -> DataFrameLike | None:
         """Access to underlying native DataFrame object."""
         return self._data
 
@@ -94,7 +94,7 @@ class DataFrameProxy:
         """Return (nrows, ncols)."""
         if self._data is None:
             return (0, 0)
-        return self._data.shape
+        return self._data.shape  # type: ignore[misc,return-value]
 
     @property
     def columns(self) -> list[str]:
@@ -102,10 +102,10 @@ class DataFrameProxy:
         if self._data is None:
             return []
         # Convert to list for consistency across engines
-        cols = self._data.columns
+        cols = self._data.columns  # type: ignore[misc]
         if hasattr(cols, "tolist"):
             return cols.tolist()
-        return list(cols)
+        return list(cols)  # type: ignore[call-overload]
 
     def compute(self) -> "DataFrameProxy":
         """
@@ -143,14 +143,14 @@ class DataFrameProxy:
             target_data = pandas_df
         elif target_engine.name == "polars":
             # Will be implemented in polars engine
-            target_data = target_engine.from_pandas(pandas_df)
+            target_data = target_engine.from_pandas(pandas_df)  # type: ignore[attr-defined]
         elif target_engine.name == "dask":
             # Will be implemented in dask engine
-            target_data = target_engine.from_pandas(pandas_df)
+            target_data = target_engine.from_pandas(pandas_df)  # type: ignore[attr-defined]
         else:
             raise ValueError(f"Unknown target engine: {engine_name}")
 
-        return DataFrameProxy(data=target_data, engine=target_engine)
+        return DataFrameProxy(data=target_data, engine=target_engine)  # type: ignore[arg-type]
 
     def to_pandas(self) -> "DataFrameProxy":
         """Convert to pandas engine."""
@@ -282,7 +282,7 @@ class DataFrameProxy:
         """Return number of rows."""
         if self._data is None:
             return 0
-        return len(self._data)
+        return len(self._data)  # type: ignore[arg-type]
 
     def __getitem__(self, key: Any) -> Any:
         """
@@ -291,7 +291,7 @@ class DataFrameProxy:
         if self._data is None:
             raise ValueError("Cannot index empty DataFrameProxy")
 
-        result = self._data[key]
+        result = self._data[key]  # type: ignore[index]
 
         # Wrap result if it's DataFrame-like
         if self._is_dataframe_like(result):

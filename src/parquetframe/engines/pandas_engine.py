@@ -36,13 +36,13 @@ class PandasEngine(Engine):
         except Exception:
             return False
 
-    def read_parquet(self, path: str | Path, **kwargs: Any) -> pd.DataFrame:
+    def read_parquet(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read Parquet file using pandas."""
-        return pd.read_parquet(path, **kwargs)
+        return pd.read_parquet(path, **kwargs)  # type: ignore[return-value]
 
-    def read_csv(self, path: str | Path, **kwargs: Any) -> pd.DataFrame:
+    def read_csv(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read CSV file using pandas."""
-        return pd.read_csv(path, **kwargs)
+        return pd.read_csv(path, **kwargs)  # type: ignore[return-value]
 
     def to_pandas(self, df: DataFrameLike) -> pd.DataFrame:
         """Convert to pandas DataFrame."""
@@ -54,19 +54,21 @@ class PandasEngine(Engine):
             return df.to_pandas()
 
         # Fallback: assume it has pandas-compatible interface
-        return pd.DataFrame(df)
+        return pd.DataFrame(df)  # type: ignore[arg-type,call-overload]
 
     def compute_if_lazy(self, df: DataFrameLike) -> DataFrameLike:
         """No-op for pandas (always eager)."""
         return df
 
-    def estimate_memory_usage(self, df: pd.DataFrame) -> int:
+    def estimate_memory_usage(self, df: DataFrameLike) -> int:
         """Estimate memory usage in bytes."""
         try:
-            return int(df.memory_usage(deep=True).sum())
+            if not isinstance(df, pd.DataFrame):
+                df = pd.DataFrame(df)  # type: ignore[arg-type,call-overload]
+            return int(df.memory_usage(deep=True).sum())  # type: ignore[attr-defined]
         except Exception:
-            # Fallback estimation
-            return len(df) * len(df.columns) * 8  # Assume 8 bytes per value
+            # Fallback estimation - assume it has len and columns
+            return len(df) * len(df.columns) * 8  # type: ignore[arg-type]
 
     def from_pandas(self, df: pd.DataFrame) -> pd.DataFrame:
         """Convert from pandas (no-op)."""

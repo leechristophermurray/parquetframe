@@ -16,7 +16,7 @@ try:
 
     POLARS_AVAILABLE = True
 except ImportError:
-    pl = None
+    pl = None  # type: ignore[assignment]
     POLARS_AVAILABLE = False
 
 try:
@@ -24,7 +24,7 @@ try:
 
     DASK_AVAILABLE = True
 except ImportError:
-    dd = None
+    dd = None  # type: ignore[assignment]
     DASK_AVAILABLE = False
 
 
@@ -103,7 +103,7 @@ class EngineCapabilities:
         name: str,
         is_lazy: bool = False,
         supports_distributed: bool = False,
-        optimal_size_range: tuple[int, int] = (0, float("inf")),
+        optimal_size_range: tuple[float, float] = (0, float("inf")),
         memory_efficiency: float = 1.0,
         performance_score: float = 1.0,
     ):

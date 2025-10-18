@@ -94,7 +94,7 @@ class EngineHeuristics:
             raise RuntimeError("No available engines found")
 
         # Return highest scoring engine
-        selected = max(scores, key=scores.get)
+        selected = max(scores, key=lambda k: scores[k])
         logger.debug(f"Selected engine: {selected} (score: {scores[selected]:.3f})")
         return selected
 
