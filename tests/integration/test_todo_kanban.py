@@ -111,9 +111,7 @@ def assert_permission_granted(app, user_id, resource_type, resource_id, relation
     has_permission = app.permissions.check_permission(
         user_id, resource_type, resource_id, relation
     )
-    assert has_permission, (
-        f"Expected {user_id} to have {relation} permission on {resource_type}:{resource_id}"
-    )
+    assert has_permission, f"Expected {user_id} to have {relation} permission on {resource_type}:{resource_id}"
 
 
 def assert_permission_denied(app, user_id, resource_type, resource_id, relation):
