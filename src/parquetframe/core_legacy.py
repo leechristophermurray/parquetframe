@@ -718,7 +718,26 @@ class ParquetFrame:
         else:
             # Use format-specific path resolution
             file_path = handler.resolve_file_path(file)
-            file_size_mb = file_path.stat().st_size / (1024 * 1024)
+
+            # Compute size in MB; handle directories (e.g., parquet datasets)
+            if (
+                isinstance(file_path, Path)
+                and file_path.exists()
+                and file_path.is_dir()
+            ):
+                total_bytes = 0
+                try:
+                    for p in file_path.rglob("*.parquet"):
+                        try:
+                            total_bytes += p.stat().st_size
+                        except Exception:  # nosec B110
+                            pass
+                except Exception:  # nosec B110
+                    # On any error during traversal, fall back to 0 and let heuristics handle
+                    total_bytes = 0
+                file_size_mb = total_bytes / (1024 * 1024)
+            else:
+                file_size_mb = Path(file_path).stat().st_size / (1024 * 1024)
 
         # Validate islazy parameter
         if islazy is not None and not isinstance(islazy, bool):
@@ -732,7 +751,26 @@ class ParquetFrame:
             # Intelligent switching when not explicitly specified
             if not is_url and file_format == FileFormat.PARQUET:
                 # Only use advanced heuristics for parquet files
-                use_dask = cls._should_use_dask(file_path, threshold, None)
+                # If a directory was provided, pick the largest parquet file for heuristics
+                heuristic_path: Path | None = None
+                try:
+                    fp = Path(file_path)
+                    if fp.exists() and fp.is_dir():
+                        parquet_files = list(fp.rglob("*.parquet"))
+                        if parquet_files:
+                            heuristic_path = max(
+                                parquet_files, key=lambda p: p.stat().st_size
+                            )
+                    elif fp.exists() and fp.is_file():
+                        heuristic_path = fp
+                except Exception:  # nosec B110
+                    heuristic_path = None
+
+                if heuristic_path is not None:
+                    use_dask = cls._should_use_dask(heuristic_path, threshold, None)
+                else:
+                    # Fallback: decide based on aggregate directory size
+                    use_dask = file_size_mb >= threshold
             else:
                 # Simple size-based decision for other formats
                 use_dask = file_size_mb >= threshold
