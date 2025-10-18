@@ -34,6 +34,8 @@ class DataFrameProxy:
             **kwargs: Additional arguments passed to engine
         """
         self._registry = EngineRegistry()
+        self._data = data
+        self._metadata = kwargs
 
         if isinstance(engine, str):
             self._engine = self._registry.get_engine(engine)
@@ -41,12 +43,11 @@ class DataFrameProxy:
             self._engine = engine
         else:
             # Auto-select engine based on data characteristics
+            # Use a simple size heuristic without needing engine yet
+            data_size = self._estimate_data_size_simple(data) if data is not None else 0
             self._engine = self._registry.select_optimal_engine(
-                data_size_bytes=self._estimate_data_size(data) if data else 0
+                data_size_bytes=data_size
             )
-
-        self._data = data
-        self._metadata = kwargs
 
     @property
     def engine_name(self) -> str:
@@ -91,7 +92,11 @@ class DataFrameProxy:
         """Return column names."""
         if self._data is None:
             return []
-        return self._data.columns
+        # Convert to list for consistency across engines
+        cols = self._data.columns
+        if hasattr(cols, "tolist"):
+            return cols.tolist()
+        return list(cols)
 
     def compute(self) -> "DataFrameProxy":
         """
@@ -151,10 +156,158 @@ class DataFrameProxy:
         return self.to_engine("dask")
 
     def _estimate_data_size(self, data: DataFrameLike) -> int:
-        """Estimate data size in bytes."""
+        """Estimate data size in bytes using engine."""
         if data is None:
             return 0
         return self._engine.estimate_memory_usage(data)
+
+    def _estimate_data_size_simple(self, data: DataFrameLike) -> int:
+        """Simple data size estimation without needing engine."""
+        if data is None:
+            return 0
+
+        try:
+            # Try to get memory usage directly from DataFrame
+            if hasattr(data, "memory_usage"):
+                # pandas DataFra me
+                return int(data.memory_usage(deep=True).sum())
+            elif hasattr(data, "estimated_size"):
+                # Polars DataFrame
+                return int(data.estimated_size())
+            elif hasattr(data, "npartitions"):
+                # Dask DataFrame - rough estimate
+                return data.npartitions * 10 * 1024 * 1024  # 10MB per partition
+            else:
+                # Fallback: assume small dataset
+                return 1024 * 1024  # 1MB default
+        except Exception:
+            # If estimation fails, assume small dataset
+            return 1024 * 1024  # 1MB default
+
+    def __getattr__(self, name: str) -> Any:
+        """
+        Delegate attribute access to underlying DataFrame.
+
+        This enables transparent method delegation while wrapping
+        DataFrame results back into DataFrameProxy.
+        """
+        if self._data is None:
+            raise AttributeError(
+                f"'DataFrameProxy' object (empty) has no attribute '{name}'"
+            )
+
+        # Get attribute from underlying DataFrame
+        attr = getattr(self._data, name)
+
+        # If it's a callable, wrap it to handle DataFrame returns
+        if callable(attr):
+
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                result = attr(*args, **kwargs)
+
+                # If result is a DataFrame, wrap it in DataFrameProxy
+                if self._is_dataframe_like(result):
+                    return DataFrameProxy(data=result, engine=self._engine)
+                else:
+                    # Return scalar or other types as-is
+                    return result
+
+            return wrapper
+        else:
+            # Return non-callable attributes directly
+            return attr
+
+    def _is_dataframe_like(self, obj: Any) -> bool:
+        """Check if object is a DataFrame-like object."""
+        # Check for common DataFrame types
+        type_name = type(obj).__name__
+        dataframe_types = (
+            "DataFrame",
+            "LazyFrame",
+            "Series",
+            "DataFrameGroupBy",
+            "SeriesGroupBy",
+        )
+        return (
+            type_name in dataframe_types
+            or hasattr(obj, "__dataframe__")
+            or (hasattr(obj, "columns") and hasattr(obj, "shape"))
+        )
+
+    def __len__(self) -> int:
+        """Return number of rows."""
+        if self._data is None:
+            return 0
+        return len(self._data)
+
+    def __getitem__(self, key: Any) -> Any:
+        """
+        Support indexing operations (df[column] or df[columns]).
+        """
+        if self._data is None:
+            raise ValueError("Cannot index empty DataFrameProxy")
+
+        result = self._data[key]
+
+        # Wrap result if it's DataFrame-like
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        else:
+            return result
+
+    def __gt__(self, other: Any) -> Any:
+        """Support > comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data > other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
+
+    def __lt__(self, other: Any) -> Any:
+        """Support < comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data < other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
+
+    def __ge__(self, other: Any) -> Any:
+        """Support >= comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data >= other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
+
+    def __le__(self, other: Any) -> Any:
+        """Support <= comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data <= other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
+
+    def __eq__(self, other: Any) -> Any:
+        """Support == comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data == other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
+
+    def __ne__(self, other: Any) -> Any:
+        """Support != comparison."""
+        if self._data is None:
+            raise ValueError("Cannot compare empty DataFrameProxy")
+        result = self._data != other
+        if self._is_dataframe_like(result):
+            return DataFrameProxy(data=result, engine=self._engine)
+        return result
 
     def __repr__(self) -> str:
         """String representation."""
