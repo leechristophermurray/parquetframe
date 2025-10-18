@@ -5,10 +5,19 @@ Provides a consistent API across pandas, Polars, and Dask DataFrame engines
 with intelligent backend selection and seamless engine switching.
 """
 
+from pathlib import Path
 from typing import Any
 
 from .base import DataFrameLike, Engine
 from .registry import EngineRegistry
+
+try:
+    from ..io_new.avro import AvroWriter
+
+    AVRO_AVAILABLE = True
+except ImportError:
+    AvroWriter = None
+    AVRO_AVAILABLE = False
 
 
 class DataFrameProxy:
@@ -154,6 +163,41 @@ class DataFrameProxy:
     def to_dask(self) -> "DataFrameProxy":
         """Convert to Dask engine."""
         return self.to_engine("dask")
+
+    def to_avro(
+        self,
+        path: str | Path,
+        schema: dict[str, Any] | None = None,
+        codec: str = "deflate",
+    ) -> "DataFrameProxy":
+        """
+        Write DataFrame to Avro file.
+
+        Args:
+            path: Output file path
+            schema: Avro schema (if None, will be inferred)
+            codec: Compression codec ('deflate', 'snappy', 'null')
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> df = pf2.read("data.csv")
+            >>> df.to_avro("output.avro", codec="snappy")
+        """
+        if not AVRO_AVAILABLE:
+            raise ImportError(
+                "fastavro is required for Avro support. "
+                "Install with: pip install fastavro"
+            )
+
+        if self._data is None:
+            raise ValueError("Cannot write empty DataFrameProxy")
+
+        writer = AvroWriter()
+        writer.write(self._data, path, schema=schema, codec=codec)
+
+        return self
 
     def _estimate_data_size(self, data: DataFrameLike) -> int:
         """Estimate data size in bytes using engine."""

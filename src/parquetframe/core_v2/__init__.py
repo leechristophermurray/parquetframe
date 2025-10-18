@@ -8,7 +8,7 @@ backend selection across pandas, Polars, and Dask engines.
 from .base import DataFrameLike, Engine, EngineCapabilities
 from .frame import DataFrameProxy
 from .heuristics import EngineHeuristics
-from .reader import read, read_csv, read_parquet
+from .reader import read, read_avro, read_csv, read_parquet
 from .registry import EngineRegistry
 
 __all__ = [
@@ -24,4 +24,5 @@ __all__ = [
     "read",
     "read_parquet",
     "read_csv",
+    "read_avro",
 ]

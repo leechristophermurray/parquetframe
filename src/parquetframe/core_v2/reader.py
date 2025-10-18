@@ -20,6 +20,14 @@ except ImportError:
 from .frame import DataFrameProxy
 from .registry import EngineRegistry
 
+try:
+    from ..io_new.avro import AvroReader
+
+    AVRO_AVAILABLE = True
+except ImportError:
+    AvroReader = None
+    AVRO_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -126,13 +134,60 @@ class DataReader:
 
         return DataFrameProxy(data=native_df, engine=selected_engine)
 
+    def read_avro(
+        self, path: str | Path, engine: str | None = None, **kwargs: Any
+    ) -> DataFrameProxy:
+        """
+        Read Avro file with intelligent engine selection.
+
+        Args:
+            path: Path to Avro file
+            engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+            **kwargs: Additional arguments
+
+        Returns:
+            DataFrameProxy with optimal engine selected
+        """
+        if not AVRO_AVAILABLE:
+            raise ImportError(
+                "fastavro is required for Avro support. "
+                "Install with: pip install fastavro"
+            )
+
+        path = Path(path)
+
+        # Check file existence first
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+
+        data_size = self._estimate_file_size(path)
+
+        # Select engine
+        if engine and engine != "auto":
+            selected_engine = self._registry.get_engine(engine)
+        else:
+            selected_engine = self._registry.select_optimal_engine(
+                data_size_bytes=data_size
+            )
+
+        logger.info(
+            f"Reading Avro file ({data_size / 1024 / 1024:.2f} MB) "
+            f"with {selected_engine.name} engine"
+        )
+
+        # Read using Avro reader
+        reader = AvroReader()
+        native_df = reader.read(path, engine=selected_engine.name)
+
+        return DataFrameProxy(data=native_df, engine=selected_engine)
+
     def read(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
     ) -> DataFrameProxy:
         """
         Read data file with automatic format detection and engine selection.
 
-        Supports: .parquet, .pqt, .csv, .tsv
+        Supports: .parquet, .pqt, .csv, .tsv, .avro
 
         Args:
             path: Path to data file
@@ -154,10 +209,12 @@ class DataReader:
             return self.read_parquet(path, engine=engine, **kwargs)
         elif suffix in (".csv", ".tsv"):
             return self.read_csv(path, engine=engine, **kwargs)
+        elif suffix == ".avro":
+            return self.read_avro(path, engine=engine, **kwargs)
         else:
             raise ValueError(
                 f"Unsupported file format: {suffix}. "
-                f"Supported: .parquet, .pqt, .csv, .tsv"
+                f"Supported: .parquet, .pqt, .csv, .tsv, .avro"
             )
 
     def _estimate_file_size(self, path: Path) -> int:
@@ -251,11 +308,28 @@ def read_csv(
     return _reader.read_csv(path, engine=engine, **kwargs)
 
 
+def read_avro(
+    path: str | Path, engine: str | None = None, **kwargs: Any
+) -> DataFrameProxy:
+    """
+    Read Avro file with intelligent engine selection.
+
+    Args:
+        path: Path to Avro file
+        engine: Force specific engine ('pandas', 'polars', 'dask', 'auto')
+        **kwargs: Additional arguments
+
+    Returns:
+        DataFrameProxy with optimal engine selected
+    """
+    return _reader.read_avro(path, engine=engine, **kwargs)
+
+
 def read(path: str | Path, engine: str | None = None, **kwargs: Any) -> DataFrameProxy:
     """
     Read data file with automatic format detection and engine selection.
 
-    Supports: .parquet, .pqt, .csv, .tsv
+    Supports: .parquet, .pqt, .csv, .tsv, .avro
 
     Args:
         path: Path to data file
@@ -273,6 +347,9 @@ def read(path: str | Path, engine: str | None = None, **kwargs: Any) -> DataFram
         >>>
         >>> # Force specific engine
         >>> df = pf2.read("data.csv", engine="polars")
+        >>>
+        >>> # Avro support with schema inference
+        >>> df = pf2.read("data.avro")
         >>>
         >>> # DataFrame operations work transparently
         >>> result = df.groupby("category").sum()

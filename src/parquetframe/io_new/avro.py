@@ -6,7 +6,7 @@ with automatic schema inference and multi-engine compatibility.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import fastavro
@@ -17,6 +17,9 @@ except ImportError:
     FASTAVRO_AVAILABLE = False
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    pass
 
 
 def infer_avro_schema(
@@ -84,15 +87,16 @@ class AvroReader:
         if not FASTAVRO_AVAILABLE:
             raise ImportError("fastavro is required for Avro support")
 
-    def read(self, path: str | Path) -> pd.DataFrame:
+    def read(self, path: str | Path, engine: str = "pandas") -> Any:
         """
-        Read Avro file to pandas DataFrame.
+        Read Avro file to DataFrame.
 
         Args:
             path: Path to Avro file
+            engine: Target engine ('pandas', 'polars', 'dask')
 
         Returns:
-            pandas DataFrame
+            DataFrame in the requested engine format
         """
         records = []
 
@@ -102,15 +106,61 @@ class AvroReader:
                 records.append(record)
 
         if not records:
-            return pd.DataFrame()
+            return self._empty_dataframe(engine)
 
-        # Convert records to DataFrame
+        # Convert to pandas first (common intermediate format)
         df = pd.DataFrame(records)
 
         # Handle timestamp columns if they exist
         df = self._handle_timestamps(df)
 
-        return df
+        # Convert to target engine
+        return self._convert_to_engine(df, engine)
+
+    def _empty_dataframe(self, engine: str) -> Any:
+        """Create empty DataFrame for the specified engine."""
+        if engine == "pandas":
+            return pd.DataFrame()
+        elif engine == "polars":
+            try:
+                import polars as pl
+
+                return pl.DataFrame()
+            except ImportError as e:
+                raise ImportError("Polars is required for polars engine") from e
+        elif engine == "dask":
+            try:
+                import dask.dataframe as dd
+
+                return dd.from_pandas(pd.DataFrame(), npartitions=1)
+            except ImportError as e:
+                raise ImportError("Dask is required for dask engine") from e
+        else:
+            raise ValueError(f"Unsupported engine: {engine}")
+
+    def _convert_to_engine(self, df: pd.DataFrame, engine: str) -> Any:
+        """Convert pandas DataFrame to target engine."""
+        if engine == "pandas":
+            return df
+        elif engine == "polars":
+            try:
+                import polars as pl
+
+                return pl.from_pandas(df)
+            except ImportError as e:
+                raise ImportError("Polars is required for polars engine") from e
+        elif engine == "dask":
+            try:
+                import dask.dataframe as dd
+
+                # Determine appropriate partitions
+                nrows = len(df)
+                npartitions = max(1, nrows // 100000)  # ~100k rows per partition
+                return dd.from_pandas(df, npartitions=npartitions)
+            except ImportError as e:
+                raise ImportError("Dask is required for dask engine") from e
+        else:
+            raise ValueError(f"Unsupported engine: {engine}")
 
     def _handle_timestamps(self, df: pd.DataFrame) -> pd.DataFrame:
         """Convert timestamp columns from milliseconds to datetime."""
@@ -147,29 +197,56 @@ class AvroWriter:
 
     def write(
         self,
-        df: pd.DataFrame,
+        df: Any,
         path: str | Path,
         schema: dict[str, Any] | None = None,
         codec: str = "deflate",
     ) -> None:
         """
-        Write pandas DataFrame to Avro file.
+        Write DataFrame to Avro file.
+
+        Supports pandas, Polars, and Dask DataFrames. All formats are
+        converted to pandas for writing.
 
         Args:
-            df: pandas DataFrame to write
+            df: DataFrame (pandas, Polars, or Dask)
             path: Output file path
             schema: Avro schema (if None, will be inferred)
             codec: Compression codec ('deflate', 'snappy', 'null')
         """
+        # Convert to pandas if needed
+        pandas_df = self._to_pandas(df)
+
         if schema is None:
-            schema = infer_avro_schema(df)
+            schema = infer_avro_schema(pandas_df)
 
         # Convert DataFrame to records
-        records = self._df_to_records(df, schema)
+        records = self._df_to_records(pandas_df, schema)
 
         # Write to Avro file
         with open(path, "wb") as f:
             fastavro.writer(f, schema, records, codec=codec)
+
+    def _to_pandas(self, df: Any) -> pd.DataFrame:
+        """Convert any DataFrame type to pandas."""
+        if isinstance(df, pd.DataFrame):
+            return df
+
+        # Check for Polars DataFrame
+        if hasattr(df, "to_pandas"):
+            return df.to_pandas()
+
+        # Check for Dask DataFrame
+        if hasattr(df, "compute"):
+            return df.compute()
+
+        # Try direct conversion
+        try:
+            return pd.DataFrame(df)
+        except Exception as e:
+            raise TypeError(
+                f"Cannot convert {type(df).__name__} to pandas DataFrame: {e}"
+            ) from e
 
     def _df_to_records(
         self, df: pd.DataFrame, schema: dict[str, Any]
