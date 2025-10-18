@@ -34,7 +34,14 @@ Examples:
 
 from pathlib import Path
 
+from .config import config_context, get_config, reset_config, set_config
 from .core import ParquetFrame
+
+# Phase 2 multi-engine components (available for advanced usage)
+try:
+    from . import core_v2  # New multi-engine core
+except ImportError:
+    core_v2 = None
 
 # Import submodules
 try:
@@ -104,4 +111,17 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
 
 
 __version__ = "0.5.3"
-__all__ = ["ParquetFrame", "pf", "read", "create_empty", "graph", "permissions"]
+__all__ = [
+    "ParquetFrame",
+    "pf",
+    "read",
+    "create_empty",
+    "graph",
+    "permissions",
+    "core_v2",
+    # Configuration
+    "get_config",
+    "set_config",
+    "reset_config",
+    "config_context",
+]
