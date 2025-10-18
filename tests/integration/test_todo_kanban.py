@@ -141,7 +141,9 @@ def create_test_tasks(app, list_id, user_id, count) -> list[Task]:
 # =============================================================================
 
 
-@pytest.mark.skip(reason="Phase 2 API migration pending - relationship queries need investigation")
+@pytest.mark.skip(
+    reason="Phase 2 API migration pending - relationship queries need investigation"
+)
 class TestEntityModels:
     """Test Entity Framework features: @entity and @rel decorators."""
 
@@ -363,7 +365,9 @@ class TestEntityModels:
 # =============================================================================
 
 
-@pytest.mark.skip(reason="Phase 2 API migration pending - permission checks need API updates")
+@pytest.mark.skip(
+    reason="Phase 2 API migration pending - permission checks need API updates"
+)
 class TestPermissions:
     """Test Zanzibar permission features comprehensively."""
 
@@ -631,7 +635,9 @@ class TestMultiUserWorkflows:
 # =============================================================================
 
 
-@pytest.mark.skip(reason="Phase 2 API migration pending - task state transitions need model updates")
+@pytest.mark.skip(
+    reason="Phase 2 API migration pending - task state transitions need model updates"
+)
 class TestTaskStateTransitions:
     """Test task lifecycle and state transitions."""
 
@@ -716,7 +722,9 @@ class TestWorkflowETL:
 # =============================================================================
 
 
-@pytest.mark.skip(reason="Phase 2 API migration pending - integration scenarios need full API review")
+@pytest.mark.skip(
+    reason="Phase 2 API migration pending - integration scenarios need full API review"
+)
 class TestIntegrationScenarios:
     """Test complex end-to-end scenarios."""
 

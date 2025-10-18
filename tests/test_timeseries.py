@@ -116,7 +116,9 @@ class TestTimeSeriesAccessor:
         # Create ParquetFrame instance
         self.pf = ParquetFrame.read(str(self.test_file))
 
-    @pytest.mark.skip(reason="Phase 2 API migration pending - TimeSeriesAccessor type check needs update")
+    @pytest.mark.skip(
+        reason="Phase 2 API migration pending - TimeSeriesAccessor type check needs update"
+    )
     def test_ts_accessor_exists(self):
         """Test that ts accessor is available."""
         assert hasattr(self.pf, "ts")
