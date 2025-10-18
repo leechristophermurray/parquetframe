@@ -50,9 +50,9 @@ from typing import Any
 # Issue deprecation warning when legacy module is imported
 warnings.warn(
     "\n"
-    "="*80 + "\n"
+    "=" * 80 + "\n"
     "DEPRECATION WARNING: Phase 1 API (parquetframe.legacy)\n"
-    "="*80 + "\n"
+    "=" * 80 + "\n"
     "\n"
     "The Phase 1 API is deprecated as of version 1.0.0 and will be removed\n"
     "in version 2.0.0 (approximately 6-12 months).\n"
@@ -73,15 +73,13 @@ warnings.warn(
     "  - BREAKING_CHANGES.md\n"
     "  - docs/phase2/MIGRATION_GUIDE.md\n"
     "\n"
-    "="*80 + "\n",
+    "=" * 80 + "\n",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Re-export Phase 1 API from core_legacy
-from ..core_legacy import (  # noqa: E402
-    ParquetFrame,
-)
+from ..core_legacy import ParquetFrame  # noqa: E402
 
 __all__ = [
     "ParquetFrame",
@@ -98,6 +96,7 @@ def __getattr__(name: str) -> Any:
     # Try to import from core_legacy
     try:
         import importlib
+
         core_legacy = importlib.import_module("..core_legacy", package=__name__)
         if hasattr(core_legacy, name):
             return getattr(core_legacy, name)

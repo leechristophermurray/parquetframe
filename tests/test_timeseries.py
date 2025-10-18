@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 # Import from the package
-from src.parquetframe import ParquetFrame
+from parquetframe.legacy import ParquetFrame
 from src.parquetframe.timeseries import TimeSeriesAccessor, detect_datetime_columns
 
 

@@ -13,8 +13,8 @@ import pandas as pd
 import pytest
 
 # Import from the package
-from src.parquetframe import ParquetFrame
-from src.parquetframe.stats import (
+from parquetframe.legacy import ParquetFrame
+from parquetframe.stats import (
     StatsAccessor,
     detect_outliers_iqr,
     detect_outliers_zscore,
