@@ -15,11 +15,6 @@ import pytest
 
 import parquetframe as pqf
 
-# Skip all tests in this file pending Phase 2 API migration
-pytestmark = pytest.mark.skip(
-    reason="Phase 2 API migration pending - SQL tests need DataFrameProxy.sql() method or legacy API updates. See docs/issues/phase2-test-migration.md"
-)
-
 
 class TestAISQLIntegrationSmoke:
     """Smoke tests for AI-powered SQL generation integration."""
