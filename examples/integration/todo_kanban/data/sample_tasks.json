@@ -1,0 +1,92 @@
+[
+  {
+    "assigned_to": "user_001",
+    "description": "Clean up authentication code and improve structure",
+    "list_id": "list_001",
+    "priority": "medium",
+    "status": "todo",
+    "task_id": "task_101",
+    "title": "Refactor authentication module"
+  },
+  {
+    "assigned_to": "user_002",
+    "description": "Add password reset functionality with email verification",
+    "list_id": "list_002",
+    "priority": "high",
+    "status": "in_progress",
+    "task_id": "task_102",
+    "title": "Implement password reset"
+  },
+  {
+    "assigned_to": "user_003",
+    "description": "Implement role-based access control (RBAC)",
+    "list_id": "list_001",
+    "priority": "high",
+    "status": "todo",
+    "task_id": "task_103",
+    "title": "Add user roles"
+  },
+  {
+    "assigned_to": "user_001",
+    "description": "Add indexes to improve query performance",
+    "list_id": "list_003",
+    "priority": "high",
+    "status": "done",
+    "task_id": "task_104",
+    "title": "Database indexing"
+  },
+  {
+    "assigned_to": "user_002",
+    "description": "Generate OpenAPI documentation with Swagger UI",
+    "list_id": "list_002",
+    "priority": "medium",
+    "status": "in_progress",
+    "task_id": "task_105",
+    "title": "API documentation"
+  },
+  {
+    "assigned_to": "user_002",
+    "description": "Add client-side form validation",
+    "list_id": "list_001",
+    "priority": "medium",
+    "status": "todo",
+    "task_id": "task_106",
+    "title": "Frontend validation"
+  },
+  {
+    "assigned_to": "user_003",
+    "description": "Integrate mobile app with backend API",
+    "list_id": "list_001",
+    "priority": "high",
+    "status": "todo",
+    "task_id": "task_107",
+    "title": "Mobile app integration"
+  },
+  {
+    "assigned_to": "user_001",
+    "description": "Integrate Stripe payment processing",
+    "list_id": "list_002",
+    "priority": "high",
+    "status": "in_progress",
+    "task_id": "task_108",
+    "title": "Payment gateway"
+  },
+  {
+    "assigned_to": "user_002",
+    "description": "Build analytics dashboard with charts",
+    "list_id": "list_001",
+    "priority": "low",
+    "status": "todo",
+    "task_id": "task_109",
+    "title": "Analytics dashboard"
+  },
+  {
+    "assigned_to": "user_003",
+    "description": "Implement full-text search with Elasticsearch",
+    "list_id": "list_001",
+    "priority": "medium",
+    "status": "todo",
+    "task_id": "task_110",
+    "title": "Search functionality"
+  }
+]
