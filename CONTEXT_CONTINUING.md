@@ -476,20 +476,20 @@ Based on detailed analysis in `CONTEXT_GRAPH.md`, implement:
 
 **Status**: 🔄 PLANNED
 **Priority**: HIGH
-**Estimated Time**: 8-12 weeks total
+**Estimated Time**: 9-13 weeks total (increased for custom backend abstraction)
 **Source**: `CONTEXT_ENHANCEMENTS_1.md` - Architectural Blueprint for Next Generation parquetframe
 
 ### **Phase Overview**
 
 Phase 2 implements the comprehensive architectural blueprint outlined in CONTEXT_ENHANCEMENTS_1.md, transforming parquetframe from a specialized utility into a next-generation data framework. This phase introduces three major architectural pillars:
 
-1. **Multi-Engine DataFrame Core**: Unified API over pandas, Polars, and Dask with intelligent backend selection
+1. **Multi-Engine DataFrame Core**: Custom unified API over pandas, Polars, and Dask with intelligent backend selection
 2. **Advanced File Format Support**: Native Apache Avro integration with high-performance fastavro backend
 3. **Entity-Graph Framework**: Novel ORM-like system with @entity and @rel decorators for data modeling
 
 ### **Goals**
 
-- ✅ **Unified API**: Single DataFrameProxy interface seamlessly switching between pandas, Polars, and Dask
+- ✅ **Unified API**: Custom DataFrameProxy interface seamlessly switching between pandas, Polars, and Dask
 - ✅ **Intelligent Backend Selection**: Automatic engine selection based on data size, memory, and performance characteristics
 - ✅ **Performance Optimization**: Leverage Polars lazy evaluation and Dask distributed computing for optimal performance
 - ✅ **Advanced File Formats**: Native Apache Avro support with high-performance fastavro integration
@@ -509,21 +509,29 @@ Phase 2 implements the comprehensive architectural blueprint outlined in CONTEXT
 
 **Status**: 🔄 PLANNED
 **Priority**: P0 (Must-have)
-**Estimated Time**: 3-4 weeks
+**Estimated Time**: 4-5 weeks (increased for custom implementation)
 **Dependencies**: Phase 1 completion
 
 #### Objective
-Implement the unified DataFrame abstraction layer with DataFrameProxy class and narwhals compatibility library integration.
+Implement the unified DataFrame abstraction layer with custom DataFrameProxy class providing direct backend integration without external dependencies.
 
 #### Key Tasks
 
-**Week 1-2: DataFrameProxy and Narwhals Integration**
-- [ ] Install and integrate narwhals compatibility library as core dependency
-- [ ] Implement DataFrameProxy class as primary user-facing interface
-- [ ] Add narwhals wrapper (_nw_df) for unified API translation
-- [ ] Implement core DataFrame operations: filter(), group_by(), select(), collect()
-- [ ] Add native property accessor for backend-specific operations
+**Week 1-2: Custom DataFrameProxy Implementation**
+- [ ] Implement DataFrameProxy class as primary user-facing interface without external dependencies
+- [ ] Create backend detection and dispatch mechanism for pandas, Polars, and Dask
+- [ ] Implement core DataFrame operations with direct API mapping: filter(), group_by(), select(), collect()
+- [ ] Add backend-specific operation translation layer
+- [ ] Implement method chaining and lazy evaluation coordination
 - [ ] Create comprehensive proxy test suite with all three backends
+
+**Week 2-3: Backend Operation Mapping System**
+- [ ] Design and implement operation translation matrix for common DataFrame operations
+- [ ] Handle API differences between pandas, Polars, and Dask for filtering, grouping, aggregation
+- [ ] Implement error handling and fallback mechanisms for unsupported operations
+- [ ] Create type system for normalizing return values across backends
+- [ ] Add support for method chaining with mixed lazy/eager evaluation
+- [ ] Implement comprehensive operation compatibility testing
 
 **Week 2-3: Engine Selection Factory**
 - [ ] Implement read_data() factory function with intelligent dispatch
@@ -533,7 +541,7 @@ Implement the unified DataFrame abstraction layer with DataFrameProxy class and 
 - [ ] Add cloud storage support (S3, GCS, Azure) for remote size estimation
 - [ ] Create engine selection decision matrix documentation
 
-**Week 3-4: Polars Integration and Lazy Evaluation**
+**Week 4-5: Polars Integration and Lazy Evaluation**
 - [ ] Implement lazy-first Polars integration with scan_parquet()
 - [ ] Add predicate pushdown optimization for Polars LazyFrames
 - [ ] Implement projection pushdown for column selection optimization
@@ -542,15 +550,17 @@ Implement the unified DataFrame abstraction layer with DataFrameProxy class and 
 - [ ] Test Polars-specific performance optimizations
 
 #### Success Metrics
-- [ ] DataFrameProxy provides unified API for pandas, Polars, and Dask backends
+- [ ] DataFrameProxy provides unified API for pandas, Polars, and Dask backends without external dependencies
+- [ ] Custom backend abstraction layer handles 95%+ of common DataFrame operations
 - [ ] Engine selection correctly chooses optimal backend based on configurable thresholds
 - [ ] Polars lazy evaluation delivers 2-5x performance improvement on medium-scale datasets
 - [ ] 100% API compatibility maintained with existing parquetframe functionality
 - [ ] Comprehensive test coverage (≥85%) across all backend combinations
 
 #### Deliverables
-- [ ] `DataFrameProxy` class with narwhals integration
+- [ ] `DataFrameProxy` class with custom backend abstraction layer
 - [ ] `read_data()` factory with intelligent engine selection
+- [ ] Backend operation mapping and translation system
 - [ ] Configurable threshold system for backend switching
 - [ ] Polars lazy evaluation integration
 - [ ] Engine selection decision matrix documentation
@@ -832,10 +842,10 @@ Provide comprehensive documentation, examples, and tutorials for all Phase 2 fea
 
 | Risk Category | Level | Risk Description | Mitigation Strategy |
 |---------------|-------|-----------------|--------------------|
-| **Technical Complexity** | 🟡 Medium | Multi-engine abstraction complexity | Incremental implementation, comprehensive testing, narwhals proven library |
-| **Performance Regression** | 🟡 Medium | Overhead from abstraction layers | Continuous benchmarking, performance-first design, lazy evaluation |
+| **Technical Complexity** | 🟠 High | Custom multi-engine abstraction complexity | Incremental implementation, comprehensive testing, extensive integration tests |
+| **Performance Regression** | 🟡 Medium | Overhead from custom abstraction layers | Continuous benchmarking, performance-first design, lazy evaluation |
 | **API Compatibility** | 🟢 Low | Breaking existing functionality | Extensive backward compatibility testing, proxy pattern |
-| **Dependency Management** | 🟡 Medium | New dependencies (narwhals, fastavro) | Optional dependencies, graceful degradation, version pinning |
+| **Maintenance Burden** | 🟡 Medium | Custom backend abstraction maintenance | Modular design, comprehensive test suite, clear documentation |
 | **Entity Framework Complexity** | 🟠 High | Novel @entity/@rel decorator system | Extensive documentation, simple examples, phased rollout |
 | **Cloud Integration** | 🟡 Medium | Remote storage authentication | Well-tested libraries (boto3, gcsfs), comprehensive error handling |
 
@@ -847,16 +857,18 @@ Provide comprehensive documentation, examples, and tutorials for all Phase 2 fea
 - ✅ Current multi-format support (CSV, JSON, ORC) working correctly
 
 **External Dependencies:**
-- ✅ narwhals library maintains API stability and pandas/Polars/Dask compatibility
 - ✅ fastavro library continues high-performance Avro implementation
 - ✅ Polars library maintains lazy evaluation and performance characteristics
+- ✅ pandas library maintains stable DataFrame API
+- ✅ Dask library maintains distributed DataFrame functionality
 - ✅ Cloud provider SDK stability (boto3, google-cloud-storage, azure-storage-blob)
 
 **Assumptions:**
 - ✅ Users willing to adopt new DataFrameProxy interface for advanced features
 - ✅ Entity-graph framework addresses real user need for data modeling
-- ✅ Performance gains justify additional complexity
+- ✅ Performance gains justify additional implementation complexity
 - ✅ Multi-engine approach provides sufficient value over single-backend solutions
+- ✅ Custom abstraction layer can be maintained without excessive development overhead
 
 ---
 
@@ -1122,7 +1134,7 @@ Provide comprehensive documentation, examples, and tutorials for all Phase 2 fea
 
 ### **Phase 2 Completion Criteria**
 
-- [ ] **Multi-Engine Core**: Complete DataFrameProxy with narwhals integration and unified API
+- [ ] **Multi-Engine Core**: Complete DataFrameProxy with custom backend abstraction and unified API
 - [ ] **Backend Selection**: Fully functional intelligent engine switching with configurable thresholds
 - [ ] **Polars Integration**: Lazy-first approach with optimized query execution
 - [ ] **Avro Support**: Complete Avro reading and writing with schema validation
