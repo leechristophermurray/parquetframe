@@ -9,6 +9,16 @@ from parquetframe.graph.algo.traversal import bfs, dfs
 from parquetframe.graph.data import EdgeSet, VertexSet
 
 
+def _dask_available():
+    """Check if Dask is available for testing."""
+    try:
+        import dask.dataframe  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 @pytest.fixture
 def simple_chain_graph():
     """Create a simple chain graph: 0->1->2->3->4."""
@@ -190,12 +200,110 @@ class TestBFS:
         with pytest.raises(ValueError, match="max_depth must be non-negative"):
             bfs(simple_chain_graph, sources=0, max_depth=-1)
 
-    def test_bfs_dask_not_implemented(self, simple_chain_graph):
-        """Test that Dask backend raises NotImplementedError."""
-        with pytest.raises(
-            NotImplementedError, match="Dask backend for BFS not yet implemented"
-        ):
-            bfs(simple_chain_graph, sources=0, backend="dask")
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_backend_chain(self, simple_chain_graph):
+        """Test Dask BFS on chain graph."""
+        # Force Dask backend
+        result = bfs(simple_chain_graph, sources=0, backend="dask")
+
+        # Should match pandas results
+        pandas_result = bfs(simple_chain_graph, sources=0, backend="pandas")
+
+        # Compare results (sort for consistent comparison)
+        result_sorted = result.sort_values("vertex").reset_index(drop=True)
+        pandas_sorted = pandas_result.sort_values("vertex").reset_index(drop=True)
+
+        assert len(result_sorted) == len(pandas_sorted)
+        assert list(result_sorted["vertex"]) == list(pandas_sorted["vertex"])
+        assert list(result_sorted["distance"]) == list(pandas_sorted["distance"])
+        assert list(result_sorted["layer"]) == list(pandas_sorted["layer"])
+
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_backend_star(self, simple_star_graph):
+        """Test Dask BFS on star graph."""
+        result = bfs(simple_star_graph, sources=0, backend="dask", npartitions=2)
+
+        # All non-center vertices should be at distance 1
+        center_result = result[result["vertex"] == 0]
+        assert len(center_result) == 1
+        assert center_result["distance"].iloc[0] == 0
+
+        leaf_results = result[result["vertex"].isin([1, 2, 3, 4])]
+        assert len(leaf_results) == 4
+        assert all(leaf_results["distance"] == 1)
+
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_lazy_computation(self, simple_chain_graph):
+        """Test Dask BFS with lazy computation."""
+        # Get lazy result
+        lazy_result = bfs(simple_chain_graph, sources=0, backend="dask", compute=False)
+
+        # Should be a Dask DataFrame
+        import dask.dataframe as dd
+
+        assert isinstance(lazy_result, dd.DataFrame)
+
+        # Compute and verify
+        computed_result = lazy_result.compute()
+        assert len(computed_result) == 5
+        assert list(computed_result.sort_values("vertex")["distance"]) == [
+            0,
+            1,
+            2,
+            3,
+            4,
+        ]
+
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_multi_source(self, simple_chain_graph):
+        """Test Dask BFS with multiple sources."""
+        result = bfs(simple_chain_graph, sources=[0, 4], backend="dask")
+
+        # Sources should have distance 0
+        source_results = result[result["vertex"].isin([0, 4])]
+        assert all(source_results["distance"] == 0)
+
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_max_depth(self, simple_chain_graph):
+        """Test Dask BFS with depth limit."""
+        result = bfs(simple_chain_graph, sources=0, max_depth=2, backend="dask")
+
+        # Should only reach vertices 0, 1, 2
+        assert len(result) == 3
+        assert set(result["vertex"]) == {0, 1, 2}
+        assert max(result["distance"]) == 2
+
+    @pytest.mark.skipif(not _dask_available(), reason="Dask not available")
+    def test_bfs_dask_undirected(self, simple_chain_graph):
+        """Test Dask BFS on undirected graph."""
+        result = bfs(simple_chain_graph, sources=2, directed=False, backend="dask")
+
+        # Should reach all vertices in undirected chain
+        assert len(result) == 5
+
+        # Distances from vertex 2: 0->2, 1->1, 2->0, 3->1, 4->2
+        expected_distances = {0: 2, 1: 1, 2: 0, 3: 1, 4: 2}
+        for _, row in result.iterrows():
+            vertex = row["vertex"]
+            distance = row["distance"]
+            assert distance == expected_distances[vertex]
+
+    def test_bfs_dask_not_available_error(self, simple_chain_graph):
+        """Test error when Dask is not available."""
+        # Mock DASK_AVAILABLE to False
+        import parquetframe.graph.algo.traversal as traversal_module
+
+        original_dask_available = traversal_module.DASK_AVAILABLE
+        traversal_module.DASK_AVAILABLE = False
+
+        try:
+            with pytest.raises(
+                ImportError, match="Dask is required for distributed BFS"
+            ):
+                bfs(simple_chain_graph, sources=0, backend="dask")
+        finally:
+            # Restore original value
+            traversal_module.DASK_AVAILABLE = original_dask_available
 
     def test_bfs_result_dtypes(self, simple_chain_graph):
         """Test that BFS result has correct column dtypes."""

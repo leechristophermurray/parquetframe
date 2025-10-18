@@ -6,10 +6,17 @@ pandas and Dask backends, multi-source traversal, and flexible output formats.
 """
 
 from collections import deque
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 import numpy as np
 import pandas as pd
+
+try:
+    import dask.dataframe as dd
+
+    DASK_AVAILABLE = True
+except ImportError:
+    DASK_AVAILABLE = False
 
 
 def bfs(
@@ -19,7 +26,11 @@ def bfs(
     directed: bool | None = None,
     backend: Literal["auto", "pandas", "dask"] | None = "auto",
     include_unreachable: bool = False,
-) -> pd.DataFrame:
+    # Dask-specific parameters
+    partition_size: int | None = None,
+    npartitions: int | None = None,
+    compute: bool = True,
+) -> Union[pd.DataFrame, "dd.DataFrame"]:
     """
     Perform Breadth-First Search (BFS) traversal of a graph.
 
@@ -33,6 +44,9 @@ def bfs(
         directed: Whether to treat graph as directed. If None, uses graph.is_directed
         backend: Backend selection ('auto', 'pandas', 'dask')
         include_unreachable: Whether to include unreachable vertices with infinite distance
+        partition_size: Target partition size in MB for Dask operations (Dask only)
+        npartitions: Number of partitions for Dask DataFrames (Dask only)
+        compute: Whether to compute result immediately or return lazy DataFrame (Dask only)
 
     Returns:
         DataFrame with columns:
@@ -40,6 +54,9 @@ def bfs(
             - distance (int64): Distance from nearest source vertex
             - predecessor (int64): Previous vertex in BFS tree (nullable)
             - layer (int64): BFS layer/level (same as distance)
+
+        For Dask backend: returns computed pandas DataFrame if compute=True,
+        otherwise returns lazy Dask DataFrame for further operations.
 
     Raises:
         ValueError: If sources contain invalid vertex IDs or graph is empty
@@ -85,9 +102,25 @@ def bfs(
     if directed is None:
         directed = graph.is_directed
 
-    # Select backend (for Phase 1.2, only pandas is implemented)
-    if backend == "dask":
-        raise NotImplementedError("Dask backend for BFS not yet implemented")
+    # Select backend implementation
+    if backend == "dask" or (
+        backend == "auto" and hasattr(graph.edges, "islazy") and graph.edges.islazy
+    ):
+        if not DASK_AVAILABLE:
+            raise ImportError(
+                "Dask is required for distributed BFS but is not installed. "
+                "Install with: pip install dask[complete]"
+            )
+        return _bfs_dask(
+            graph,
+            sources,
+            max_depth,
+            directed,
+            include_unreachable,
+            partition_size,
+            npartitions,
+            compute,
+        )
 
     # 2. Get adjacency structure for efficient neighbor lookups
     if directed:
@@ -188,6 +221,181 @@ def bfs(
         )
 
     return result_df
+
+
+def _bfs_dask(
+    graph: Any,
+    sources: list[int],
+    max_depth: int | None,
+    directed: bool,
+    include_unreachable: bool,
+    partition_size: int | None = None,
+    npartitions: int | None = None,
+    compute: bool = True,
+) -> pd.DataFrame | dd.DataFrame:
+    """
+    Dask-optimized BFS using level-synchronous frontier expansion.
+
+    This implementation uses a frontier-based approach where each level of the
+    BFS is computed in parallel using Dask DataFrames. The algorithm maintains
+    a frontier of vertices at the current distance and expands it by joining
+    with the edges DataFrame.
+
+    Args:
+        graph: GraphFrame object containing the graph data
+        sources: List of source vertex IDs
+        max_depth: Maximum depth to traverse
+        directed: Whether to treat graph as directed
+        include_unreachable: Whether to include unreachable vertices
+        partition_size: Target partition size for Dask operations
+        npartitions: Number of partitions for Dask DataFrames
+        compute: Whether to compute result or return lazy Dask DataFrame
+
+    Returns:
+        DataFrame with BFS results (computed or lazy based on compute parameter)
+    """
+    # Get edge data as Dask DataFrame
+    edges_df = graph.edges
+    if not hasattr(edges_df, "islazy") or not edges_df.islazy:
+        # Convert ParquetFrame to pandas DataFrame, then to Dask
+        if hasattr(edges_df, "pandas_df"):
+            # ParquetFrame object - get the underlying pandas DataFrame
+            pandas_edges = edges_df.pandas_df
+        else:
+            # Already a pandas DataFrame
+            pandas_edges = edges_df
+
+        edges_df = dd.from_pandas(pandas_edges, npartitions=npartitions or 4)
+    else:
+        # Already a Dask DataFrame
+        pass
+
+    # Determine source and destination column names
+    from ..data import EdgeSet
+
+    edge_set = EdgeSet(
+        data=graph.edges, edge_type="default", properties={}, schema=None
+    )
+    src_col = edge_set.src_column or "src"
+    dst_col = edge_set.dst_column or "dst"
+
+    # Create edges for undirected graphs (add reverse edges)
+    if not directed:
+        # Add reverse edges for undirected traversal
+        reverse_edges = edges_df.rename(columns={src_col: dst_col, dst_col: src_col})
+        edges_df = dd.concat([edges_df, reverse_edges], ignore_index=True)
+
+    # Repartition edges for optimal join performance
+    if partition_size is not None:
+        edges_df = edges_df.repartition(partition_size=f"{partition_size}MB")
+    elif npartitions is not None:
+        edges_df = edges_df.repartition(npartitions=npartitions)
+
+    # Initialize frontier with source vertices
+    frontier_data = {
+        "vertex": sources,
+        "distance": [0] * len(sources),
+        "predecessor": [None] * len(sources),
+        "layer": [0] * len(sources),
+    }
+    frontier = dd.from_pandas(pd.DataFrame(frontier_data), npartitions=1)
+
+    # Initialize visited tracking
+    visited = dd.from_pandas(
+        pd.DataFrame({"vertex": sources, "visited": [True] * len(sources)}),
+        npartitions=1,
+    )
+
+    # Store results from each level
+    results = [frontier]
+
+    current_depth = 0
+
+    # Level-synchronous BFS loop
+    while True:
+        # Check depth limit
+        if max_depth is not None and current_depth >= max_depth:
+            break
+
+        # Check if frontier is empty
+        frontier_size = len(frontier)
+        if hasattr(frontier_size, "compute"):
+            frontier_size = frontier_size.compute()
+        if frontier_size == 0:
+            break
+
+        # Expand frontier by joining with edges
+        # Join frontier vertices with outgoing edges
+        next_frontier = edges_df.merge(
+            frontier[["vertex", "distance"]].rename(columns={"vertex": src_col}),
+            on=src_col,
+            how="inner",
+        )
+
+        # Select destination vertices and update distance
+        next_frontier = next_frontier[[dst_col, "distance", src_col]].rename(
+            columns={dst_col: "vertex", src_col: "predecessor"}
+        )
+        next_frontier["distance"] = next_frontier["distance"] + 1
+        next_frontier["layer"] = next_frontier["distance"]
+
+        # Remove already visited vertices
+        next_frontier = next_frontier.merge(visited, on="vertex", how="left")
+        next_frontier = next_frontier[next_frontier["visited"].isna()]
+        next_frontier = next_frontier.drop("visited", axis=1)
+
+        # Check if we have new vertices to explore
+        next_frontier_size = len(next_frontier)
+        if hasattr(next_frontier_size, "compute"):
+            next_frontier_size = next_frontier_size.compute()
+        if next_frontier_size == 0:
+            break
+
+        # For vertices reached from multiple sources in the same level,
+        # keep only the first occurrence (arbitrary but deterministic)
+        next_frontier = next_frontier.drop_duplicates(subset=["vertex"], keep="first")
+
+        # Update visited set
+        new_visited = next_frontier[["vertex"]].copy()
+        new_visited["visited"] = True
+        visited = dd.concat([visited, new_visited], ignore_index=True)
+
+        # Add to results
+        results.append(next_frontier)
+
+        # Update frontier for next iteration
+        frontier = next_frontier
+        current_depth += 1
+
+        # Safety check to prevent infinite loops
+        if current_depth > 1000:  # Reasonable limit for most graphs
+            break
+
+    # Combine all results
+    if len(results) > 1:
+        result_df = dd.concat(results, ignore_index=True)
+    else:
+        result_df = results[0]
+
+    # Handle unreachable vertices if requested
+    if include_unreachable:
+        # This is complex in Dask and may require computing the result first
+        # For now, we'll note this limitation
+        pass  # TODO: Implement unreachable vertex handling for Dask
+
+    # Sort by vertex ID for consistent output
+    result_df = result_df.sort_values("vertex")
+
+    # Ensure correct data types
+    result_df["vertex"] = result_df["vertex"].astype("int64")
+    result_df["distance"] = result_df["distance"].astype("int64")
+    result_df["layer"] = result_df["layer"].astype("int64")
+    # Note: predecessor handling for nullable int in Dask is complex
+
+    if compute:
+        return result_df.compute()
+    else:
+        return result_df
 
 
 def dfs(
