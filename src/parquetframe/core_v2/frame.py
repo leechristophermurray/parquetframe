@@ -1,0 +1,165 @@
+"""
+DataFrameProxy - Unified DataFrame interface for ParquetFrame Phase 2.
+
+Provides a consistent API across pandas, Polars, and Dask DataFrame engines
+with intelligent backend selection and seamless engine switching.
+"""
+
+from typing import Any
+
+from .base import DataFrameLike, Engine
+from .registry import EngineRegistry
+
+
+class DataFrameProxy:
+    """
+    Unified DataFrame interface with intelligent backend selection.
+
+    Acts as a proxy to underlying DataFrame engines (pandas, Polars, Dask)
+    providing a consistent API while leveraging engine-specific optimizations.
+    """
+
+    def __init__(
+        self,
+        data: DataFrameLike | None = None,
+        engine: str | Engine | None = None,
+        **kwargs: Any,
+    ):
+        """
+        Initialize DataFrameProxy.
+
+        Args:
+            data: Underlying DataFrame object or None for empty frame
+            engine: Engine name or Engine instance to use
+            **kwargs: Additional arguments passed to engine
+        """
+        self._registry = EngineRegistry()
+
+        if isinstance(engine, str):
+            self._engine = self._registry.get_engine(engine)
+        elif isinstance(engine, Engine):
+            self._engine = engine
+        else:
+            # Auto-select engine based on data characteristics
+            self._engine = self._registry.select_optimal_engine(
+                data_size_bytes=self._estimate_data_size(data) if data else 0
+            )
+
+        self._data = data
+        self._metadata = kwargs
+
+    @property
+    def engine_name(self) -> str:
+        """Name of the current engine."""
+        return self._engine.name
+
+    @property
+    def is_lazy(self) -> bool:
+        """Whether the current engine uses lazy evaluation."""
+        return self._engine.is_lazy
+
+    @property
+    def native(self) -> DataFrameLike:
+        """Access to underlying native DataFrame object."""
+        return self._data
+
+    def head(self, n: int = 5) -> "DataFrameProxy":
+        """Return the first n rows."""
+        if self._data is None:
+            return self
+
+        result = self._data.head(n)
+        return DataFrameProxy(data=result, engine=self._engine)
+
+    def tail(self, n: int = 5) -> "DataFrameProxy":
+        """Return the last n rows."""
+        if self._data is None:
+            return self
+
+        result = self._data.tail(n)
+        return DataFrameProxy(data=result, engine=self._engine)
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        """Return (nrows, ncols)."""
+        if self._data is None:
+            return (0, 0)
+        return self._data.shape
+
+    @property
+    def columns(self) -> list[str]:
+        """Return column names."""
+        if self._data is None:
+            return []
+        return self._data.columns
+
+    def compute(self) -> "DataFrameProxy":
+        """
+        Compute result for lazy engines, no-op for eager engines.
+
+        Returns:
+            DataFrameProxy with computed result
+        """
+        if self._data is None:
+            return self
+
+        computed_data = self._engine.compute_if_lazy(self._data)
+        return DataFrameProxy(data=computed_data, engine=self._engine)
+
+    def to_engine(self, engine_name: str) -> "DataFrameProxy":
+        """
+        Convert to a different engine.
+
+        Args:
+            engine_name: Target engine name ('pandas', 'polars', 'dask')
+
+        Returns:
+            New DataFrameProxy using the target engine
+        """
+        if self._data is None:
+            return DataFrameProxy(engine=engine_name)
+
+        target_engine = self._registry.get_engine(engine_name)
+
+        # Convert via pandas as intermediate format
+        pandas_df = self._engine.to_pandas(self._data)
+
+        # Convert pandas to target engine
+        if target_engine.name == "pandas":
+            target_data = pandas_df
+        elif target_engine.name == "polars":
+            # Will be implemented in polars engine
+            target_data = target_engine.from_pandas(pandas_df)
+        elif target_engine.name == "dask":
+            # Will be implemented in dask engine
+            target_data = target_engine.from_pandas(pandas_df)
+        else:
+            raise ValueError(f"Unknown target engine: {engine_name}")
+
+        return DataFrameProxy(data=target_data, engine=target_engine)
+
+    def to_pandas(self) -> "DataFrameProxy":
+        """Convert to pandas engine."""
+        return self.to_engine("pandas")
+
+    def to_polars(self) -> "DataFrameProxy":
+        """Convert to Polars engine."""
+        return self.to_engine("polars")
+
+    def to_dask(self) -> "DataFrameProxy":
+        """Convert to Dask engine."""
+        return self.to_engine("dask")
+
+    def _estimate_data_size(self, data: DataFrameLike) -> int:
+        """Estimate data size in bytes."""
+        if data is None:
+            return 0
+        return self._engine.estimate_memory_usage(data)
+
+    def __repr__(self) -> str:
+        """String representation."""
+        if self._data is None:
+            return f"DataFrameProxy(engine={self.engine_name}, empty=True)"
+
+        shape_str = f"{self.shape[0]} rows × {self.shape[1]} columns"
+        return f"DataFrameProxy(engine={self.engine_name}, {shape_str})"

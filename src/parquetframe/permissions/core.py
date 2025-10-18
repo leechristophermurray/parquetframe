@@ -200,7 +200,7 @@ class TupleStore:
         if self.is_empty():
             self._data = ParquetFrame(new_row, islazy=False)
         else:
-            combined = pd.concat([self._data.df, new_row], ignore_index=True)
+            combined = pd.concat([self._data._df, new_row], ignore_index=True)
             # Remove duplicates based on tuple_key
             combined = combined.drop_duplicates(subset=["tuple_key"], keep="last")
             self._data = ParquetFrame(combined, islazy=False)
@@ -225,7 +225,7 @@ class TupleStore:
         if self.is_empty():
             self._data = ParquetFrame(new_rows, islazy=False)
         else:
-            combined = pd.concat([self._data.df, new_rows], ignore_index=True)
+            combined = pd.concat([self._data._df, new_rows], ignore_index=True)
             # Remove duplicates based on tuple_key
             combined = combined.drop_duplicates(subset=["tuple_key"], keep="last")
             self._data = ParquetFrame(combined, islazy=False)
@@ -245,8 +245,8 @@ class TupleStore:
         if self.is_empty():
             return self
 
-        mask = self._data.df["tuple_key"] != tuple_obj.tuple_key
-        filtered = self._data.df[mask]
+        mask = self._data._df["tuple_key"] != tuple_obj.tuple_key
+        filtered = self._data._df[mask]
         self._data = ParquetFrame(filtered.reset_index(drop=True), islazy=False)
 
         return self
@@ -264,7 +264,7 @@ class TupleStore:
         if self.is_empty():
             return False
 
-        return tuple_obj.tuple_key in self._data.df["tuple_key"].values
+        return tuple_obj.tuple_key in self._data._df["tuple_key"].values
 
     def query_tuples(
         self,
@@ -290,7 +290,7 @@ class TupleStore:
         if self.is_empty():
             return []
 
-        df = self._data.df
+        df = self._data._df
 
         # Build filter conditions
         conditions = []
@@ -377,26 +377,26 @@ class TupleStore:
         """Get all unique relation types in the store."""
         if self.is_empty():
             return set()
-        return set(self._data.df["relation"].unique())
+        return set(self._data._df["relation"].unique())
 
     def get_namespaces(self) -> set[str]:
         """Get all unique object namespaces in the store."""
         if self.is_empty():
             return set()
-        return set(self._data.df["namespace"].unique())
+        return set(self._data._df["namespace"].unique())
 
     def get_subject_namespaces(self) -> set[str]:
         """Get all unique subject namespaces in the store."""
         if self.is_empty():
             return set()
-        return set(self._data.df["subject_namespace"].unique())
+        return set(self._data._df["subject_namespace"].unique())
 
     def __iter__(self) -> Iterator[RelationTuple]:
         """Iterate over all tuples in the store."""
         if self.is_empty():
             return iter([])
 
-        for _, row in self._data.df.iterrows():
+        for _, row in self._data._df.iterrows():
             yield RelationTuple.from_dict(row)
 
     def __len__(self) -> int:
@@ -428,7 +428,7 @@ class TupleStore:
                 "unique_namespaces": 0,
             }
 
-        df = self._data.df
+        df = self._data._df
         return {
             "total_tuples": len(df),
             "unique_objects": df["object_ref"].nunique(),

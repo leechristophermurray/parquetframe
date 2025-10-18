@@ -36,6 +36,12 @@ from pathlib import Path
 
 from .core import ParquetFrame
 
+# Phase 2 multi-engine components (available for advanced usage)
+try:
+    from . import core_v2  # New multi-engine core
+except ImportError:
+    core_v2 = None
+
 # Import submodules
 try:
     from . import graph
@@ -104,4 +110,12 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
 
 
 __version__ = "0.5.3"
-__all__ = ["ParquetFrame", "pf", "read", "create_empty", "graph", "permissions"]
+__all__ = [
+    "ParquetFrame",
+    "pf",
+    "read",
+    "create_empty",
+    "graph",
+    "permissions",
+    "core_v2",
+]
