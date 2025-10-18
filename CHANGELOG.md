@@ -10,6 +10,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [1.0.0] - TBD
+
+### 🚀 **MAJOR RELEASE: Phase 2 Multi-Engine API is Now Default**
+
+**This is a breaking change release that makes Phase 2 the default API.**
+
+### Breaking Changes
+
+#### API Changes
+- **Main Class Changed**: `ParquetFrame` → `DataFrameProxy`
+  - `import parquetframe as pf` now returns Phase 2 multi-engine API
+  - `pf.read()` returns `DataFrameProxy` instead of `ParquetFrame`
+- **Backend Property**: `df.islazy` → `df.engine_name`
+  - Phase 1: `if df.islazy:` checked for Dask (boolean)
+  - Phase 2: `if df.engine_name == "dask":` checks engine (string: "pandas", "polars", or "dask")
+- **DataFrame Access**: `df.df` → `df.native`
+  - Phase 1: `native_df = df.df`
+  - Phase 2: `native_df = df.native`
+- **Backend Parameter**: `islazy=True/False` → `engine="pandas"/"polars"/"dask"`
+  - Phase 1: `pf.read("data.csv", islazy=True)` for Dask
+  - Phase 2: `pf.read("data.csv", engine="dask")` for Dask
+- **Threshold Configuration**: `threshold_mb=` parameter removed
+  - Phase 1: `pf.read("data.csv", threshold_mb=50)`
+  - Phase 2: Use `set_config(pandas_threshold_mb=50.0)` globally
+
+#### Migration Path
+- **Legacy Support**: Phase 1 API available via `parquetframe.legacy` module
+  - Use `from parquetframe.legacy import ParquetFrame` for backward compatibility
+  - Deprecation warnings will guide migration
+  - Legacy module will be removed in v2.0.0
+
+### Added
+- 🔄 **Multi-Engine Support**: Automatic selection between pandas, Polars, and Dask
+  - **Pandas** (<100MB): Eager execution, rich ecosystem
+  - **Polars** (100MB-10GB): Lazy evaluation, high performance
+  - **Dask** (>10GB): Distributed processing, scalable
+- 📁 **Apache Avro Support**: Native Avro format reading and writing
+  - `pf.read_avro()` and `df.to_avro()`
+  - Schema inference and validation
+  - Compression support (deflate, snappy)
+- 🎯 **Entity-Graph Framework**: Declarative persistence with `@entity` decorator
+  - ORM-like CRUD operations
+  - Relationship management with `@rel` decorator
+  - Parquet/Avro storage backends
+- ⚙️ **Global Configuration System**: `set_config()` and `config_context()`
+  - Configure engine thresholds globally
+  - Environment variable support
+  - Context manager for temporary overrides
+- 📊 **Intelligent Engine Selection**: Automatic backend choice based on:
+  - Dataset size
+  - Available memory
+  - Installed engines
+  - User preferences
+
+### Enhanced
+- ⚡ **Performance**: 2-5x improvements on medium-scale datasets (100MB-10GB)
+- 🔧 **Developer Experience**: Single, clear import path eliminates confusion
+- 📚 **Documentation**: Comprehensive breaking changes guide and migration documentation
+- 🧪 **Test Coverage**: 146 tests (145 passing, 1 skipped) with >85% coverage
+
+### Deprecated
+- ⚠️ **Phase 1 API**: Available via `parquetframe.legacy` with deprecation warnings
+  - Will be removed in v2.0.0 (6-12 months)
+  - Clear migration path provided
+
+### Documentation
+- 📖 **[BREAKING_CHANGES.md](BREAKING_CHANGES.md)**: Comprehensive migration guide
+- 📘 **[ADR-0002](docs/adr/0002-make-phase2-default-api.md)**: Architecture decision record
+- 📗 **[Migration Guide](docs/phase2/MIGRATION_GUIDE.md)**: Step-by-step migration instructions
+- 📕 **[User Guide](docs/phase2/USER_GUIDE.md)**: Complete Phase 2 feature documentation
+
+### Migration Quick Reference
+
+```python
+# Phase 1 (Old)
+import parquetframe as pf
+df = pf.read("data.csv", islazy=True)
+if df.islazy:
+    result = df.df.compute()
+else:
+    result = df.df
+
+# Phase 2 (New)
+import parquetframe as pf
+df = pf.read("data.csv", engine="dask")
+if df.engine_name == "dask":
+    result = df.native.compute()
+else:
+    result = df.native
+
+# Temporary Compatibility (Deprecated)
+from parquetframe.legacy import ParquetFrame
+# Phase 1 code works with deprecation warnings
+```
+
+### For More Information
+- See [BREAKING_CHANGES.md](BREAKING_CHANGES.md) for detailed migration guide
+- See [docs/phase2/MIGRATION_GUIDE.md](docs/phase2/MIGRATION_GUIDE.md) for step-by-step instructions
+- See [docs/adr/0002-make-phase2-default-api.md](docs/adr/0002-make-phase2-default-api.md) for decision rationale
+
 ## [0.5.0] - 2025-01-15
 
 ### 🧮 Advanced Analytics Features (Phase 0.3)
