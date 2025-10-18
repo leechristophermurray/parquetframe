@@ -5,7 +5,7 @@ import pytest
 
 from parquetframe.core import ParquetFrame
 from parquetframe.graph import GraphFrame
-from parquetframe.graph.algo.traversal import bfs
+from parquetframe.graph.algo.traversal import bfs, dfs
 from parquetframe.graph.data import EdgeSet, VertexSet
 
 
@@ -213,4 +213,209 @@ class TestBFS:
         # Should default to vertex 0
         source_row = result[result["vertex"] == 0].iloc[0]
         assert source_row["distance"] == 0
+        assert pd.isna(source_row["predecessor"])
+
+
+@pytest.mark.graph
+class TestDFS:
+    """Test DFS (Depth-First Search) implementation."""
+
+    def test_dfs_single_source_chain(self, simple_chain_graph):
+        """Test DFS from single source on chain graph."""
+        result = dfs(simple_chain_graph, sources=0)
+
+        # All vertices should be reachable
+        assert len(result) == 5
+        assert set(result["vertex"]) == {0, 1, 2, 3, 4}
+
+        # Source should have no predecessor
+        source_row = result[result["vertex"] == 0].iloc[0]
+        assert pd.isna(source_row["predecessor"])
+        assert source_row["component_id"] == 0
+
+        # Discovery times should be in DFS order (0, 1, 2, 3, 4 for chain)
+        result_sorted = result.sort_values("discovery_time")
+        expected_order = [0, 1, 2, 3, 4]  # DFS goes deep first
+        assert list(result_sorted["vertex"]) == expected_order
+
+        # Finish times should be in reverse DFS order (4, 3, 2, 1, 0)
+        result_sorted_finish = result.sort_values("finish_time")
+        expected_finish_order = [4, 3, 2, 1, 0]  # Deepest finishes first
+        assert list(result_sorted_finish["vertex"]) == expected_finish_order
+
+    def test_dfs_single_source_star(self, simple_star_graph):
+        """Test DFS from center of star graph."""
+        result = dfs(simple_star_graph, sources=0)
+
+        # All vertices should be reachable
+        assert len(result) == 5
+        assert set(result["vertex"]) == {0, 1, 2, 3, 4}
+
+        # Center should have discovery time 0
+        center_row = result[result["vertex"] == 0].iloc[0]
+        assert center_row["discovery_time"] == 0
+        assert pd.isna(center_row["predecessor"])
+
+        # All leaf vertices should have center as predecessor
+        leaf_results = result[result["vertex"].isin([1, 2, 3, 4])]
+        assert all(leaf_results["predecessor"] == 0)
+
+        # Center should finish last (highest finish time)
+        assert center_row["finish_time"] == result["finish_time"].max()
+
+    def test_dfs_forest_mode(self, disconnected_graph):
+        """Test DFS forest traversal on disconnected graph."""
+        result = dfs(disconnected_graph, forest=True)
+
+        # Should visit all vertices
+        assert len(result) == 5
+        assert set(result["vertex"]) == {0, 1, 2, 3, 4}
+
+        # Should have multiple components
+        components = set(result["component_id"])
+        assert len(components) >= 2  # At least 2 components
+
+        # Vertices 0,1 should be in one component
+        comp_0_1 = result[result["vertex"].isin([0, 1])]["component_id"]
+        assert len(set(comp_0_1)) == 1  # Same component
+
+        # Vertices 2,3 should be in another component
+        comp_2_3 = result[result["vertex"].isin([2, 3])]["component_id"]
+        assert len(set(comp_2_3)) == 1  # Same component
+
+        # Vertex 4 should be in its own component (isolated)
+        comp_4 = result[result["vertex"] == 4]["component_id"].iloc[0]
+        assert comp_4 not in set(comp_0_1) and comp_4 not in set(comp_2_3)
+
+    def test_dfs_max_depth_limiting(self, simple_chain_graph):
+        """Test DFS with depth limit."""
+        result = dfs(simple_chain_graph, sources=0, max_depth=2)
+
+        # Should only reach vertices at depth <= 2 from source 0
+        # Chain: 0->1->2 (depths 0,1,2), so vertices 3,4 unreachable
+        assert len(result) == 3
+        assert set(result["vertex"]) == {0, 1, 2}
+
+        # Discovery times should still be in DFS order
+        result_sorted = result.sort_values("discovery_time")
+        assert list(result_sorted["vertex"]) == [0, 1, 2]
+
+    def test_dfs_multi_source(self, disconnected_graph):
+        """Test DFS with multiple sources on disconnected graph."""
+        result = dfs(disconnected_graph, sources=[0, 2])
+
+        # Should visit vertices from both components
+        assert len(result) == 4  # 0,1 from first source, 2,3 from second source
+        assert set(result["vertex"]) == {0, 1, 2, 3}
+
+        # Should have two components (one from each source)
+        components = set(result["component_id"])
+        assert len(components) == 2
+
+        # Sources should have no predecessor
+        source_results = result[result["vertex"].isin([0, 2])]
+        assert all(pd.isna(source_results["predecessor"]))
+
+        # Components should be separate
+        comp_0_vertices = result[result["component_id"] == 0]["vertex"]
+        comp_1_vertices = result[result["component_id"] == 1]["vertex"]
+        assert set(comp_0_vertices).isdisjoint(set(comp_1_vertices))
+
+    def test_dfs_undirected_graph(self, simple_chain_graph):
+        """Test DFS on undirected version of chain graph."""
+        # Make graph undirected
+        simple_chain_graph.metadata["directed"] = False
+
+        result = dfs(simple_chain_graph, sources=2, directed=False)
+
+        # From vertex 2, should reach all vertices in undirected chain
+        assert len(result) == 5
+        assert set(result["vertex"]) == {0, 1, 2, 3, 4}
+
+        # Source vertex 2 should have discovery time 0
+        source_row = result[result["vertex"] == 2].iloc[0]
+        assert source_row["discovery_time"] == 0
+        assert pd.isna(source_row["predecessor"])
+
+    def test_dfs_discovery_finish_times(self, simple_chain_graph):
+        """Test that DFS discovery and finish times are consistent."""
+        result = dfs(simple_chain_graph, sources=0)
+
+        # For each vertex, discovery time should be < finish time
+        for _, row in result.iterrows():
+            assert row["discovery_time"] < row["finish_time"]
+
+        # Discovery times should be unique and start from 0
+        discovery_times = sorted(result["discovery_time"])
+        assert discovery_times == list(range(len(discovery_times)))
+
+        # Finish times should be unique and continue from discovery times
+        finish_times = sorted(result["finish_time"])
+        num_vertices = len(result)
+        expected_finish_times = list(range(num_vertices, 2 * num_vertices))
+        assert finish_times == expected_finish_times
+
+        # All times should be unique across discovery and finish
+        all_times = result["discovery_time"].tolist() + result["finish_time"].tolist()
+        assert len(set(all_times)) == len(all_times)  # No duplicates
+
+    def test_dfs_empty_graph(self):
+        """Test DFS on empty graph."""
+        empty_vertices = pd.DataFrame({"vertex_id": []})
+        empty_edges = pd.DataFrame({"src": [], "dst": []})
+        empty_graph = GraphFrame(
+            vertices=ParquetFrame(empty_vertices),
+            edges=ParquetFrame(empty_edges),
+            metadata={"directed": True},
+        )
+
+        with pytest.raises(ValueError, match="Cannot perform DFS on empty graph"):
+            dfs(empty_graph)
+
+    def test_dfs_invalid_source(self, simple_chain_graph):
+        """Test DFS with invalid source vertex."""
+        with pytest.raises(ValueError, match="Source vertex 10 out of range"):
+            dfs(simple_chain_graph, sources=10)
+
+        with pytest.raises(ValueError, match="Source vertex -1 out of range"):
+            dfs(simple_chain_graph, sources=-1)
+
+    def test_dfs_invalid_max_depth(self, simple_chain_graph):
+        """Test DFS with invalid max_depth."""
+        with pytest.raises(ValueError, match="max_depth must be non-negative"):
+            dfs(simple_chain_graph, sources=0, max_depth=-1)
+
+    def test_dfs_dask_not_implemented(self, simple_chain_graph):
+        """Test that Dask backend raises informative NotImplementedError."""
+        with pytest.raises(
+            NotImplementedError, match="Dask backend for DFS not implemented"
+        ):
+            dfs(simple_chain_graph, sources=0, backend="dask")
+
+    def test_dfs_result_dtypes(self, simple_chain_graph):
+        """Test that DFS result has correct column dtypes."""
+        result = dfs(simple_chain_graph, sources=0)
+
+        assert result["vertex"].dtype == "int64"
+        assert result["predecessor"].dtype == "Int64"  # Nullable int
+        assert result["discovery_time"].dtype == "int64"
+        assert result["finish_time"].dtype == "int64"
+        assert result["component_id"].dtype == "int64"
+
+    def test_dfs_component_consistency(self, simple_chain_graph):
+        """Test that vertices in same DFS tree have same component ID."""
+        result = dfs(simple_chain_graph, sources=0)
+
+        # All vertices should be in the same component (connected chain)
+        components = set(result["component_id"])
+        assert len(components) == 1
+        assert list(components)[0] == 0  # First component
+
+    def test_dfs_auto_source_selection(self, simple_chain_graph):
+        """Test DFS with sources=None (auto-selection)."""
+        result = dfs(simple_chain_graph, sources=None)
+
+        # Should default to vertex 0
+        source_row = result[result["vertex"] == 0].iloc[0]
+        assert source_row["discovery_time"] == 0
         assert pd.isna(source_row["predecessor"])
