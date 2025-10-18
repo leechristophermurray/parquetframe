@@ -10,14 +10,21 @@ Supported formats:
     - JSON (.json, .jsonl, .ndjson) - Regular or JSON Lines format
     - Parquet (.parquet, .pqt) - Columnar format (optimal performance)
     - ORC (.orc) - Optimized Row Columnar format
+    - GraphAr - Graph data in Apache GraphAr format (Phase 1.1+)
 
 Examples:
-    Multi-format usage:
+    Multi-format data processing:
         >>> import parquetframe as pqf
         >>> csv_df = pqf.read("sales.csv")  # Auto-detects CSV
         >>> json_df = pqf.read("events.jsonl")  # Auto-detects JSON Lines
         >>> parquet_df = pqf.read("data.parquet")  # Auto-detects Parquet
         >>> result = csv_df.groupby("region").sum().save("output.parquet")
+
+    Graph processing (Phase 1.1+):
+        >>> import parquetframe as pqf
+        >>> graph = pqf.graph.read_graph("social_network/")  # GraphAr format
+        >>> print(f"Graph: {graph.num_vertices} vertices, {graph.num_edges} edges")
+        >>> neighbors = graph.neighbors(vertex_id=123)
 
     Manual control:
         >>> df = pqf.read("data.txt", format="csv")  # Force CSV format
@@ -28,6 +35,19 @@ Examples:
 from pathlib import Path
 
 from .core import ParquetFrame
+
+# Import submodules
+try:
+    from . import graph
+except ImportError:
+    # Graph module not available - will be implemented in Phase 1.1
+    graph = None
+
+try:
+    from . import permissions
+except ImportError:
+    # Permissions module not available
+    permissions = None
 
 # Make ParquetFrame available as 'pf' for convenience
 pf = ParquetFrame
@@ -83,5 +103,5 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
     return ParquetFrame(islazy=islazy)
 
 
-__version__ = "0.4.2"
-__all__ = ["ParquetFrame", "pf", "read", "create_empty"]
+__version__ = "0.5.3"
+__all__ = ["ParquetFrame", "pf", "read", "create_empty", "graph", "permissions"]
