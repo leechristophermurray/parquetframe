@@ -12,7 +12,7 @@ from .base import DataFrameLike, Engine
 from .registry import EngineRegistry
 
 if TYPE_CHECKING:
-    from ..sql import QueryContext, QueryResult
+    from ..sql import QueryContext, QueryResult, SQLBuilder
 
 try:
     from ..io_new.avro import AvroWriter
@@ -282,6 +282,107 @@ class DataFrameProxy:
         from ..engines.pandas_engine import PandasEngine
 
         return DataFrameProxy(data=result, engine=PandasEngine())
+
+    def sql_hint(self, **hints: Any) -> "QueryContext":
+        """
+        Create a QueryContext with optimization hints for SQL queries.
+
+        This is a convenience method for creating QueryContext objects.
+
+        Args:
+            **hints: Optimization hints (QueryContext parameters)
+                - memory_limit: str (e.g., '1GB')
+                - enable_parallel: bool
+                - predicate_pushdown: bool
+                - projection_pushdown: bool
+                - custom_pragmas: dict
+
+        Returns:
+            QueryContext object that can be passed to sql()
+
+        Examples:
+            >>> df = pf.read("data.csv")
+            >>> ctx = df.sql_hint(memory_limit="1GB", enable_parallel=False)
+            >>> result = df.sql("SELECT * FROM df", context=ctx)
+        """
+        from ..sql import QueryContext
+
+        return QueryContext(**hints)
+
+    def sql_with_params(self, query: str, **params: Any) -> "DataFrameProxy":
+        """
+        Execute a parameterized SQL query.
+
+        Uses named parameters in {param_name} format within the query.
+
+        Args:
+            query: SQL query with {param_name} placeholders
+            **params: Named parameters to substitute
+
+        Returns:
+            DataFrameProxy with query results
+
+        Raises:
+            ValueError: If required parameters are missing
+
+        Examples:
+            >>> df = pf.read("data.csv")
+            >>> result = df.sql_with_params(
+            ...     "SELECT * FROM df WHERE age > {min_age} AND salary < {max_salary}",
+            ...     min_age=25,
+            ...     max_salary=70000
+            ... )
+        """
+        from ..sql import parameterize_query
+
+        # Parameterize the query
+        final_query = parameterize_query(query, **params)
+
+        # Execute the parameterized query
+        return self.sql(final_query)  # type: ignore[return-value]
+
+    def select(self, *columns: str) -> "SQLBuilder":
+        """
+        Start building a SQL query with SELECT.
+
+        Returns a SQLBuilder for fluent API query construction.
+
+        Args:
+            *columns: Column names to select
+
+        Returns:
+            SQLBuilder for method chaining
+
+        Examples:
+            >>> df = pf.read("data.csv")
+            >>> result = df.select("name", "age").where("age > 25").execute()
+            >>> result = df.select("category", "COUNT(*) as count").group_by("category").execute()
+        """
+        from ..sql import SQLBuilder
+
+        builder = SQLBuilder(self)  # type: ignore[arg-type]
+        return builder.select(*columns)
+
+    def where(self, condition: str) -> "SQLBuilder":
+        """
+        Start building a SQL query with WHERE.
+
+        Returns a SQLBuilder for fluent API query construction.
+
+        Args:
+            condition: SQL WHERE condition
+
+        Returns:
+            SQLBuilder for method chaining
+
+        Examples:
+            >>> df = pf.read("data.csv")
+            >>> result = df.where("age > 25").select("name", "age").execute()
+        """
+        from ..sql import SQLBuilder
+
+        builder = SQLBuilder(self)  # type: ignore[arg-type]
+        return builder.where(condition)
 
     def _estimate_data_size(self, data: DataFrameLike) -> int:
         """Estimate data size in bytes using engine."""
