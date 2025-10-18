@@ -6,8 +6,11 @@ and Dask engines, validating the abstraction layer correctness.
 """
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
+
+# Optional hypothesis import - only needed when tests are implemented
+pytest.importorskip("hypothesis", reason="hypothesis not available")
+from hypothesis import given  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 # Will be available once scaffold is integrated
 # from parquetframe.core.frame import DataFrameProxy
