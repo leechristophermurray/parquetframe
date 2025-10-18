@@ -11,11 +11,6 @@ import pytest
 import parquetframe as pqf
 from parquetframe.core import ParquetFrame
 
-# Skip all tests in this file pending Phase 2 API migration
-pytestmark = pytest.mark.skip(
-    reason="Phase 2 API migration pending - tests use deprecated ParquetFrame, create_empty, pf alias. See docs/issues/phase2-test-migration.md"
-)
-
 
 class TestBackendSwitchingLogic:
     """Test automatic backend switching based on file size."""
