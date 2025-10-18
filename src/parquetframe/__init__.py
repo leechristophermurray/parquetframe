@@ -43,6 +43,12 @@ except ImportError:
     # Graph module not available - will be implemented in Phase 1.1
     graph = None
 
+try:
+    from . import permissions
+except ImportError:
+    # Permissions module not available
+    permissions = None
+
 # Make ParquetFrame available as 'pf' for convenience
 pf = ParquetFrame
 
@@ -98,4 +104,4 @@ def create_empty(islazy: bool = False) -> ParquetFrame:
 
 
 __version__ = "0.5.3"
-__all__ = ["ParquetFrame", "pf", "read", "create_empty", "graph"]
+__all__ = ["ParquetFrame", "pf", "read", "create_empty", "graph", "permissions"]
