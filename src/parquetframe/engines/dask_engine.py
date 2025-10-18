@@ -13,7 +13,7 @@ try:
 
     DASK_AVAILABLE = True
 except ImportError:
-    dd = None
+    dd = None  # type: ignore[assignment]
     DASK_AVAILABLE = False
 
 import pandas as pd
@@ -39,19 +39,19 @@ class DaskEngine(Engine):
         """Check if Dask is available."""
         return DASK_AVAILABLE and dd is not None
 
-    def read_parquet(self, path: str | Path, **kwargs: Any) -> "dd.DataFrame":
+    def read_parquet(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read Parquet file using Dask."""
         if not self.is_available:
             raise ImportError("Dask is not available")
 
-        return dd.read_parquet(str(path), **kwargs)
+        return dd.read_parquet(str(path), **kwargs)  # type: ignore[return-value]
 
-    def read_csv(self, path: str | Path, **kwargs: Any) -> "dd.DataFrame":
+    def read_csv(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read CSV file using Dask."""
         if not self.is_available:
             raise ImportError("Dask is not available")
 
-        return dd.read_csv(str(path), **kwargs)
+        return dd.read_csv(str(path), **kwargs)  # type: ignore[return-value]
 
     def to_pandas(self, df: DataFrameLike) -> pd.DataFrame:
         """Convert Dask DataFrame to pandas."""
@@ -62,15 +62,15 @@ class DaskEngine(Engine):
             return df.compute()
         else:
             # Already pandas or compatible
-            return pd.DataFrame(df)
+            return pd.DataFrame(df)  # type: ignore[arg-type,call-overload]
 
-    def compute_if_lazy(self, df: DataFrameLike) -> pd.DataFrame:
+    def compute_if_lazy(self, df: DataFrameLike) -> DataFrameLike:
         """Compute Dask DataFrame to pandas."""
         if not self.is_available:
             raise ImportError("Dask is not available")
 
         if isinstance(df, dd.DataFrame):
-            return df.compute()
+            return df.compute()  # type: ignore[return-value]
         else:
             return df
 

@@ -13,7 +13,7 @@ try:
 
     POLARS_AVAILABLE = True
 except ImportError:
-    pl = None
+    pl = None  # type: ignore[assignment]
     POLARS_AVAILABLE = False
 
 import pandas as pd
@@ -39,20 +39,20 @@ class PolarsEngine(Engine):
         """Check if Polars is available."""
         return POLARS_AVAILABLE and pl is not None
 
-    def read_parquet(self, path: str | Path, **kwargs: Any) -> "pl.LazyFrame":
+    def read_parquet(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read Parquet file using Polars (lazy by default)."""
         if not self.is_available:
             raise ImportError("Polars is not available")
 
         # Use lazy scanning for better performance
-        return pl.scan_parquet(str(path), **kwargs)
+        return pl.scan_parquet(str(path), **kwargs)  # type: ignore[return-value]
 
-    def read_csv(self, path: str | Path, **kwargs: Any) -> "pl.LazyFrame":
+    def read_csv(self, path: str | Path, **kwargs: Any) -> DataFrameLike:
         """Read CSV file using Polars (lazy by default)."""
         if not self.is_available:
             raise ImportError("Polars is not available")
 
-        return pl.scan_csv(str(path), **kwargs)
+        return pl.scan_csv(str(path), **kwargs)  # type: ignore[return-value]
 
     def to_pandas(self, df: DataFrameLike) -> pd.DataFrame:
         """Convert Polars DataFrame to pandas."""
@@ -65,15 +65,15 @@ class PolarsEngine(Engine):
             return df.to_pandas()
         else:
             # Already pandas or compatible
-            return pd.DataFrame(df)
+            return pd.DataFrame(df)  # type: ignore[arg-type,call-overload]
 
-    def compute_if_lazy(self, df: DataFrameLike) -> "pl.DataFrame":
+    def compute_if_lazy(self, df: DataFrameLike) -> DataFrameLike:
         """Compute LazyFrame to DataFrame."""
         if not self.is_available:
             raise ImportError("Polars is not available")
 
         if isinstance(df, pl.LazyFrame):
-            return df.collect()
+            return df.collect()  # type: ignore[return-value]
         else:
             return df
 
