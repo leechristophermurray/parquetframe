@@ -24,13 +24,8 @@ def test_basic_functionality():
 
         print("   [OK] parquetframe imported successfully")
 
-        # Test basic creation
-        print("2. Testing basic creation...")
-        empty_pf = pqf.create_empty()
-        print(f"   [OK] Created empty ParquetFrame: {empty_pf}")
-
         # Test with sample data
-        print("3. Testing with sample data...")
+        print("2. Testing with sample data...")
         sample_df = pd.DataFrame(
             {
                 "id": range(5),
@@ -39,31 +34,46 @@ def test_basic_functionality():
             }
         )
 
-        pf = pqf.ParquetFrame(sample_df)
-        print(f"   [OK] Created ParquetFrame with data: {pf.shape}")
+        # Create a temporary file to test read functionality
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir) / "sample_data.csv"
+            sample_df.to_csv(temp_path, index=False)
+
+            # Test Phase 2 read with automatic engine selection
+            df = pqf.read(temp_path)
+            print(
+                f"   [OK] Created DataFrameProxy with data using {df.engine_name} engine"
+            )
+            print(f"   [OK] DataFrame shape: {df.native.shape}")
 
         # Test basic operations
-        print("4. Testing basic operations...")
-        result = pf.groupby("category").sum()
+        print("3. Testing basic operations...")
+        result = df.native.groupby("category").sum()
         print(f"   [OK] GroupBy operation result shape: {result.shape}")
 
         # Test file I/O (in temp directory)
-        print("5. Testing file I/O...")
+        print("4. Testing file I/O...")
         with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir) / "test_data"
-
-            # Save
-            pf.save(temp_path)
-            expected_file = Path(temp_dir) / "test_data.parquet"
-            print(f"   [OK] Saved to {expected_file}")
+            # Test CSV read/write
+            csv_path = Path(temp_dir) / "test_data.csv"
+            sample_df.to_csv(csv_path, index=False)
+            print(f"   [OK] Saved CSV to {csv_path}")
 
             # Read back
-            pf_loaded = pqf.read(temp_path)
-            print(f"   [OK] Loaded from file: {pf_loaded.shape}")
+            df_loaded = pqf.read(csv_path)
+            print(f"   [OK] Loaded from CSV: {df_loaded.native.shape}")
+            print(f"   [OK] Engine used: {df_loaded.engine_name}")
+
+            # Test Parquet read/write
+            parquet_path = Path(temp_dir) / "test_data.parquet"
+            sample_df.to_parquet(parquet_path)
+            df_parquet = pqf.read(parquet_path)
+            print(f"   [OK] Loaded from Parquet: {df_parquet.native.shape}")
 
             # Verify data integrity
             pd.testing.assert_frame_equal(
-                pf._df.reset_index(drop=True), pf_loaded._df.reset_index(drop=True)
+                sample_df.reset_index(drop=True),
+                df_loaded.native.reset_index(drop=True),
             )
             print("   [OK] Data integrity verified")
 
