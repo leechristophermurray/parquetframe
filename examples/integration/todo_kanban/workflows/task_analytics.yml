@@ -1,0 +1,325 @@
+name: "Task Analytics and Aggregation"
+description: "Comprehensive ETL workflow for task analytics with grouping, aggregations, and time series analysis"
+
+# Workflow variables (can be overridden via CLI)
+variables:
+  tasks_path: "./kanban_data/tasks"
+  users_path: "./kanban_data/users"
+  lists_path: "./kanban_data/lists"
+  boards_path: "./kanban_data/boards"
+  output_dir: "analytics"
+  start_date: ""  # Optional: filter start date (YYYY-MM-DD)
+  end_date: ""    # Optional: filter end date (YYYY-MM-DD)
+
+steps:
+  # ========== Data Loading ==========
+
+  # Step 1: Load all entities for comprehensive analysis
+  - name: "load_tasks"
+    type: "read"
+    input: "${tasks_path}"
+    output: "tasks"
+
+  - name: "load_users"
+    type: "read"
+    input: "${users_path}"
+    output: "users"
+
+  - name: "load_lists"
+    type: "read"
+    input: "${lists_path}"
+    output: "lists"
+
+  - name: "load_boards"
+    type: "read"
+    input: "${boards_path}"
+    output: "boards"
+
+  # ========== Date Filtering (Optional) ==========
+
+  # Step 2: Filter tasks by date range if specified
+  - name: "filter_by_date_range"
+    type: "filter"
+    input: "tasks"
+    query: "(created_at >= '${start_date}' or '${start_date}' == '') and (created_at <= '${end_date}' or '${end_date}' == '')"
+    output: "date_filtered_tasks"
+
+  # ========== Status Analytics ==========
+
+  # Step 3: Group by status - count and distribution
+  - name: "aggregate_by_status"
+    type: "groupby"
+    input: "date_filtered_tasks"
+    by: ["status"]
+    agg:
+      task_id: "count"
+      priority: ["mean", "nunique"]
+    output: "status_analytics"
+
+  # ========== Priority Analytics ==========
+
+  # Step 4: Group by priority - count and average age
+  - name: "aggregate_by_priority"
+    type: "groupby"
+    input: "date_filtered_tasks"
+    by: ["priority"]
+    agg:
+      task_id: "count"
+      status: "nunique"
+    output: "priority_analytics"
+
+  # ========== User/Assignee Analytics ==========
+
+  # Step 5: Group by assigned user - workload analysis
+  - name: "aggregate_by_user"
+    type: "groupby"
+    input: "date_filtered_tasks"
+    by: ["assigned_to"]
+    agg:
+      task_id: "count"
+      priority: "nunique"
+      status: "nunique"
+    output: "user_workload"
+
+  # Step 6: Filter out unassigned tasks for user-specific metrics
+  - name: "filter_assigned_tasks"
+    type: "filter"
+    input: "date_filtered_tasks"
+    query: "assigned_to.notna()"
+    output: "assigned_tasks"
+
+  # Step 7: Calculate assigned task metrics
+  - name: "assigned_task_metrics"
+    type: "groupby"
+    input: "assigned_tasks"
+    by: ["assigned_to", "status"]
+    agg:
+      task_id: "count"
+    output: "user_status_breakdown"
+
+  # ========== List Analytics ==========
+
+  # Step 8: Group by list - tasks per list
+  - name: "aggregate_by_list"
+    type: "groupby"
+    input: "date_filtered_tasks"
+    by: ["list_id"]
+    agg:
+      task_id: "count"
+      status: "nunique"
+      priority: "nunique"
+    output: "list_analytics"
+
+  # ========== Combined Status + Priority Analytics ==========
+
+  # Step 9: Cross-tabulation: status x priority
+  - name: "aggregate_status_priority"
+    type: "groupby"
+    input: "date_filtered_tasks"
+    by: ["status", "priority"]
+    agg:
+      task_id: "count"
+    output: "status_priority_matrix"
+
+  # ========== Completion Rate Analysis ==========
+
+  # Step 10: Calculate done vs not-done tasks
+  - name: "filter_done_tasks"
+    type: "filter"
+    input: "date_filtered_tasks"
+    query: "status == 'done'"
+    output: "done_tasks"
+
+  - name: "count_done_tasks"
+    type: "groupby"
+    input: "done_tasks"
+    by: ["status"]
+    agg:
+      task_id: "count"
+    output: "done_count"
+
+  # Step 11: Calculate in-progress tasks
+  - name: "filter_active_tasks"
+    type: "filter"
+    input: "date_filtered_tasks"
+    query: "status != 'done'"
+    output: "active_tasks"
+
+  - name: "count_active_tasks"
+    type: "groupby"
+    input: "active_tasks"
+    by: ["status"]
+    agg:
+      task_id: "count"
+    output: "active_count"
+
+  # ========== Board-Level Analytics ==========
+
+  # Step 12: Select tasks with board relationship (via list)
+  # Note: Actual join would require custom transform
+  - name: "tasks_for_board_analysis"
+    type: "select"
+    input: "date_filtered_tasks"
+    columns:
+      - task_id
+      - title
+      - status
+      - priority
+      - list_id
+      - created_at
+    output: "board_ready_tasks"
+
+  # ========== Time Series Analysis ==========
+
+  # Step 13: Transform for time series analysis
+  # Note: This would extract date components in real implementation
+  - name: "prepare_time_series"
+    type: "transform"
+    input: "date_filtered_tasks"
+    transforms:
+      # In real implementation, extract year, month, day, week
+      - operation: "note"
+        note: "Extract date components for time series grouping"
+    output: "time_series_ready"
+
+  # ========== High Priority/Urgent Task Analysis ==========
+
+  # Step 14: Identify high-priority tasks
+  - name: "filter_high_priority"
+    type: "filter"
+    input: "date_filtered_tasks"
+    query: "priority.isin(['high', 'urgent'])"
+    output: "high_priority_tasks"
+
+  - name: "high_priority_status_breakdown"
+    type: "groupby"
+    input: "high_priority_tasks"
+    by: ["status", "priority"]
+    agg:
+      task_id: "count"
+      assigned_to: "nunique"
+    output: "high_priority_analytics"
+
+  # ========== Blocked Task Analysis ==========
+
+  # Step 15: Analyze blocked tasks
+  - name: "filter_blocked_tasks"
+    type: "filter"
+    input: "date_filtered_tasks"
+    query: "status == 'blocked'"
+    output: "blocked_tasks"
+
+  - name: "blocked_task_analysis"
+    type: "groupby"
+    input: "blocked_tasks"
+    by: ["priority", "assigned_to"]
+    agg:
+      task_id: "count"
+    output: "blocked_analytics"
+
+  # ========== Save All Analytics Outputs ==========
+
+  # Summary outputs
+  - name: "save_status_analytics"
+    type: "save"
+    input: "status_analytics"
+    output: "${output_dir}/analytics_by_status.parquet"
+    config:
+      write_index: false
+
+  - name: "save_priority_analytics"
+    type: "save"
+    input: "priority_analytics"
+    output: "${output_dir}/analytics_by_priority.parquet"
+    config:
+      write_index: false
+
+  - name: "save_user_workload"
+    type: "save"
+    input: "user_workload"
+    output: "${output_dir}/analytics_user_workload.parquet"
+    config:
+      write_index: false
+
+  - name: "save_list_analytics"
+    type: "save"
+    input: "list_analytics"
+    output: "${output_dir}/analytics_by_list.parquet"
+    config:
+      write_index: false
+
+  - name: "save_status_priority_matrix"
+    type: "save"
+    input: "status_priority_matrix"
+    output: "${output_dir}/analytics_status_priority_matrix.parquet"
+    config:
+      write_index: false
+
+  - name: "save_high_priority_analytics"
+    type: "save"
+    input: "high_priority_analytics"
+    output: "${output_dir}/analytics_high_priority.parquet"
+    config:
+      write_index: false
+
+  - name: "save_blocked_analytics"
+    type: "save"
+    input: "blocked_analytics"
+    output: "${output_dir}/analytics_blocked_tasks.parquet"
+    config:
+      write_index: false
+
+  - name: "save_user_status_breakdown"
+    type: "save"
+    input: "user_status_breakdown"
+    output: "${output_dir}/analytics_user_status_breakdown.parquet"
+    config:
+      write_index: false
+
+  # Detailed task exports for dashboards
+  - name: "save_done_tasks"
+    type: "save"
+    input: "done_tasks"
+    output: "${output_dir}/detailed_done_tasks.csv"
+    config:
+      write_index: false
+
+  - name: "save_active_tasks"
+    type: "save"
+    input: "active_tasks"
+    output: "${output_dir}/detailed_active_tasks.csv"
+    config:
+      write_index: false
+
+  - name: "save_high_priority_tasks"
+    type: "save"
+    input: "high_priority_tasks"
+    output: "${output_dir}/detailed_high_priority_tasks.csv"
+    config:
+      write_index: false
+
+  - name: "save_blocked_tasks"
+    type: "save"
+    input: "blocked_tasks"
+    output: "${output_dir}/detailed_blocked_tasks.csv"
+    config:
+      write_index: false
+
+# Notes:
+# - Full implementation would include:
+#   * JOIN operations to add user names, list names, board names
+#   * Time series grouping with date extraction (year, month, week, day)
+#   * Velocity metrics (tasks completed per time period)
+#   * Age calculation for tasks (days since created)
+#   * Trend analysis (task creation rate over time)
+#   * Stalled board detection (boards with no activity)
+#   * Overloaded user identification (users with too many tasks)
+#   * Completion rate percentages
+#   * Average time to completion
+#   * Board-level rollup statistics
+#
+# - Custom transform functions needed for:
+#   * Date component extraction (year, month, day from created_at)
+#   * Task age calculation (current_date - created_at)
+#   * Completion rate calculation ((done_count / total_count) * 100)
+#   * JOIN operations for denormalized views

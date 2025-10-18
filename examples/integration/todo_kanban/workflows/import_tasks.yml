@@ -1,0 +1,93 @@
+name: "Import Tasks from External Sources"
+description: "ETL workflow to import tasks from CSV or JSON files with validation and permission checks"
+
+# Workflow variables (can be overridden via CLI)
+variables:
+  source_file: "data/sample_tasks.csv"
+  source_format: "csv"  # csv or json
+  target_list_id: "list_001"
+  user_id: "user_001"
+  output_report: "reports/import_report.json"
+  storage_path: "./kanban_data/tasks"
+
+steps:
+  # Step 1: Read source data from CSV or JSON
+  - name: "read_source"
+    type: "read"
+    input: "${source_file}"
+    output: "raw_tasks"
+
+  # Step 2: Validate required fields
+  - name: "validate_required_fields"
+    type: "filter"
+    input: "raw_tasks"
+    # Ensure task_id, title exist (basic validation)
+    query: "task_id.notna() and title.notna()"
+    output: "validated_tasks"
+
+  # Step 3: Select and rename columns to match Task entity schema
+  - name: "transform_to_schema"
+    type: "select"
+    input: "validated_tasks"
+    columns:
+      task_id: "task_id"
+      title: "title"
+      description: "description"
+      status: "status"
+      priority: "priority"
+      list_id: "list_id"
+      assigned_to: "assigned_to"
+    output: "schema_tasks"
+
+  # Step 4: Filter tasks for target list (or set default list_id)
+  - name: "set_target_list"
+    type: "filter"
+    input: "schema_tasks"
+    # Filter to only import tasks for the specified list
+    # Note: In a full implementation, this would check permissions via custom transform
+    query: "list_id == '${target_list_id}' or list_id.isna()"
+    output: "filtered_tasks"
+
+  # Step 5: Validate status and priority values
+  - name: "validate_enums"
+    type: "filter"
+    input: "filtered_tasks"
+    # Ensure valid status values
+    query: "status.isin(['todo', 'in_progress', 'done', 'blocked']) or status.isna()"
+    output: "valid_tasks"
+
+  # Step 6: Group by status for import summary
+  - name: "calculate_import_stats"
+    type: "groupby"
+    input: "valid_tasks"
+    by: ["status"]
+    agg:
+      task_id: "count"
+      priority: "nunique"
+    output: "import_stats"
+
+  # Step 7: Save validated tasks to storage
+  - name: "save_tasks"
+    type: "save"
+    input: "valid_tasks"
+    output: "${storage_path}/imported_tasks.parquet"
+    config:
+      write_index: false
+      compression: "snappy"
+
+  # Step 8: Save import statistics report
+  - name: "save_import_report"
+    type: "save"
+    input: "import_stats"
+    output: "reports/import_summary.parquet"
+    config:
+      write_index: false
+
+# Notes:
+# - Full permission checking requires custom transform functions
+# - In production, add steps to:
+#   * Check user has write permission to target list
+#   * Grant assignee permissions for assigned tasks
+#   * Validate foreign key references (list_id, assigned_to exist)
+#   * Add created_at/updated_at timestamps
+#   * Handle duplicate task_id scenarios

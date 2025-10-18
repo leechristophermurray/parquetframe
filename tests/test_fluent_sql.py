@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from parquetframe import ParquetFrame
+from parquetframe.legacy import ParquetFrame
 from parquetframe.sql import QueryResult, SQLBuilder
 
 

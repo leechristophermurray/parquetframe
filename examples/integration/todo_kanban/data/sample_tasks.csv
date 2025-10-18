@@ -1,0 +1,31 @@
+task_id,title,description,status,priority,list_id,assigned_to
+task_001,Setup database,Configure PostgreSQL with migrations and indexes,todo,high,list_001,user_001
+task_002,Design API,RESTful API design with OpenAPI spec,in_progress,high,list_001,user_002
+task_003,Write tests,Unit and integration tests with pytest,todo,medium,list_002,user_001
+task_004,Deploy staging,Deploy to staging environment with Docker,done,medium,list_003,user_003
+task_005,Code review,Review pull request #42 for auth module,in_progress,low,list_002,user_002
+task_006,Update documentation,Update API documentation with new endpoints,todo,medium,list_001,user_001
+task_007,Fix bug #123,Authentication token expiry issue,in_progress,high,list_002,user_002
+task_008,Implement caching,Add Redis caching layer,todo,high,list_001,user_001
+task_009,Security audit,Perform security audit of authentication system,todo,high,list_001,user_003
+task_010,Performance testing,Load testing with locust,todo,medium,list_002,user_002
+task_011,Database backup,Setup automated backups to S3,done,high,list_003,user_003
+task_012,Monitoring setup,Configure Prometheus and Grafana,in_progress,medium,list_002,user_001
+task_013,CI/CD pipeline,Setup GitHub Actions workflow,done,high,list_003,user_002
+task_014,Error handling,Improve error handling and logging,todo,medium,list_001,user_001
+task_015,User authentication,Implement OAuth2 authentication,in_progress,high,list_002,user_003
+task_016,API rate limiting,Add rate limiting middleware,todo,medium,list_001,user_002
+task_017,Database optimization,Optimize slow queries,todo,high,list_001,user_001
+task_018,Frontend integration,Connect frontend to API,in_progress,high,list_002,user_002
+task_019,Email notifications,Setup email notification system,todo,low,list_001,user_003
+task_020,Websocket support,Add realtime websocket support,todo,medium,list_001,user_001
+task_021,Admin dashboard,Build admin dashboard UI,todo,low,list_001,user_002
+task_022,Data migration,Migrate legacy data to new schema,done,high,list_003,user_001
+task_023,API versioning,Implement API version management,todo,medium,list_001,user_003
+task_024,Health checks,Add health check endpoints,done,high,list_003,user_002
+task_025,Containerization,Dockerize all services,in_progress,high,list_002,user_001
+task_026,Load balancer,Configure nginx load balancer,todo,high,list_001,user_003
+task_027,Session management,Implement session store with Redis,todo,medium,list_001,user_002
+task_028,Backup testing,Test backup restoration process,todo,medium,list_002,user_003
+task_029,Documentation review,Review and update all documentation,todo,low,list_001,user_001
+task_030,Final testing,End-to-end testing before release,todo,high,list_001,user_002

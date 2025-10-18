@@ -13,8 +13,8 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from parquetframe import ParquetFrame
 from parquetframe.core import FORMAT_HANDLERS, FileFormat, detect_format
+from parquetframe.legacy import ParquetFrame
 
 
 class TestFormatDetection:

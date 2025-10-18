@@ -1,0 +1,195 @@
+name: "Export Task Report"
+description: "ETL workflow to export task reports with joins, filtering, and aggregations"
+
+# Workflow variables (can be overridden via CLI)
+variables:
+  tasks_path: "./kanban_data/tasks"
+  users_path: "./kanban_data/users"
+  lists_path: "./kanban_data/lists"
+  boards_path: "./kanban_data/boards"
+  output_csv: "reports/task_report.csv"
+  output_parquet: "reports/task_report.parquet"
+  filter_status: ""  # Optional: filter by status (todo, in_progress, done, blocked)
+  filter_priority: ""  # Optional: filter by priority (low, medium, high, urgent)
+  requesting_user: "user_001"  # User requesting the report (for permission filtering)
+
+steps:
+  # Step 1: Load all Tasks
+  - name: "load_tasks"
+    type: "read"
+    input: "${tasks_path}"
+    output: "tasks"
+
+  # Step 2: Load Users for assigned_to join
+  - name: "load_users"
+    type: "read"
+    input: "${users_path}"
+    output: "users"
+
+  # Step 3: Load TaskLists for list_id join
+  - name: "load_lists"
+    type: "read"
+    input: "${lists_path}"
+    output: "lists"
+
+  # Step 4: Load Boards for board hierarchy
+  - name: "load_boards"
+    type: "read"
+    input: "${boards_path}"
+    output: "boards"
+
+  # Step 5: Select relevant columns from users
+  - name: "select_user_columns"
+    type: "select"
+    input: "users"
+    columns:
+      user_id: "assigned_user_id"
+      username: "assigned_username"
+      email: "assigned_email"
+    output: "user_info"
+
+  # Step 6: Select relevant columns from lists
+  - name: "select_list_columns"
+    type: "select"
+    input: "lists"
+    columns:
+      list_id: "list_id"
+      name: "list_name"
+      board_id: "board_id"
+      position: "list_position"
+    output: "list_info"
+
+  # Step 7: Select relevant columns from boards
+  - name: "select_board_columns"
+    type: "select"
+    input: "boards"
+    columns:
+      board_id: "board_id"
+      name: "board_name"
+      owner_id: "board_owner_id"
+    output: "board_info"
+
+  # Step 8: Join tasks with user information (LEFT JOIN on assigned_to)
+  # Note: Actual join operation would require a custom transform or merge step
+  # For demonstration, we'll use transform step placeholder
+  - name: "enrich_with_user_data"
+    type: "transform"
+    input: "tasks"
+    transforms:
+      # In real implementation, this would merge with user_info
+      # For now, this is a placeholder showing the intent
+      - operation: "note"
+        note: "Join with user_info on assigned_to = assigned_user_id"
+    output: "tasks_with_users"
+
+  # Step 9: Filter by status if specified
+  - name: "filter_by_status"
+    type: "filter"
+    input: "tasks_with_users"
+    query: "status == '${filter_status}' or '${filter_status}' == ''"
+    output: "status_filtered"
+
+  # Step 10: Filter by priority if specified
+  - name: "filter_by_priority"
+    type: "filter"
+    input: "status_filtered"
+    query: "priority == '${filter_priority}' or '${filter_priority}' == ''"
+    output: "priority_filtered"
+
+  # Step 11: Select final report columns
+  - name: "select_report_columns"
+    type: "select"
+    input: "priority_filtered"
+    columns:
+      - task_id
+      - title
+      - description
+      - status
+      - priority
+      - list_id
+      - assigned_to
+      - created_at
+      - updated_at
+    output: "report_data"
+
+  # Step 12: Calculate aggregate statistics by status
+  - name: "aggregate_by_status"
+    type: "groupby"
+    input: "report_data"
+    by: ["status"]
+    agg:
+      task_id: "count"
+      priority: "nunique"
+    output: "status_summary"
+
+  # Step 13: Calculate aggregate statistics by priority
+  - name: "aggregate_by_priority"
+    type: "groupby"
+    input: "report_data"
+    by: ["priority"]
+    agg:
+      task_id: "count"
+      status: "nunique"
+    output: "priority_summary"
+
+  # Step 14: Calculate aggregate statistics by assigned user
+  - name: "aggregate_by_user"
+    type: "groupby"
+    input: "report_data"
+    by: ["assigned_to"]
+    agg:
+      task_id: "count"
+    output: "user_summary"
+
+  # Step 15: Save main report as CSV
+  - name: "save_csv_report"
+    type: "save"
+    input: "report_data"
+    output: "${output_csv}"
+    config:
+      write_index: false
+
+  # Step 16: Save main report as Parquet (optimized for analytics)
+  - name: "save_parquet_report"
+    type: "save"
+    input: "report_data"
+    output: "${output_parquet}"
+    config:
+      write_index: false
+      compression: "snappy"
+
+  # Step 17: Save status summary
+  - name: "save_status_summary"
+    type: "save"
+    input: "status_summary"
+    output: "reports/summary_by_status.parquet"
+    config:
+      write_index: false
+
+  # Step 18: Save priority summary
+  - name: "save_priority_summary"
+    type: "save"
+    input: "priority_summary"
+    output: "reports/summary_by_priority.parquet"
+    config:
+      write_index: false
+
+  # Step 19: Save user summary
+  - name: "save_user_summary"
+    type: "save"
+    input: "user_summary"
+    output: "reports/summary_by_user.parquet"
+    config:
+      write_index: false
+
+# Notes:
+# - Full join operations require custom transform functions or merge step type
+# - Permission filtering (step 4 from original plan) requires custom transform:
+#   * For each task, check if requesting_user has read permission
+#   * Filter out tasks user cannot access
+# - In production, add steps to:
+#   * Implement proper LEFT/INNER joins for user, list, and board data
+#   * Add permission-based filtering using PermissionManager.check()
+#   * Include list_name and board_name in final report
+#   * Calculate completion rates and other KPIs
+#   * Add date range filtering options
