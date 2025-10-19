@@ -181,7 +181,7 @@ def read(
     return _read_v2(file, engine=engine, **kwargs)
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __all__ = [
     # Main Phase 2 API
     "DataFrameProxy",

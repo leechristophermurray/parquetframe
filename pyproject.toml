@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "parquetframe"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
