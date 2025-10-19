@@ -64,12 +64,12 @@ def compute_percentile_stats(
         # Dask computation
         stats = {}
         for p in percentiles:
-            stats[f"p{int(p*100)}"] = series.quantile(p).compute()
+            stats[f"p{int(p * 100)}"] = series.quantile(p).compute()
     else:
         # Pandas computation
         stats = {}
         for p in percentiles:
-            stats[f"p{int(p*100)}"] = series.quantile(p)
+            stats[f"p{int(p * 100)}"] = series.quantile(p)
 
     return stats
 
@@ -396,7 +396,7 @@ class StatsAccessor:
             # Percentiles
             percentiles = [0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
             for p in percentiles:
-                dist_stats[f"percentile_{int(p*100)}"] = series_computed.quantile(p)
+                dist_stats[f"percentile_{int(p * 100)}"] = series_computed.quantile(p)
 
             # Distribution shape assessment
             if abs(dist_stats["skewness"]) < 0.5:

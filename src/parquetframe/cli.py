@@ -776,7 +776,7 @@ def analyze(
             total_count = len(outliers_pf.pandas_df)
 
             console.print(
-                f"Found {outlier_count} outliers out of {total_count} records ({outlier_count/total_count*100:.2f}%)"
+                f"Found {outlier_count} outliers out of {total_count} records ({outlier_count / total_count * 100:.2f}%)"
             )
             results["outlier_detection"] = {
                 "method": outlier_method,
