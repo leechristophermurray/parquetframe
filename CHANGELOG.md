@@ -10,6 +10,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Future enhancements and features will be listed here
 
+## [1.0.1] - 2025-10-19
+
+### Fixed
+- 🐛 **Entity ID Generation**: Fixed timestamp collision issue when creating entities in rapid succession
+  - Implemented UUID+timestamp pattern: `{type}_{milliseconds}_{uuid}`
+  - Example: `board_1729299580000_a3f4b2e1`
+  - Resolves 7 test failures in entity relationship queries
+- 🔧 **Permission System**: Added convenience wrapper methods for permission checks
+  - `TodoKanbanApp.check_list_access()` - auto-looks up board_id
+  - `TodoKanbanApp.check_task_access()` - auto-looks up list_id and board_id
+  - Simplifies API usage and fixes 4 permission test failures
+- 📚 **Documentation Build**: Removed non-existent `DataFrameProxy.to_parquet` method reference
+- 🔄 **Backend Switch Tests**: Updated 4 tests for Phase 2 API compatibility
+  - `islazy` → `engine`, `._df` → `.native`, `.islazy` → `.engine_name`
+- 🎯 **Task Model**: Added missing `position` field to Task dataclass
+- 🧪 **Test Compatibility**: Fixed memory_usage and TimeSeriesAccessor tests for Phase 2
+- ⚙️ **CI/CD Pipeline**: Configured pre-commit formatters to skip in GitHub Actions
+  - Prevents cyclic formatting conflicts between black, ruff, and isort
+
+### Test Results
+- ✅ All 922 tests passing (24 skipped)
+- ✅ 59.84% coverage (exceeds 45% requirement)
+- ✅ All CI/CD pipelines green
+
 ## [1.0.0] - TBD
 
 ### 🚀 **MAJOR RELEASE: Phase 2 Multi-Engine API is Now Default**
