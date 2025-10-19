@@ -65,7 +65,7 @@ jobs:
     - name: Run linting
       run: |
         ruff check src/ tests/
-        black --check src/ tests/
+        ruff format --check src/ tests/
     - name: Run type checking
       run: |
         mypy src/parquetframe

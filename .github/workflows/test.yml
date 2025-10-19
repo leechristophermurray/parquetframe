@@ -147,7 +147,7 @@ jobs:
       run: |
         .venv\Scripts\Activate.ps1
         ruff check src/ tests/
-        black --check --diff src/ tests/
+        ruff format --check src/ tests/
       continue-on-error: true
       shell: pwsh
 
@@ -156,7 +156,7 @@ jobs:
       run: |
         source .venv/bin/activate
         ruff check src/ tests/
-        black --check --diff src/ tests/
+        ruff format --check src/ tests/
       continue-on-error: true
       shell: bash
 
