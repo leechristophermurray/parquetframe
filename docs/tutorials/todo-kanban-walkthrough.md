@@ -29,34 +29,55 @@ A production-ready Kanban board system supporting:
 
 ### Entity Relationship Diagram
 
-```
-┌──────────┐           ┌──────────┐           ┌──────────┐           ┌──────────┐
-│   User   │──owns───▶│  Board   │──contains─▶│TaskList  │──contains─▶│   Task   │
-└──────────┘           └──────────┘           └──────────┘           └──────────┘
-     │                       │                       │                      │
-     │                    shared                 inherits              inherits
-     │                    with users             permissions          permissions
-     │                       │                       │                      │
-     │                       ▼                       ▼                      ▼
-     │                  ┌─────────────────────────────────────────────────┐
-     └──assigned───────▶│          Permission Graph (Zanzibar)           │
-                        └─────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    User[User]
+    Board[Board]
+    TaskList[TaskList]
+    Task[Task]
+    PermGraph[Permission Graph<br/>Zanzibar]
+
+    User -->|owns| Board
+    Board -->|contains| TaskList
+    TaskList -->|contains| Task
+    User -.->|assigned to| Task
+
+    Board -.->|shared with users| PermGraph
+    TaskList -.->|inherits permissions| PermGraph
+    Task -.->|inherits permissions| PermGraph
+
+    style User fill:#e1f5ff
+    style Board fill:#fff9c4
+    style TaskList fill:#f3e5f5
+    style Task fill:#c8e6c9
+    style PermGraph fill:#ffccbc
 ```
 
 ### Permission Model
 
 The application implements **Zanzibar-style Relationship-Based Access Control (ReBAC)**:
 
-```
-Board Permissions
-├── owner   → Full control (delete, share, manage)
-├── editor  → Can create/edit lists and tasks
-└── viewer  → Read-only access
+```mermaid
+graph TD
+    subgraph Board Permissions
+        BO[owner<br/>Full control: delete, share, manage]
+        BE[editor<br/>Can create/edit lists and tasks]
+        BV[viewer<br/>Read-only access]
+    end
 
-Permission Inheritance Chain:
-Board(owner) → TaskList(editor) → Task(editor)
-Board(editor) → TaskList(editor) → Task(editor)
-Board(viewer) → TaskList(viewer) → Task(viewer)
+    subgraph Permission Inheritance Chain
+        BO --> |inherits as editor| TLE[TaskList editor]
+        BE --> |inherits as editor| TLE2[TaskList editor]
+        BV --> |inherits as viewer| TLV[TaskList viewer]
+
+        TLE --> |inherits as editor| TKE[Task editor]
+        TLE2 --> |inherits as editor| TKE2[Task editor]
+        TLV --> |inherits as viewer| TKV[Task viewer]
+    end
+
+    style BO fill:#ffcdd2
+    style BE fill:#fff9c4
+    style BV fill:#c8e6c9
 ```
 
 ---
@@ -100,6 +121,7 @@ python demo.py
 ```
 
 The demo will:
+
 1. Create three users (Alice, Bob, Charlie)
 2. Create a board with lists (Todo, In Progress, Done)
 3. Create and assign tasks
@@ -117,6 +139,7 @@ The demo will:
 The `@entity` decorator transforms a dataclass into a persistent entity with automatic CRUD operations:
 
 ```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+
 @entity(storage_path="./kanban_data/users", primary_key="user_id")
 @dataclass
 class User:
