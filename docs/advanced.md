@@ -45,5 +45,5 @@ result = df.filter("column > 100").groupby("category").agg({"value": "mean"})
 ## Further Reading
 
 - [Performance Tips](performance.md)
-- [Backend Selection](backends.md)
+- [Legacy Backend Selection](legacy/legacy-backends.md)
 - [Memory Management Best Practices](tutorials/performance.md)

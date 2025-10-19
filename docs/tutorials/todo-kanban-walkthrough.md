@@ -29,34 +29,85 @@ A production-ready Kanban board system supporting:
 
 ### Entity Relationship Diagram
 
+```mermaid
+erDiagram
+    User ||--o{ Board : owns
+    Board ||--o{ TaskList : contains
+    TaskList ||--o{ Task : contains
+    User ||--o{ Task : "assigned to"
+
+    User {
+        string user_id PK
+        string username
+        string email
+        datetime created_at
+    }
+
+    Board {
+        string board_id PK
+        string name
+        string description
+        string owner_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    TaskList {
+        string list_id PK
+        string name
+        string board_id FK
+        int position
+        datetime created_at
+        datetime updated_at
+    }
+
+    Task {
+        string task_id PK
+        string title
+        string description
+        string status
+        string priority
+        string list_id FK
+        string assigned_to FK
+        int position
+        datetime created_at
+        datetime updated_at
+    }
 ```
-┌──────────┐           ┌──────────┐           ┌──────────┐           ┌──────────┐
-│   User   │──owns───▶│  Board   │──contains─▶│TaskList  │──contains─▶│   Task   │
-└──────────┘           └──────────┘           └──────────┘           └──────────┘
-     │                       │                       │                      │
-     │                    shared                 inherits              inherits
-     │                    with users             permissions          permissions
-     │                       │                       │                      │
-     │                       ▼                       ▼                      ▼
-     │                  ┌─────────────────────────────────────────────────┐
-     └──assigned───────▶│          Permission Graph (Zanzibar)           │
-                        └─────────────────────────────────────────────────┘
-```
+
+**Permission Graph Integration:**
+
+The Zanzibar permission system creates a separate graph layer that manages access control:
+
+- Board permissions cascade to TaskLists and Tasks
+- Users inherit permissions through group membership
+- Permission checks traverse the graph for indirect access
 
 ### Permission Model
 
 The application implements **Zanzibar-style Relationship-Based Access Control (ReBAC)**:
 
-```
-Board Permissions
-├── owner   → Full control (delete, share, manage)
-├── editor  → Can create/edit lists and tasks
-└── viewer  → Read-only access
+```mermaid
+graph TD
+    subgraph Board Permissions
+        BO[owner<br/>Full control: delete, share, manage]
+        BE[editor<br/>Can create/edit lists and tasks]
+        BV[viewer<br/>Read-only access]
+    end
 
-Permission Inheritance Chain:
-Board(owner) → TaskList(editor) → Task(editor)
-Board(editor) → TaskList(editor) → Task(editor)
-Board(viewer) → TaskList(viewer) → Task(viewer)
+    subgraph Permission Inheritance Chain
+        BO --> |inherits as editor| TLE[TaskList editor]
+        BE --> |inherits as editor| TLE2[TaskList editor]
+        BV --> |inherits as viewer| TLV[TaskList viewer]
+
+        TLE --> |inherits as editor| TKE[Task editor]
+        TLE2 --> |inherits as editor| TKE2[Task editor]
+        TLV --> |inherits as viewer| TKV[Task viewer]
+    end
+
+    style BO fill:#ffcdd2
+    style BE fill:#fff9c4
+    style BV fill:#c8e6c9
 ```
 
 ---
@@ -100,6 +151,7 @@ python demo.py
 ```
 
 The demo will:
+
 1. Create three users (Alice, Bob, Charlie)
 2. Create a board with lists (Todo, In Progress, Done)
 3. Create and assign tasks
@@ -116,7 +168,9 @@ The demo will:
 
 The `@entity` decorator transforms a dataclass into a persistent entity with automatic CRUD operations:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+
 @entity(storage_path="./kanban_data/users", primary_key="user_id")
 @dataclass
 class User:
@@ -149,7 +203,8 @@ class User:
 
 ### Entity Model: User
 
-```python path=null start=null
+```python
+# path=null start=null
 from dataclasses import dataclass
 from datetime import datetime
 from parquetframe.entity import entity, rel
@@ -174,7 +229,8 @@ class User:
 
 **Usage:**
 
-```python path=null start=null
+```python
+# path=null start=null
 # Create and save
 user = User(user_id="user_001", username="alice", email="alice@example.com")
 user.save()
@@ -193,7 +249,8 @@ boards = user.boards()  # Get all boards owned by alice
 
 ### Entity Model: Board
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=51
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=51
 @entity(storage_path="./kanban_data/boards", primary_key="board_id")
 @dataclass
 class Board:
@@ -226,7 +283,8 @@ class Board:
 
 ### Entity Model: TaskList
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=96
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=96
 @entity(storage_path="./kanban_data/lists", primary_key="list_id")
 @dataclass
 class TaskList:
@@ -252,7 +310,8 @@ class TaskList:
 
 ### Entity Model: Task
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
 @entity(storage_path="./kanban_data/tasks", primary_key="task_id")
 @dataclass
 class Task:
@@ -301,7 +360,8 @@ The `@rel` decorator defines relationships between entities, enabling relationsh
 
 ### Forward Relationships (Many-to-One)
 
-```python path=null start=null
+```python
+# path=null start=null
 @entity(storage_path="./kanban_data/boards", primary_key="board_id")
 @dataclass
 class Board:
@@ -320,7 +380,8 @@ print(owner_user.username)
 
 ### Reverse Relationships (One-to-Many)
 
-```python path=null start=null
+```python
+# path=null start=null
 @entity(storage_path="./kanban_data/users", primary_key="user_id")
 @dataclass
 class User:
@@ -340,7 +401,8 @@ for board in owned_boards:
 
 ### Bi-directional Relationships
 
-```python path=null start=null
+```python
+# path=null start=null
 # User → Board (reverse)
 user = User.find("user_001")
 boards = user.boards()
@@ -358,7 +420,8 @@ The application implements Google's Zanzibar permission model with all 4 core AP
 
 ### Permission Model Structure
 
-```python path=null start=null
+```python
+# path=null start=null
 # Grant permission
 app.permissions.grant_board_access(user_id, board_id, "owner")
 
@@ -376,7 +439,8 @@ RelationTuple(
 
 Check if a user has a specific permission on a resource.
 
-```python path=null start=null
+```python
+# path=null start=null
 # Check board access
 has_access = app.permissions.check_board_access(
     user_id="user_alice",
@@ -398,7 +462,8 @@ has_task_access = app.permissions.check_task_access(
 
 **Example from Demo:**
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/demo.py start=169
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/demo.py start=169
 # Checking board permissions
 alice_owner = app.permissions.check_board_access(
     alice.user_id, board.board_id, "owner"
@@ -420,7 +485,8 @@ print(f"Charlie viewer access: {charlie_viewer} ✓")
 
 Get the full permission tree showing how a user got access to a resource.
 
-```python path=null start=null
+```python
+# path=null start=null
 # Expand board permissions
 tree = app.permissions.expand_board_permissions(board_id="board_001", relation="editor")
 
@@ -438,7 +504,8 @@ tree = app.permissions.expand_board_permissions(board_id="board_001", relation="
 
 List all resources of a type that a user can access.
 
-```python path=null start=null
+```python
+# path=null start=null
 # List all boards a user can access
 accessible_boards = app.permissions.list_user_permissions(
     user_id="user_bob",
@@ -459,7 +526,8 @@ for relation, board_id in accessible_boards:
 
 List all users who have a specific permission on a resource.
 
-```python path=null start=null
+```python
+# path=null start=null
 # List all editors of a board
 editors = app.permissions.list_resource_permissions(
     resource_type="board",
@@ -472,7 +540,8 @@ editors = app.permissions.list_resource_permissions(
 
 ### Permission Inheritance Example
 
-```python path=null start=null
+```python
+# path=null start=null
 # 1. Grant board access
 app.permissions.grant_board_access(user_id="user_bob", board_id="board_001", role="editor")
 
@@ -513,7 +582,8 @@ can_view_task = app.permissions.check_task_access(
 
 ### Scenario 1: Creating and Sharing a Board
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/demo.py start=77
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/demo.py start=77
 # Step 1: Create users
 alice = app.create_user("alice", "alice@example.com")
 bob = app.create_user("bob", "bob@example.com")
@@ -539,7 +609,8 @@ app.share_board(board.board_id, alice.user_id, charlie.user_id, "viewer")
 
 ### Scenario 2: Task Assignment and State Transitions
 
-```python path=null start=null
+```python
+# path=null start=null
 # Alice creates a task and assigns to Bob
 task = app.create_task(
     list_id=todo_list.list_id,
@@ -574,7 +645,8 @@ app.move_task(
 
 ### Scenario 3: Permission Revocation
 
-```python path=null start=null
+```python
+# path=null start=null
 # Revoke Bob's editor access
 app.permissions.revoke_board_access(bob.user_id, board.board_id, "editor")
 
@@ -596,7 +668,8 @@ task_assignee_access = app.permissions.check_task_access(
 
 ### Workflow 1: Import Tasks from CSV/JSON
 
-```yaml path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/workflows/import_tasks.yml start=1
+```yaml
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/workflows/import_tasks.yml start=1
 name: "Import Tasks from External Sources"
 description: "ETL workflow to import tasks from CSV or JSON files with validation"
 
@@ -657,7 +730,8 @@ pframe workflow run import_tasks.yml \
 
 ### Workflow 2: Export Task Report
 
-```yaml path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/workflows/export_report.yml start=1
+```yaml
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/workflows/export_report.yml start=1
 name: "Export Task Report"
 description: "Generate comprehensive task reports with filtering and aggregations"
 
@@ -729,7 +803,8 @@ pframe workflow run export_report.yml \
 
 ### Basic Usage Example
 
-```python path=null start=null
+```python
+# path=null start=null
 from examples.integration.todo_kanban import TodoKanbanApp
 
 # Initialize
@@ -770,7 +845,8 @@ app.update_task_status(task.task_id, bob.user_id, "in_progress")
 
 ### Custom Permission Rules
 
-```python path=null start=null
+```python
+# path=null start=null
 # Grant direct task access (bypassing board permissions)
 app.permissions.grant_direct_task_access(
     user_id="user_charlie",
@@ -784,7 +860,8 @@ app.permissions.grant_direct_task_access(
 
 ### Bulk Operations
 
-```python path=null start=null
+```python
+# path=null start=null
 # Bulk task creation
 tasks_data = [
     {"title": "Task 1", "description": "...", "priority": "high"},
@@ -802,7 +879,8 @@ for data in tasks_data:
 
 ### Performance Considerations
 
-```python path=null start=null
+```python
+# path=null start=null
 # Use batch queries to reduce I/O
 all_tasks = Task.find_all()  # Single I/O operation
 

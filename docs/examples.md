@@ -1,595 +1,483 @@
 # Examples
 
-Real-world examples showing how to use ParquetFrame in common scenarios.
+Comprehensive examples showcasing ParquetFrame Phase 2 features through real-world applications.
 
-## Multi-Format Data Processing
+> **Note:** This page focuses on Phase 2 examples. For legacy Phase 1 examples, see [Legacy Documentation](legacy/legacy-basic-usage.md).
 
-### Working with Different File Formats
+## Featured Example: Todo/Kanban Application
 
-```python
-import parquetframe as pf
-from pathlib import Path
+A complete task management application showcasing all Phase 2 features:
 
-def process_mixed_data_sources():
-    """Process data from multiple formats in a unified workflow."""
+- **Entity Framework** - Type-safe data models with `@entity` decorator
+- **Relationships** - Object navigation with `@rel` decorator
+- **Zanzibar Permissions** - Fine-grained access control with all 4 APIs
+- **Multi-User Collaboration** - Permission inheritance and role-based access
+- **YAML Workflows** - ETL pipelines for import/export
 
-    # Read from different formats - all work the same way
-    print("Loading data from various formats...")
+### Quick Preview
 
-    # CSV with sales data
-    sales_csv = pf.read("sales_data.csv")  # Auto-detects CSV
-    print(f"Sales CSV: {len(sales_csv)} rows using {'Dask' if sales_csv.islazy else 'pandas'}")
+```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+@entity(storage_path="./kanban_data/users", primary_key="user_id")
+@dataclass
+class User:
+    """
+    User entity representing an application user.
 
-    # JSON Lines with user events
-    events_jsonl = pf.read("user_events.jsonl")  # Auto-detects JSON Lines
-    print(f"Events JSONL: {len(events_jsonl)} rows")
+    Fields:
+        user_id: Unique user identifier
+        username: User's display name
+        email: User's email address
+        created_at: Timestamp when user was created
 
-    # Parquet with customer data
-    customers = pf.read("customers.parquet")  # Native format
-    print(f"Customers: {len(customers)} rows")
+    Relationships:
+        boards: Reverse relationship to boards owned by this user
+    """
 
-    # TSV with product catalog
-    products = pf.read("product_catalog.tsv")  # Auto-detects tab delimiter
-    print(f"Products TSV: {len(products)} rows")
+    user_id: str
+    username: str
+    email: str
+    created_at: datetime = None
 
-    # Process and combine data using consistent API
-    # Filter active customers
-    active_customers = customers.query("status == 'active'")
+    def __post_init__(self):
+        """Initialize created_at if not provided."""
+        if self.created_at is None:
+            self.created_at = datetime.now()
 
-    # Aggregate sales by customer
-    customer_sales = (sales_csv
-                     .groupby('customer_id')
-                     .agg({'amount': 'sum', 'order_count': 'sum'})
-                     .reset_index())
-
-    # Process events data
-    event_summary = (events_jsonl
-                    .query("event_type == 'purchase'")
-                    .groupby('customer_id')
-                    .size()
-                    .reset_index(name='event_count'))
-
-    # Combine all data using SQL-like joins
-    final_result = active_customers.sql("""
-        SELECT
-            c.customer_id,
-            c.name,
-            c.region,
-            COALESCE(s.amount, 0) as total_sales,
-            COALESCE(s.order_count, 0) as orders,
-            COALESCE(e.event_count, 0) as events
-        FROM df c
-        LEFT JOIN customer_sales s ON c.customer_id = s.customer_id
-        LEFT JOIN event_summary e ON c.customer_id = e.customer_id
-        ORDER BY total_sales DESC
-    """, customer_sales=customer_sales, event_summary=event_summary)
-
-    # Save result in optimal format (Parquet)
-    final_result.save("customer_360_view.parquet")
-
-    print(f"✅ Processed {len(final_result)} customer records from multiple formats")
-    return final_result
-
-# Run mixed format processing
-result = process_mixed_data_sources()
+    @rel("Board", foreign_key="owner_id", reverse=True)
+    def boards(self):
+        """Get all boards owned by this user."""
+        pass
 ```
 
-### Format-Specific Processing
+### Key Features Demonstrated
 
-```python
-import parquetframe as pf
-import json
+**Entity Framework:**
+- Four related entities: User, Board, TaskList, Task
+- Type validation and auto-timestamps
+- Bidirectional relationships
+
+**Permission System:**
+- Role-based access (owner, editor, viewer)
+- Permission inheritance (Board → List → Task)
+- All 4 Zanzibar APIs:
+  - `check()` - Verify permissions
+  - `expand()` - List accessible resources
+  - `list_objects()` - Find all resources with permission
+  - `list_subjects()` - Find all users with access
+
+**Workflows:**
+- CSV import pipeline
+- Report export pipeline
+- ETL transformations
+
+### 📚 Full Tutorial
+
+**[Complete Todo/Kanban Walkthrough →](tutorials/todo-kanban-walkthrough.md)**
+
+The complete 850+ line tutorial covers:
+- Architecture and setup
+- Entity definitions and relationships
+- Permission system implementation
+- Multi-user collaboration scenarios
+- YAML workflow examples
+- Running the application
+
+---
+
+## Phase 2 Examples
+
+### Entity Framework
+
+#### Defining Entities with Decorators
+
+```python path=null start=null
+from dataclasses import dataclass
 from datetime import datetime
+from parquetframe.entity import entity, rel
+from parquetframe.core_v2 import core_v2
 
-def format_specific_examples():
-    """Examples of format-specific features and optimizations."""
+# Initialize core
+core = core_v2(engine="pandas")
 
-    # CSV with custom parameters
-    print("Processing CSV with custom delimiter...")
-    pipe_delimited = pf.read("data.csv",
-                           sep="|",              # Custom delimiter
-                           header=1,             # Header on row 1
-                           dtype={'id': 'str'},  # Custom data types
-                           nrows=10000)          # Read only first 10k rows
+@entity(storage_path="./data/products", primary_key="product_id")
+@dataclass
+class Product:
+    """Product entity with automatic persistence."""
+    product_id: str
+    name: str
+    category: str
+    price: float
+    stock_quantity: int
+    created_at: datetime = None
 
-    # JSON with nested data handling
-    print("Processing nested JSON data...")
-    nested_json = pf.read("api_response.json")
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.now()
 
-    # Flatten nested columns if needed
-    if 'user_profile' in nested_json.columns:
-        # Extract nested fields
-        flattened = nested_json.copy()
-        # This would require custom logic for your specific JSON structure
-        print("Note: Nested JSON flattening requires custom logic based on structure")
+# Create and save products
+product = Product(
+    product_id="prod_001",
+    name="Wireless Mouse",
+    category="Electronics",
+    price=29.99,
+    stock_quantity=150
+)
 
-    # JSON Lines for streaming data
-    print("Processing streaming JSON Lines data...")
-    stream_data = pf.read("streaming_events.jsonl")  # Perfect for log files
+core.save(product)
 
-    # Filter recent events
-    recent_events = stream_data.query("timestamp > '2024-01-01'")
-
-    # TSV with automatic tab detection
-    print("Processing TSV data...")
-    tab_data = pf.read("genome_annotations.tsv")  # Common in bioinformatics
-
-    # ORC for big data workflows
-    try:
-        print("Processing ORC data...")
-        orc_data = pf.read("hadoop_export.orc")  # Requires pyarrow
-        print(f"ORC file loaded: {len(orc_data)} rows")
-    except ImportError:
-        print("ORC support requires: pip install pyarrow")
-
-    return {
-        'csv_rows': len(pipe_delimited),
-        'json_rows': len(nested_json),
-        'jsonl_rows': len(stream_data),
-        'tsv_rows': len(tab_data)
-    }
-
-# Run format-specific examples
-stats = format_specific_examples()
-print(f"Processing summary: {stats}")
+# Load products
+loaded = core.load(Product, product_id="prod_001")
+print(f"Loaded: {loaded.name} - ${loaded.price}")
 ```
 
-### Intelligent Backend Selection Demo
+#### Entity Relationships
 
-```python
-import parquetframe as pf
-import tempfile
-import pandas as pd
-from pathlib import Path
+Define relationships between entities:
 
-def backend_selection_demo():
-    """Demonstrate automatic backend selection based on file size."""
+```python path=null start=null
+@entity(storage_path="./data/orders", primary_key="order_id")
+@dataclass
+class Order:
+    """Order entity with customer relationship."""
+    order_id: str
+    customer_id: str
+    total_amount: float
+    status: str
+    created_at: datetime = None
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
+    @rel("Customer", foreign_key="customer_id")
+    def customer(self):
+        """Get the customer for this order."""
+        pass
 
-        # Create small CSV file
-        small_data = pd.DataFrame({
-            'id': range(1000),
-            'value': range(1000),
-            'category': ['A', 'B', 'C'] * 334
-        })
-        small_csv = temp_path / 'small.csv'
-        small_data.to_csv(small_csv, index=False)
+@entity(storage_path="./data/customers", primary_key="customer_id")
+@dataclass
+class Customer:
+    """Customer entity with reverse order relationship."""
+    customer_id: str
+    name: str
+    email: str
 
-        # Create larger dataset
-        large_data = pd.DataFrame({
-            'id': range(100000),
-            'value': range(100000),
-            'category': ['A', 'B', 'C', 'D', 'E'] * 20000
-        })
-        large_csv = temp_path / 'large.csv'
-        large_data.to_csv(large_csv, index=False)
+    @rel("Order", foreign_key="customer_id", reverse=True)
+    def orders(self):
+        """Get all orders for this customer."""
+        pass
 
-        # Read small file - should use pandas
-        print("Reading small CSV file...")
-        small_pf = pf.read(small_csv, threshold_mb=1)  # 1MB threshold
-        print(f"Small file backend: {'Dask' if small_pf.islazy else 'pandas'}")
+# Navigate relationships
+order = core.load(Order, order_id="ord_001")
+customer = order.customer()  # Follow forward relationship
+print(f"Order {order.order_id} belongs to {customer.name}")
 
-        # Read large file - should use Dask
-        print("Reading large CSV file...")
-        large_pf = pf.read(large_csv, threshold_mb=1)  # 1MB threshold
-        print(f"Large file backend: {'Dask' if large_pf.islazy else 'pandas'}")
-
-        # Manual backend control
-        print("Manual backend control...")
-        forced_dask = pf.read(small_csv, islazy=True)
-        forced_pandas = pf.read(small_csv, islazy=False)
-
-        print(f"Forced Dask (small file): {'Dask' if forced_dask.islazy else 'pandas'}")
-        print(f"Forced pandas (small file): {'Dask' if forced_pandas.islazy else 'pandas'}")
-
-        # Same operations work regardless of backend
-        small_result = small_pf.groupby('category').value.sum()
-        large_result = large_pf.groupby('category').value.sum()
-
-        print("✅ Backend selection demo completed!")
-        return small_result, large_result
-
-# Run backend selection demo
-small_res, large_res = backend_selection_demo()
+# Navigate reverse relationship
+all_orders = customer.orders()  # Get all orders
+print(f"{customer.name} has {len(all_orders)} orders")
 ```
 
-## Data Processing Pipeline
+### Permission System
 
-```python
-import parquetframe as pqf
-from pathlib import Path
+#### Zanzibar Permission Checking
 
-def process_sales_data():
-    """Complete sales data processing pipeline."""
+```python path=null start=null
+from parquetframe.permissions import PermissionManager
 
-    # Read raw sales data (auto-selects backend)
-    sales = pqf.read("raw_sales_data.parquet")
-    print(f"Loaded {len(sales)} sales records using {('Dask' if sales.islazy else 'pandas')}")
+# Initialize permission manager
+perm_mgr = PermissionManager()
 
-    # Clean and process data
-    cleaned_sales = (sales
-        .dropna(subset=['customer_id', 'amount'])
-        .query("amount > 0")
-        .query("date >= '2023-01-01'"))
+# Grant permissions
+perm_mgr.grant_permission(
+    user_id="user_001",
+    resource_type="document",
+    resource_id="doc_123",
+    relation="editor"
+)
 
-    # Generate summary statistics
-    summary = (cleaned_sales
-        .groupby(['region', 'product_category'])
-        .agg({
-            'amount': ['sum', 'mean', 'count'],
-            'customer_id': 'nunique'
-        })
-        .round(2))
+# Check permissions - uses Zanzibar check() API
+can_edit = perm_mgr.check_permission(
+    user_id="user_001",
+    resource_type="document",
+    resource_id="doc_123",
+    relation="editor"
+)
 
-    # Save results
-    summary.save("sales_summary_by_region")
-
-    return summary
-
-# Run the pipeline
-result = process_sales_data()
-print("✅ Sales processing completed!")
+print(f"User can edit: {can_edit}")
 ```
 
-## Batch File Processing
+#### List User Permissions
 
-```python
-import parquetframe as pqf
-from pathlib import Path
-import logging
+```python path=null start=null
+# Find all documents user can access - uses expand() API
+accessible_docs = perm_mgr.list_user_permissions(
+    user_id="user_001",
+    resource_type="document",
+    relation="viewer"
+)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+print(f"User has access to {len(accessible_docs)} documents")
 
-def batch_process_directory(input_dir: str, output_dir: str, pattern: str = "*.parquet"):
-    """Process all parquet files in a directory."""
+# Find all users with access to a document - uses list_subjects() API
+authorized_users = perm_mgr.list_resource_permissions(
+    resource_type="document",
+    resource_id="doc_123",
+    relation="editor"
+)
 
-    input_path = Path(input_dir)
-    output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
-
-    files_processed = 0
-    total_rows = 0
-
-    for file_path in input_path.glob(pattern):
-        logger.info(f"Processing {file_path.name}")
-
-        try:
-            # Read with automatic backend selection
-            df = pqf.read(file_path)
-
-            # Apply transformations
-            processed = (df
-                .dropna()
-                .query("status == 'active'")
-                .groupby('category')
-                .sum()
-                .reset_index())
-
-            # Save processed data
-            output_file = output_path / f"processed_{file_path.stem}"
-            processed.save(output_file)
-
-            files_processed += 1
-            total_rows += len(processed)
-
-            logger.info(f"✅ Processed {file_path.name}: {len(processed)} rows")
-
-        except Exception as e:
-            logger.error(f"❌ Failed to process {file_path.name}: {e}")
-
-    logger.info(f"🎉 Batch processing complete: {files_processed} files, {total_rows} total rows")
-
-# Usage
-batch_process_directory("raw_data", "processed_data")
+print(f"{len(authorized_users)} users can edit this document")
 ```
 
-## Memory-Efficient Large File Processing
+#### Permission Inheritance
 
-```python
-import parquetframe as pqf
-from dask.diagnostics import ProgressBar
+From the Todo/Kanban example:
 
-def process_large_dataset(file_path: str, sample_size: float = 0.1):
-    """Process large datasets efficiently using Dask."""
+```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=254
+    def grant_board_access(
+        self,
+        user_id: str,
+        board_id: str,
+        role: str,
+    ) -> None:
+        """
+        Grant board-level access to a user.
 
-    # Force Dask for large file processing
-    df = pqf.read(file_path, islazy=True)
-    print(f"Loaded large dataset with {df.npartitions} partitions")
+        This automatically propagates permissions to all lists and tasks in the board.
 
-    # Work with sample for exploration
-    print("Creating sample for analysis...")
-    sample = df.sample(frac=sample_size)
-    sample_pandas = sample.to_pandas()
+        Args:
+            user_id: User ID to grant access to
+            board_id: Board ID
+            role: Role (owner, editor, viewer)
 
-    # Analyze sample
-    print("Sample analysis:")
-    print(f"- Shape: {sample_pandas.shape}")
-    print(f"- Memory usage: {sample_pandas.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
-    print(f"- Data types: {sample_pandas.dtypes.value_counts().to_dict()}")
+        Raises:
+            ValueError: If role is invalid
+        """
+        if role not in ["owner", "editor", "viewer"]:
+            raise ValueError(f"Invalid role: {role}. Must be owner, editor, or viewer")
 
-    # Process full dataset with progress bar
-    print("Processing full dataset...")
-    with ProgressBar():
-        # Compute aggregations on full dataset
-        summary = (df
-            .groupby(['region', 'product'])
-            .agg({'sales': 'sum', 'quantity': 'sum'})
-            .compute())
-
-    # Save results
-    summary_pf = pqf.ParquetFrame(summary)
-    summary_pf.save("large_dataset_summary")
-
-    return summary
-
-# Process a large file
-summary = process_large_dataset("huge_sales_data.parquet", sample_size=0.05)
+        self.grant_permission(user_id, "board", board_id, role)
 ```
 
-## Time Series Analysis
+### YAML Workflows
 
-```python
-import parquetframe as pqf
-import pandas as pd
+#### ETL Pipeline Example
 
-def analyze_time_series(data_path: str):
-    """Analyze time series data with automatic backend selection."""
+```yaml path=null start=null
+# data_pipeline.yml
+name: Customer Data ETL
+description: Import customer data from CSV and process
 
-    # Read time series data
-    df = pqf.read(data_path)
+steps:
+  - name: Read Customer CSV
+    action: read
+    params:
+      path: "customers.csv"
+      format: "csv"
 
-    # Ensure datetime column is properly typed
-    if df.islazy:
-        # For Dask, convert timestamp
-        df._df['timestamp'] = dd.to_datetime(df._df['timestamp'])
-    else:
-        # For pandas, convert timestamp
-        df._df['timestamp'] = pd.to_datetime(df._df['timestamp'])
+  - name: Clean Data
+    action: transform
+    params:
+      operations:
+        - type: filter
+          condition: "status == 'active'"
+        - type: dropna
+          subset: ["email", "customer_id"]
 
-    # Daily aggregations
-    daily_metrics = (df
-        .groupby(df._df.timestamp.dt.date)
-        .agg({
-            'value': ['mean', 'sum', 'std'],
-            'count': 'sum'
-        }))
+  - name: Enrich with Orders
+    action: join
+    params:
+      right_source: "orders.parquet"
+      on: "customer_id"
+      how: "left"
 
-    # Monthly trends
-    monthly_trends = (df
-        .groupby(df._df.timestamp.dt.to_period('M'))
-        .agg({
-            'value': ['mean', 'sum'],
-            'count': 'sum'
-        }))
-
-    # Handle Dask computation if needed
-    if df.islazy:
-        daily_metrics = daily_metrics.compute()
-        monthly_trends = monthly_trends.compute()
-
-    # Save results
-    pqf.ParquetFrame(daily_metrics).save("daily_metrics")
-    pqf.ParquetFrame(monthly_trends).save("monthly_trends")
-
-    return daily_metrics, monthly_trends
-
-# Analyze time series
-daily, monthly = analyze_time_series("sensor_data.parquet")
+  - name: Save Entities
+    action: save_entities
+    params:
+      entity_type: Customer
+      storage_path: "./data/customers"
 ```
 
-## Machine Learning Workflow
+Run the workflow:
 
-```python
-import parquetframe as pqf
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-import pandas as pd
+```python path=null start=null
+from parquetframe.workflow import WorkflowEngine
+from parquetframe.core_v2 import core_v2
 
-def ml_pipeline(data_path: str):
-    """Complete ML pipeline with ParquetFrame."""
+# Initialize
+core = core_v2()
+engine = WorkflowEngine(core)
 
-    # Load data with automatic backend selection
-    df = pqf.read(data_path)
-    print(f"Loaded data using {'Dask' if df.islazy else 'pandas'} backend")
+# Run workflow
+result = engine.run_workflow("data_pipeline.yml")
+print(f"Processed {result['records_processed']} customers")
+```
 
-    # For large datasets, take a sample
-    if df.islazy and len(df) > 100000:
-        print("Large dataset detected, sampling 50% for ML training")
-        df = df.sample(frac=0.5)
+### Multi-Engine Support
 
-    # Convert to pandas for sklearn compatibility
-    if df.islazy:
-        df.to_pandas()
+#### Switch Between Compute Engines
 
-    # Feature engineering
-    features = (df
-        .dropna()
-        .assign(
-            # Create new features
-            value_per_unit=lambda x: x['total_value'] / x['quantity'],
-            is_weekend=lambda x: pd.to_datetime(x['date']).dt.weekday >= 5
-        ))
+```python path=null start=null
+from parquetframe.core_v2 import core_v2
 
-    # Prepare features and target
-    feature_cols = ['value_per_unit', 'quantity', 'is_weekend', 'region_encoded']
-    X = features[feature_cols]._df
-    y = features['target']._df
+# Start with pandas for small data
+core = core_v2(engine="pandas")
 
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
+# Create some entities
+product = Product(product_id="p1", name="Widget", price=19.99)
+core.save(product)
+
+# Switch to Polars for faster operations
+core.switch_engine("polars")
+products = core.query(Product).filter(price__gt=10).all()
+
+# Switch to Dask for distributed computing
+core.switch_engine("dask")
+large_query_result = core.query(Product).filter(category="Electronics").all()
+
+print(f"Found {len(large_query_result)} electronics products")
+```
+
+#### Engine-Specific Optimizations
+
+```python path=null start=null
+# Polars - fastest for single-machine workloads
+core = core_v2(engine="polars")
+products = core.query(Product).all()
+print(f"Loaded {len(products)} products with Polars")
+
+# Dask - best for distributed/large-scale data
+core = core_v2(engine="dask", dask_scheduler="distributed")
+tasks = core.query(Task).filter(status="in_progress").all()
+print(f"Processing {len(tasks)} tasks across cluster")
+
+# pandas - compatible with existing ecosystem
+core = core_v2(engine="pandas")
+import matplotlib.pyplot as plt
+
+# Direct pandas access for plotting
+orders_df = core.query(Order).to_dataframe()
+orders_df.groupby('status').size().plot(kind='bar')
+plt.show()
+```
+
+---
+
+## Integration Examples
+
+### With FastAPI
+
+```python path=null start=null
+from fastapi import FastAPI, HTTPException
+from parquetframe.core_v2 import core_v2
+from parquetframe.permissions import PermissionManager
+
+app = FastAPI()
+core = core_v2()
+perm_mgr = PermissionManager()
+
+@app.post("/tasks/")
+def create_task(task_data: dict, user_id: str):
+    """Create a new task with permission check."""
+    # Check if user can create tasks in this list
+    can_create = perm_mgr.check_list_access(
+        user_id=user_id,
+        list_id=task_data["list_id"],
+        board_id=task_data["board_id"],
+        required_role="editor"
     )
 
-    # Train model
-    print("Training model...")
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+    if not can_create:
+        raise HTTPException(status_code=403, detail="Permission denied")
 
-    # Evaluate
-    y_pred = model.predict(X_test)
-    print("Model Performance:")
-    print(classification_report(y_test, y_pred))
+    # Create and save task
+    task = Task(**task_data)
+    core.save(task)
 
-    # Save feature importance
-    feature_importance = pd.DataFrame({
-        'feature': feature_cols,
-        'importance': model.feature_importances_
-    }).sort_values('importance', ascending=False)
+    return {"task_id": task.task_id, "status": "created"}
 
-    pqf.ParquetFrame(feature_importance).save("feature_importance")
+@app.get("/tasks/{task_id}")
+def get_task(task_id: str, user_id: str):
+    """Get task with permission check."""
+    task = core.load(Task, task_id=task_id)
 
-    return model, feature_importance
-
-# Run ML pipeline
-model, importance = ml_pipeline("ml_training_data.parquet")
-```
-
-## ETL Pipeline with Error Handling
-
-```python
-import parquetframe as pqf
-from pathlib import Path
-import logging
-from typing import List, Dict
-
-def robust_etl_pipeline(
-    input_files: List[str],
-    output_dir: str,
-    transformations: Dict[str, callable]
-):
-    """Robust ETL pipeline with comprehensive error handling."""
-
-    logger = logging.getLogger(__name__)
-    results = []
-    errors = []
-
-    output_path = Path(output_dir)
-    output_path.mkdir(exist_ok=True)
-
-    for file_path in input_files:
-        try:
-            logger.info(f"Processing {file_path}")
-
-            # Read data with automatic backend selection
-            df = pqf.read(file_path)
-            original_count = len(df)
-
-            # Apply transformations
-            for transform_name, transform_func in transformations.items():
-                logger.debug(f"Applying {transform_name}")
-                df = transform_func(df)
-
-            # Validate results
-            if len(df) == 0:
-                logger.warning(f"No data remaining after transformations for {file_path}")
-                continue
-
-            # Save processed data
-            output_file = output_path / f"processed_{Path(file_path).stem}"
-            df.save(output_file)
-
-            # Track results
-            result = {
-                'file': file_path,
-                'original_rows': original_count,
-                'processed_rows': len(df),
-                'backend': 'Dask' if df.islazy else 'pandas',
-                'status': 'success'
-            }
-            results.append(result)
-            logger.info(f"✅ Successfully processed {file_path}")
-
-        except FileNotFoundError as e:
-            error = {'file': file_path, 'error': f"File not found: {e}", 'type': 'FileError'}
-            errors.append(error)
-            logger.error(f"❌ File not found: {file_path}")
-
-        except Exception as e:
-            error = {'file': file_path, 'error': str(e), 'type': type(e).__name__}
-            errors.append(error)
-            logger.error(f"❌ Error processing {file_path}: {e}")
-
-    # Save processing report
-    import pandas as pd
-    if results:
-        results_df = pqf.ParquetFrame(pd.DataFrame(results))
-        results_df.save(output_path / "processing_report")
-
-    if errors:
-        errors_df = pqf.ParquetFrame(pd.DataFrame(errors))
-        errors_df.save(output_path / "processing_errors")
-
-    logger.info(f"ETL Pipeline completed: {len(results)} success, {len(errors)} errors")
-    return results, errors
-
-# Define transformations
-transformations = {
-    'clean_nulls': lambda df: df.dropna(),
-    'filter_positive': lambda df: df.query("amount > 0"),
-    'add_derived_fields': lambda df: df.assign(
-        amount_category=lambda x: pd.cut(x.amount, bins=[0, 100, 500, float('inf')],
-                                        labels=['low', 'medium', 'high'])
+    # Check read permission
+    can_view = perm_mgr.check_task_access(
+        user_id=user_id,
+        task_id=task_id,
+        list_id=task.list_id,
+        board_id=task.list().board_id,
+        required_role="viewer"
     )
-}
 
-# Run ETL pipeline
-input_files = ["file1.parquet", "file2.parquet", "file3.parquet"]
-results, errors = robust_etl_pipeline(input_files, "etl_output", transformations)
+    if not can_view:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    return task
 ```
 
-## Performance Comparison
+### With Data Science Tools
 
-```python
-import parquetframe as pqf
-import time
+```python path=null start=null
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from parquetframe.core_v2 import core_v2
 
-def performance_comparison(file_path: str):
-    """Compare performance between pandas and Dask backends."""
+# Initialize
+core = core_v2(engine="pandas")
 
-    print(f"Performance comparison for: {file_path}")
-    print("=" * 50)
+# Load entities as DataFrame for analysis
+tasks = core.query(Task).to_dataframe()
+users = core.query(User).to_dataframe()
 
-    # Test pandas backend
-    start_time = time.time()
-    df_pandas = pqf.read(file_path, islazy=False)
-    load_time_pandas = time.time() - start_time
+# Merge for analysis
+analysis_df = tasks.merge(users, left_on="assigned_to", right_on="user_id")
 
-    start_time = time.time()
-    result_pandas = df_pandas.groupby('category').sum()
-    process_time_pandas = time.time() - start_time
+# Visualizations
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
 
-    # Test Dask backend
-    start_time = time.time()
-    df_dask = pqf.read(file_path, islazy=True)
-    load_time_dask = time.time() - start_time
+# Task status distribution
+analysis_df['status'].value_counts().plot(kind='pie', ax=axes[0, 0], autopct='%1.1f%%')
+axes[0, 0].set_title('Task Status Distribution')
 
-    start_time = time.time()
-    result_dask = df_dask.groupby('category').sum()
-    if df_dask.islazy:
-        result_dask = result_dask.compute()
-    process_time_dask = time.time() - start_time
+# Tasks by priority
+sns.countplot(data=analysis_df, x='priority', hue='status', ax=axes[0, 1])
+axes[0, 1].set_title('Tasks by Priority and Status')
 
-    # Report results
-    print(f"File size: {os.path.getsize(file_path) / (1024**2):.1f} MB")
-    print(f"Rows: {len(df_pandas):,}")
-    print(f"Columns: {len(df_pandas.columns)}")
-    print()
-    print("Performance Results:")
-    print(f"Pandas - Load: {load_time_pandas:.2f}s, Process: {process_time_pandas:.2f}s")
-    print(f"Dask   - Load: {load_time_dask:.2f}s, Process: {process_time_dask:.2f}s")
+# Tasks per user
+analysis_df.groupby('username').size().plot(kind='barh', ax=axes[1, 0])
+axes[1, 0].set_title('Tasks per User')
 
-    # Memory usage comparison
-    if hasattr(df_pandas._df, 'memory_usage'):
-        pandas_memory = df_pandas._df.memory_usage(deep=True).sum() / (1024**2)
-        print(f"Pandas memory usage: {pandas_memory:.1f} MB")
+# Task completion timeline
+analysis_df['created_at'] = pd.to_datetime(analysis_df['created_at'])
+analysis_df.set_index('created_at').resample('D').size().plot(ax=axes[1, 1])
+axes[1, 1].set_title('Tasks Created Over Time')
 
-# Run performance comparison
-performance_comparison("benchmark_data.parquet")
+plt.tight_layout()
+plt.savefig('task_analysis.png')
+print("Analysis complete! Saved to task_analysis.png")
 ```
 
-These examples demonstrate ParquetFrame's versatility in handling various data processing scenarios while automatically optimizing for performance and memory usage.
+---
+
+## Legacy Examples (Phase 1)
+
+For examples using the legacy Phase 1 API with pandas/Dask backend switching:
+
+- **[Legacy Basic Usage](legacy/legacy-basic-usage.md)** - Phase 1 file operations
+- **[Legacy Backend Switching](legacy/legacy-backends.md)** - pandas/Dask switching examples
+
+### Migration Path
+
+If you're using Phase 1 code, see the **[Migration Guide](getting-started/migration.md)** for:
+- Side-by-side code comparisons
+- Step-by-step migration instructions
+- Breaking changes and workarounds
+
+---
+
+## More Examples
+
+- **[📚 Todo/Kanban Tutorial](tutorials/todo-kanban-walkthrough.md)** - Complete 850+ line walkthrough
+- **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities
+- **[Permissions Guide](user-guide/permissions.md)** - Complete permission examples
+- **[Workflows Guide](user-guide/workflows.md)** - YAML workflow patterns
+
+All examples use Phase 2 API unless explicitly marked as legacy.
+```

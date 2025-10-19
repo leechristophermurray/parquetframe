@@ -1,6 +1,8 @@
 # Quick Start Guide
 
-Get up and running with ParquetFrame in minutes!
+Get up and running with ParquetFrame Phase 2 in minutes!
+
+> **Note:** This guide covers Phase 2 API with the Entity Framework. For legacy Phase 1 documentation, see [Legacy Basic Usage](legacy/legacy-basic-usage.md).
 
 ## Installation
 
@@ -8,303 +10,359 @@ Get up and running with ParquetFrame in minutes!
 pip install parquetframe
 ```
 
+## Phase 2 Core Concepts
+
+Phase 2 introduces:
+
+- **Multi-Engine Core** - Seamlessly switch between pandas, Polars, and Dask
+- **Entity Framework** - Define data models with decorators
+- **Relationships** - Navigate object graphs with ease
+- **Zanzibar Permissions** - Fine-grained access control
+- **Workflow System** - YAML-based ETL pipelines
+
 ## Basic Usage
 
-### 1. Import ParquetFrame
+### 1. Initialize Core
 
 ```python
-import parquetframe as pqf
+from parquetframe.core_v2 import core_v2
+
+# Initialize with default engine (pandas)
+core = core_v2()
+
+# Or specify engine explicitly
+core = core_v2(engine="polars")  # pandas, polars, or dask
 ```
 
-### 2. Read Data Files (Multi-Format Support)
+### 2. Define Entities
 
-ParquetFrame automatically detects file formats and chooses the optimal backend:
+Use the `@entity` decorator to define data models:
 
 ```python
-# All formats work the same way:
-df = pqf.read("data.parquet")    # Parquet files
-df = pqf.read("data.csv")        # CSV files
-df = pqf.read("data.json")       # JSON files
-df = pqf.read("data.jsonl")      # JSON Lines files
-df = pqf.read("data.orc")        # ORC files (requires pyarrow)
-df = pqf.read("data")            # Auto-detect .parquet extension
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
 
-# Override format detection
-df = pqf.read("data.txt", format="csv")  # Force CSV format
+@entity(storage_path="./kanban_data/tasks", primary_key="task_id")
+@dataclass
+class Task:
+    """
+    Task entity representing an individual task.
+
+    Fields:
+        task_id: Unique task identifier
+        title: Task title
+        description: Detailed task description
+        status: Current status (todo, in_progress, done)
+        priority: Task priority (low, medium, high)
+        list_id: ID of the list this task belongs to
+        assigned_to: Optional ID of the user assigned to this task
+        created_at: Timestamp when task was created
+        updated_at: Timestamp when task was last updated
+
+    Relationships:
+        list: Forward relationship to TaskList (parent list)
+        assigned_user: Forward relationship to User (assignee)
+    """
+
+    task_id: str
+    title: str
+    description: str
+    status: str = "todo"  # todo, in_progress, done
+    priority: str = "medium"  # low, medium, high
+    list_id: str = ""
+    assigned_to: str | None = None
+    position: int = 0  # Position within the list
+    created_at: datetime = None
+    updated_at: datetime = None
 ```
 
-### 3. Check Current Backend
+### 3. Create and Save Entities
 
 ```python
-print(f"Using {'Dask' if df.islazy else 'pandas'} backend")
-print(f"Shape: {df.shape}")
+from datetime import datetime
+
+# Create a task instance
+task = Task(
+    task_id="task_001",
+    title="Implement user authentication",
+    description="Add OAuth2 support with JWT tokens",
+    status="todo",
+    priority="high",
+    list_id="list_001",
+    assigned_to="user_123"
+)
+
+# Save to storage
+core.save(task)
+
+# Load back
+loaded_task = core.load(Task, task_id="task_001")
+print(f"Task: {loaded_task.title} - {loaded_task.status}")
 ```
 
-### 4. Perform Operations
+### 4. Define Relationships
 
-All pandas and Dask operations work transparently:
+Use the `@rel` decorator to define relationships between entities:
 
 ```python
-# Standard DataFrame operations
-summary = df.describe()
-filtered = df[df['value'] > 100]
-grouped = df.groupby('category').sum()
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=190
 
-# Method chaining works too
-result = (df
-    .query("status == 'active'")
-    .groupby(['region', 'product'])
-    .agg({'sales': 'sum', 'quantity': 'mean'})
-    .reset_index())
+    @rel("TaskList", foreign_key="list_id")
+    def list(self):
+        """Get the list this task belongs to."""
+        pass
+
+    @rel("User", foreign_key="assigned_to")
+    def assigned_user(self):
+        """Get the user assigned to this task."""
+        pass
 ```
 
-### 5. Save Results
+Navigate relationships easily:
 
 ```python
-# Save with automatic .parquet extension (default)
-result.save("output")
+# Navigate from task to list to board
+task = core.load(Task, task_id="task_001")
+task_list = task.list()  # Get parent list
+board = task_list.board()  # Get parent board
 
-# Or specify different formats
-result.save("output.parquet")   # Parquet format
-result.save("output.csv")       # CSV format
-result.save("output.json")      # JSON format
+print(f"Task '{task.title}' is in list '{task_list.name}' on board '{board.name}'")
 
-# Pass additional options
-result.save("compressed_output", compression='snappy')
+# Navigate reverse relationships
+board = core.load(Board, board_id="board_001")
+all_lists = board.lists()  # Get all lists in board
+for lst in all_lists:
+    tasks = lst.tasks()  # Get all tasks in list
+    print(f"List '{lst.name}' has {len(tasks)} tasks")
 ```
 
-## Key Features Demo
+### 5. Implement Permissions
 
-### Automatic Backend Selection
+Use Zanzibar-style permissions for fine-grained access control:
 
 ```python
-# Small file → pandas (fast)
-small_df = pqf.read("small_dataset.parquet")  # < 10MB
-print(f"Small file: {type(small_df._df)}")    # pandas.DataFrame
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=110
 
-# Large file → Dask (memory efficient)
-large_df = pqf.read("large_dataset.parquet")  # > 10MB
-print(f"Large file: {type(large_df._df)}")    # dask.dataframe.DataFrame
+    def check_permission(
+        self,
+        user_id: str,
+        resource_type: str,
+        resource_id: str,
+        relation: str,
+        allow_indirect: bool = True,
+    ) -> bool:
+        """
+        Check if a user has a specific permission.
+
+        Uses Zanzibar check() API for both direct and indirect permissions.
+
+        Args:
+            user_id: User ID to check
+            resource_type: Type of resource (board, list, task)
+            resource_id: ID of the resource
+            relation: Relation/permission type to check
+            allow_indirect: Whether to check indirect permissions via graph traversal
+
+        Returns:
+            True if user has the permission, False otherwise
+        """
+        return check(
+            store=self.store,
+            subject_namespace="user",
+            subject_id=user_id,
+            relation=relation,
+            object_namespace=resource_type,
+            object_id=resource_id,
+            allow_indirect=allow_indirect,
+        )
 ```
 
-### Manual Backend Control
+Usage example:
 
 ```python
-# Override automatic selection
-pandas_df = pqf.read("any_file.parquet", islazy=False)  # Force pandas
-dask_df = pqf.read("any_file.parquet", islazy=True)     # Force Dask
+from parquetframe.permissions import PermissionManager
 
-# Convert between backends
-pandas_df.to_dask()     # Convert to Dask
-dask_df.to_pandas()     # Convert to pandas
+# Initialize permission manager
+perm_mgr = PermissionManager()
 
-# Or use properties
-df.islazy = True        # Switch to Dask
-df.islazy = False       # Switch to pandas
+# Grant board access to a user
+perm_mgr.grant_board_access(user_id="user_123", board_id="board_001", role="editor")
+
+# Check if user can edit a task
+can_edit = perm_mgr.check_task_access(
+    user_id="user_123",
+    task_id="task_001",
+    list_id="list_001",
+    board_id="board_001",
+    required_role="editor"
+)
+
+if can_edit:
+    # Update the task
+    task.status = "in_progress"
+    core.save(task)
 ```
 
-### Custom Thresholds
+### 6. Define Workflows
 
-```python
-# Use Dask for files larger than 50MB
-df = pqf.read("data.parquet", threshold_mb=50)
+Create YAML workflows for ETL pipelines:
 
-# Use pandas for files larger than 1MB (force small threshold)
-df = pqf.read("data.parquet", threshold_mb=1)
+```yaml
+# import_tasks.yml
+name: Import Tasks from CSV
+description: Load tasks from external CSV file
+
+steps:
+  - name: Read CSV
+    action: read
+    params:
+      path: "external_tasks.csv"
+      format: "csv"
+
+  - name: Transform Data
+    action: transform
+    params:
+      operations:
+        - type: filter
+          condition: "status in ['todo', 'in_progress']"
+        - type: map
+          field: priority
+          mapping:
+            1: "low"
+            2: "medium"
+            3: "high"
+
+  - name: Save to ParquetFrame
+    action: save_entities
+    params:
+      entity_type: Task
+      storage_path: "./kanban_data/tasks"
 ```
 
-## Multi-Format Examples
+Run workflows:
 
-### CSV to Parquet Conversion
 ```python
-# Read CSV, process, save as optimized Parquet
-csv_data = pqf.read("sales.csv")
-processed = csv_data.query("amount > 0").groupby("region").sum()
-processed.save("sales_summary.parquet")  # Much faster to read later
+from parquetframe.workflow import WorkflowEngine
+
+# Initialize workflow engine
+engine = WorkflowEngine(core)
+
+# Run workflow
+result = engine.run_workflow("import_tasks.yml")
+print(f"Imported {result['records_processed']} tasks")
 ```
 
-### JSON Data Processing
+## Multi-Engine Support
+
+Switch between compute engines based on your needs:
+
 ```python
-# Process JSON Lines streaming data
-events = pqf.read("user_events.jsonl")  # JSON Lines format
-daily_stats = events.groupby(events.timestamp.dt.date).count()
-daily_stats.save("daily_user_stats.parquet")
+# Start with pandas for small datasets
+core = core_v2(engine="pandas")
+
+# Switch to Polars for faster operations
+core.switch_engine("polars")
+
+# Or use Dask for distributed computing
+core.switch_engine("dask")
+
+# All entity operations work seamlessly across engines
+tasks = core.query(Task).filter(status="in_progress").all()
 ```
 
-### Format Chain Processing
-```python
-# Chain operations across different formats
-result = (pqf.read("raw_data.csv")
-    .query("status == 'active'")
-    .merge(pqf.read("metadata.json")._df, on="id")
-    .groupby("category").sum()
-    .save("final_report.parquet"))  # Fast format for analytics
-```
+## Complete Example
 
-## Common Patterns
-
-### Data Pipeline
+Here's a full example bringing it all together:
 
 ```python
-result = (pqf.read("raw_data.parquet")
-    .query("date >= '2023-01-01'")
-    .groupby('customer_id')
-    .agg({
-        'sales_amount': 'sum',
-        'order_count': 'count',
-        'avg_order_value': 'mean'
-    })
-    .reset_index()
-    .save("customer_summary"))
+from parquetframe.core_v2 import core_v2
+from parquetframe.permissions import PermissionManager
+from datetime import datetime
 
-print("Pipeline completed!")
-```
+# Initialize
+core = core_v2(engine="pandas")
+perm_mgr = PermissionManager()
 
-### Conditional Processing
+# Create entities
+user = User(user_id="user_001", username="alice", email="alice@example.com")
+board = Board(
+    board_id="board_001",
+    name="Q1 Roadmap",
+    description="Product features for Q1 2024",
+    owner_id="user_001"
+)
+task_list = TaskList(
+    list_id="list_001",
+    name="In Progress",
+    board_id="board_001",
+    position=1
+)
+task = Task(
+    task_id="task_001",
+    title="Design new login flow",
+    description="Modernize authentication UX",
+    status="in_progress",
+    priority="high",
+    list_id="list_001",
+    assigned_to="user_001"
+)
 
-```python
-df = pqf.read("data.parquet")
+# Save all entities
+core.save(user)
+core.save(board)
+core.save(task_list)
+core.save(task)
 
-if df.islazy:
-    # Large dataset - use Dask aggregations
-    result = df.groupby('category').sales.sum().compute()
-else:
-    # Small dataset - use pandas for speed
-    result = df.groupby('category')['sales'].sum()
+# Set up permissions
+perm_mgr.grant_board_access("user_001", "board_001", "owner")
+perm_mgr.inherit_board_permissions("board_001", "list_001")
+perm_mgr.inherit_list_permissions("list_001", "task_001")
 
-print(result)
-```
+# Navigate relationships
+loaded_task = core.load(Task, task_id="task_001")
+print(f"Task: {loaded_task.title}")
+print(f"List: {loaded_task.list().name}")
+print(f"Board: {loaded_task.list().board().name}")
+print(f"Owner: {loaded_task.list().board().owner().username}")
 
-### Batch Processing
+# Check permissions
+can_edit = perm_mgr.check_task_access(
+    user_id="user_001",
+    task_id="task_001",
+    list_id="list_001",
+    board_id="board_001",
+    required_role="editor"
+)
 
-```python
-from pathlib import Path
-
-input_dir = Path("raw_data")
-output_dir = Path("processed_data")
-output_dir.mkdir(exist_ok=True)
-
-for file_path in input_dir.glob("*.parquet"):
-    print(f"Processing {file_path.name}...")
-
-    # Automatic backend selection for each file
-    df = pqf.read(file_path)
-
-    # Apply transformations
-    processed = (df
-        .dropna()
-        .query("amount > 0")
-        .groupby('category')
-        .sum())
-
-    # Save with same base name
-    processed.save(output_dir / file_path.stem)
-
-print("Batch processing complete!")
-```
-
-## Working with Different File Sizes
-
-### Small Files (< 10MB)
-```python
-# Automatically uses pandas for speed
-small_df = pqf.read("transactions.parquet")
-
-# Fast operations
-daily_summary = small_df.groupby(small_df.date.dt.date).sum()
-top_customers = small_df.nlargest(10, 'amount')
-```
-
-### Large Files (> 10MB)
-```python
-# Automatically uses Dask for memory efficiency
-large_df = pqf.read("historical_data.parquet")
-
-# Memory-efficient operations
-monthly_totals = large_df.groupby('month').amount.sum().compute()
-sample_data = large_df.sample(frac=0.01).compute()  # 1% sample
-```
-
-### Very Large Files (> 1GB)
-```python
-# Force Dask for very large files
-huge_df = pqf.read("big_data.parquet", islazy=True)
-
-# Use Dask operations with progress tracking
-from dask.diagnostics import ProgressBar
-
-with ProgressBar():
-    result = huge_df.groupby('region').sales.mean().compute()
-```
-
-## Integration Examples
-
-### With Pandas
-```python
-import pandas as pd
-import parquetframe as pqf
-
-# Read with ParquetFrame, convert to pandas if needed
-df = pqf.read("data.parquet")
-if df.islazy:
-    pandas_df = df.to_pandas()._df
-else:
-    pandas_df = df._df
-
-# Use pandas-specific features
-correlation = pandas_df.corr()
-```
-
-### With Dask
-```python
-import dask.dataframe as dd
-import parquetframe as pqf
-
-# Read with ParquetFrame, ensure Dask backend
-df = pqf.read("data.parquet", islazy=True)
-dask_df = df._df
-
-# Use Dask-specific features
-partitions = dask_df.npartitions
-graph_info = dask_df.visualize("computation_graph.png")
-```
-
-### With Machine Learning
-```python
-import parquetframe as pqf
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-
-# Load data
-df = pqf.read("ml_dataset.parquet")
-
-# Ensure pandas for sklearn compatibility
-if df.islazy:
-    df = df.to_pandas()
-
-# Prepare data
-X = df.drop('target', axis=1)
-y = df['target']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Train model
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
+if can_edit:
+    loaded_task.status = "done"
+    core.save(loaded_task)
+    print("Task marked as done!")
 ```
 
 ## Next Steps
 
-Now that you've got the basics down:
+**Explore the Todo/Kanban Tutorial:**
 
-1. **[Basic Usage](usage.md)** - Dive deeper into core functionality
-2. **[Advanced Features](advanced.md)** - Learn about advanced patterns and optimizations
-3. **[API Reference](api/core.md)** - Complete documentation of all methods
-4. **[Performance Tips](performance.md)** - Optimize your workflows
+- **[Full Todo/Kanban Walkthrough](tutorials/todo-kanban-walkthrough.md)** - Complete application example with all Phase 2 features
+
+**Learn More:**
+
+1. **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities and decorators
+2. **[Relationships Guide](phase2/relationships.md)** - Master object navigation
+3. **[Permissions System](user-guide/permissions.md)** - Comprehensive Zanzibar permission examples
+4. **[Workflows](user-guide/workflows.md)** - YAML-based ETL pipelines
+5. **[Migration Guide](getting-started/migration.md)** - Migrate from Phase 1 to Phase 2
+
+**API Documentation:**
+
+- **[Core API Reference](api/core.md)** - Complete core_v2 documentation
+- **[Entity API Reference](api/entities.md)** - Entity framework APIs
+- **[Permissions API Reference](api/permissions.md)** - Zanzibar permission APIs
 
 ## Need Help?
 
-- Check the [API Reference](api/core.md) for detailed method documentation
-- Browse [examples](examples.md) for common use cases
-- Report issues on [GitHub](https://github.com/leechristophermurray/parquetframe/issues)
+- Browse **[examples](examples.md)** for common use cases
+- Check the **[Migration Guide](getting-started/migration.md)** if coming from Phase 1
+- Report issues on **[GitHub](https://github.com/leechristophermurray/parquetframe/issues)**
 
-Happy data processing! 🚀
+Happy building! 🚀

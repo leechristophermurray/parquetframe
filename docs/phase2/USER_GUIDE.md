@@ -325,6 +325,174 @@ polars_df = df.to_polars()
 result = polars_df.filter(pl.col("age") > 30).select(["name", "age"])
 ```
 
+### Complete Example: Todo/Kanban Application
+
+Here's a real-world example showing a complete Kanban board system with multiple related entities:
+
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+@entity(storage_path="./kanban_data/users", primary_key="user_id")
+@dataclass
+class User:
+    """User entity representing an application user."""
+    user_id: str
+    username: str
+    email: str
+    created_at: datetime = None
+
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.now()
+
+    @rel("Board", foreign_key="owner_id", reverse=True)
+    def boards(self):
+        """Get all boards owned by this user."""
+        pass
+```
+
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=51
+@entity(storage_path="./kanban_data/boards", primary_key="board_id")
+@dataclass
+class Board:
+    """Board entity representing a kanban board."""
+    board_id: str
+    name: str
+    description: str
+    owner_id: str
+    created_at: datetime = None
+    updated_at: datetime = None
+
+    def __post_init__(self):
+        now = datetime.now()
+        if self.created_at is None:
+            self.created_at = now
+        if self.updated_at is None:
+            self.updated_at = now
+
+    @rel("User", foreign_key="owner_id")
+    def owner(self):
+        """Get the user who owns this board."""
+        pass
+
+    @rel("TaskList", foreign_key="board_id", reverse=True)
+    def lists(self):
+        """Get all task lists in this board."""
+        pass
+```
+
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
+@entity(storage_path="./kanban_data/tasks", primary_key="task_id")
+@dataclass
+class Task:
+    """Task entity representing an individual task."""
+    task_id: str
+    title: str
+    description: str
+    status: str = "todo"
+    priority: str = "medium"
+    list_id: str = ""
+    assigned_to: str | None = None
+    position: int = 0
+    created_at: datetime = None
+    updated_at: datetime = None
+
+    def __post_init__(self):
+        now = datetime.now()
+        if self.created_at is None:
+            self.created_at = now
+        if self.updated_at is None:
+            self.updated_at = now
+
+        # Validate status
+        if self.status not in ["todo", "in_progress", "done"]:
+            raise ValueError(f"Invalid status: {self.status}")
+
+        # Validate priority
+        if self.priority not in ["low", "medium", "high"]:
+            raise ValueError(f"Invalid priority: {self.priority}")
+
+    @rel("TaskList", foreign_key="list_id")
+    def list(self):
+        """Get the list this task belongs to."""
+        pass
+
+    @rel("User", foreign_key="assigned_to")
+    def assigned_user(self):
+        """Get the user assigned to this task."""
+        pass
+```
+
+**Using the Todo/Kanban Entities:**
+
+```python
+from datetime import datetime
+
+# Create user
+user = User(
+    user_id="user_001",
+    username="alice",
+    email="alice@example.com"
+)
+user.save()
+
+# Create board
+board = Board(
+    board_id="board_001",
+    name="Q1 Roadmap",
+    description="Product features for Q1 2024",
+    owner_id="user_001"
+)
+board.save()
+
+# Create task list
+task_list = TaskList(
+    list_id="list_001",
+    name="In Progress",
+    board_id="board_001",
+    position=1
+)
+task_list.save()
+
+# Create task
+task = Task(
+    task_id="task_001",
+    title="Implement user authentication",
+    description="Add OAuth2 support",
+    status="in_progress",
+    priority="high",
+    list_id="list_001",
+    assigned_to="user_001"
+)
+task.save()
+
+# Navigate relationships
+loaded_task = Task.find("task_001")
+print(f"Task: {loaded_task.title}")
+print(f"List: {loaded_task.list().name}")
+print(f"Board: {loaded_task.list().board().name}")
+print(f"Owner: {loaded_task.list().board().owner().username}")
+print(f"Assigned to: {loaded_task.assigned_user().username}")
+
+# Reverse navigation
+user_boards = user.boards()  # Get all boards owned by alice
+board_lists = board.lists()  # Get all lists in the board
+for lst in board_lists:
+    tasks = lst.tasks()  # Get all tasks in each list
+    print(f"List '{lst.name}' has {len(tasks)} tasks")
+```
+
+**Key Features Demonstrated:**
+
+- ✅ **Nested Relationships**: User → Board → TaskList → Task
+- ✅ **Bidirectional Navigation**: Forward and reverse relationships
+- ✅ **Field Validation**: Status and priority validation in `__post_init__`
+- ✅ **Auto-Timestamps**: Created and updated timestamps
+- ✅ **Optional Fields**: `assigned_to` can be None
+
+👉 **[See Full Tutorial](../tutorials/todo-kanban-walkthrough.md)** for complete application including permissions and workflows.
+
 ### Complex Entity Models
 
 ```python
