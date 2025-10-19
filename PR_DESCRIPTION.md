@@ -36,8 +36,8 @@ result = df.sql("SELECT * FROM df WHERE age > 25")
 users = pf.read("users.csv")
 orders = pf.read("orders.json")
 result = users.sql("""
-    SELECT u.name, o.amount 
-    FROM df u 
+    SELECT u.name, o.amount
+    FROM df u
     JOIN orders o ON u.id = o.user_id
 """, orders=orders)
 
@@ -215,13 +215,13 @@ pandas_df = df.pandas_df  # Returns pandas DataFrame
 
 ## 🎯 Success Metrics
 
-✅ **169+ tests migrated** from Phase 1 to Phase 2 API  
-✅ **123/123 SQL tests passing** (100% success rate)  
-✅ **All file formats supported** (CSV, TSV, JSON, JSONL, Parquet, ORC, Avro)  
-✅ **Full SQL feature parity** (queries, JOINs, optimization, profiling)  
-✅ **Backward compatibility** (ParquetFrame alias, legacy properties)  
-✅ **CI/CD pipeline fixed** (all jobs passing)  
-✅ **Zero regressions** (no existing tests broken)  
+✅ **169+ tests migrated** from Phase 1 to Phase 2 API
+✅ **123/123 SQL tests passing** (100% success rate)
+✅ **All file formats supported** (CSV, TSV, JSON, JSONL, Parquet, ORC, Avro)
+✅ **Full SQL feature parity** (queries, JOINs, optimization, profiling)
+✅ **Backward compatibility** (ParquetFrame alias, legacy properties)
+✅ **CI/CD pipeline fixed** (all jobs passing)
+✅ **Zero regressions** (no existing tests broken)
 
 ---
 
@@ -235,9 +235,9 @@ Legacy code using `ParquetFrame` continues to work through aliasing.
 
 ## 📚 Related Issues
 
-Fixes #[CI/CD pipeline failures]  
-Fixes #[Phase 2 API migration tracking]  
-Closes #[SQL test failures]  
+Fixes #[CI/CD pipeline failures]
+Fixes #[Phase 2 API migration tracking]
+Closes #[SQL test failures]
 
 ---
 
