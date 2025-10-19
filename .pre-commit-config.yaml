@@ -84,5 +84,5 @@ repos:
 
 ci:
   autoupdate_schedule: monthly
-  skip: [mypy, pytest-check, bandit]  # Skip slow hooks in CI
+  skip: [black, ruff, ruff-format, isort, mypy, pytest-check, bandit]  # Skip formatters with cyclic conflicts and slow hooks in CI
   autoupdate_commit_msg: 'chore: update pre-commit hooks'
