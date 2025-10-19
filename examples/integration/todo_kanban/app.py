@@ -8,6 +8,8 @@ This module provides the TodoKanbanApp class which orchestrates:
 - Multi-user collaboration
 """
 
+import time
+import uuid
 from datetime import datetime
 
 from .models import Board, Task, TaskList, User
@@ -76,7 +78,8 @@ class TodoKanbanApp:
         Example:
             >>> user = app.create_user("alice", "alice@example.com")
         """
-        user_id = f"user_{username}_{int(datetime.now().timestamp())}"
+        # Generate unique ID with timestamp and random component
+        user_id = f"user_{username}_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
         user = User(user_id=user_id, username=username, email=email)
         user.save()
         return user
@@ -106,7 +109,8 @@ class TodoKanbanApp:
         Example:
             >>> board = app.create_board(user.user_id, "Project Alpha", "Sprint board")
         """
-        board_id = f"board_{int(datetime.now().timestamp())}"
+        # Generate unique ID with timestamp and random component
+        board_id = f"board_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
         board = Board(
             board_id=board_id,
             name=name,
@@ -241,7 +245,8 @@ class TodoKanbanApp:
                 f"User {user_id} does not have editor access to board {board_id}"
             )
 
-        list_id = f"list_{int(datetime.now().timestamp())}"
+        # Generate unique ID with timestamp and random component
+        list_id = f"list_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
         task_list = TaskList(
             list_id=list_id, name=name, board_id=board_id, position=position
         )
@@ -364,7 +369,8 @@ class TodoKanbanApp:
                 f"User {user_id} does not have editor access to list {list_id}"
             )
 
-        task_id = f"task_{int(datetime.now().timestamp())}"
+        # Generate unique ID with timestamp and random component
+        task_id = f"task_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}"
         task = Task(
             task_id=task_id,
             title=title,
@@ -620,6 +626,62 @@ class TodoKanbanApp:
             )
 
         Task.delete(task_id)
+
+    # =========================================================================
+    # Convenience Permission Check Methods
+    # =========================================================================
+
+    def check_list_access(
+        self, user_id: str, list_id: str, required_role: str = "viewer"
+    ) -> bool:
+        """
+        Check if user has required list access (convenience wrapper).
+
+        Automatically looks up board_id from list_id.
+
+        Args:
+            user_id: User ID to check
+            list_id: List ID
+            required_role: Minimum required role
+
+        Returns:
+            True if user has required access
+        """
+        task_list = TaskList.find(list_id)
+        if not task_list:
+            return False
+
+        return self.permissions.check_list_access(
+            user_id, list_id, task_list.board_id, required_role
+        )
+
+    def check_task_access(
+        self, user_id: str, task_id: str, required_role: str = "viewer"
+    ) -> bool:
+        """
+        Check if user has required task access (convenience wrapper).
+
+        Automatically looks up list_id and board_id from task_id.
+
+        Args:
+            user_id: User ID to check
+            task_id: Task ID
+            required_role: Minimum required role
+
+        Returns:
+            True if user has required access
+        """
+        task = Task.find(task_id)
+        if not task:
+            return False
+
+        task_list = TaskList.find(task.list_id)
+        if not task_list:
+            return False
+
+        return self.permissions.check_task_access(
+            user_id, task_id, task.list_id, task_list.board_id, required_role
+        )
 
 
 # Export main class

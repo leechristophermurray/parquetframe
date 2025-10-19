@@ -401,7 +401,7 @@ class TestPermissions:
         assert_permission_granted(app, bob.user_id, "board", board.board_id, "editor")
 
         # Check inherited access to list
-        has_list_access = app.permissions.check_list_access(
+        has_list_access = app.check_list_access(
             bob.user_id, todo_list.list_id, "editor"
         )
         assert has_list_access, "Board editor should have access to lists"
@@ -419,9 +419,7 @@ class TestPermissions:
         app.share_board(board.board_id, alice.user_id, bob.user_id, "editor")
 
         # Bob should have access to tasks via board→list→task inheritance
-        has_task_access = app.permissions.check_task_access(
-            bob.user_id, task.task_id, "editor"
-        )
+        has_task_access = app.check_task_access(bob.user_id, task.task_id, "editor")
         assert has_task_access, "Board editor should have access to tasks"
 
     def test_permission_inheritance_board_to_task(
@@ -437,9 +435,7 @@ class TestPermissions:
         app.share_board(board.board_id, alice.user_id, charlie.user_id, "viewer")
 
         # Charlie should have read access to tasks (transitive)
-        has_task_access = app.permissions.check_task_access(
-            charlie.user_id, task.task_id, "viewer"
-        )
+        has_task_access = app.check_task_access(charlie.user_id, task.task_id, "viewer")
         assert has_task_access, "Board viewer should have read access to tasks"
 
     def test_denied_access(self, app, sample_board, sample_users):
@@ -516,7 +512,7 @@ class TestPermissions:
 
         # List users with access to board
         subjects = app.permissions.list_resource_permissions("board", board.board_id)
-        user_ids = [subject_id for subject_id, _ in subjects]
+        user_ids = [subject_id for _, subject_id in subjects]
 
         assert alice.user_id in user_ids
         assert bob.user_id in user_ids
@@ -532,7 +528,7 @@ class TestPermissions:
         app.share_board(board.board_id, alice.user_id, bob.user_id, "editor")
 
         # Verify Bob has access to list
-        has_access_before = app.permissions.check_list_access(
+        has_access_before = app.check_list_access(
             bob.user_id, todo_list.list_id, "editor"
         )
         assert has_access_before
@@ -541,7 +537,7 @@ class TestPermissions:
         app.permissions.revoke_board_access(bob.user_id, board.board_id, "editor")
 
         # Verify Bob no longer has access to list
-        has_access_after = app.permissions.check_list_access(
+        has_access_after = app.check_list_access(
             bob.user_id, todo_list.list_id, "editor"
         )
         assert not has_access_after
