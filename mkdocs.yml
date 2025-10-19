@@ -67,42 +67,47 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: installation.md
-    - Quick Start: quickstart.md
+    - Quick Start (Phase 2): quickstart.md
     - First Steps: first-steps.md
-  - User Guide:
-    - Basic Usage: usage.md
-    - Advanced Features: advanced.md
-    - Performance Tips: performance.md
-    - Backend Selection: backends.md
-    - File Formats: formats.md
-    - Analytics: analytics.md
-    - Time Series: timeseries.md
-  - AI Features:
-    - AI Overview: ai-features.md
-    - AI Usage Guide: AI_USAGE.md
-    - Natural Language Queries: ai/queries.md
-    - Local LLM Setup: ai/setup.md
-    - Prompt Engineering: ai/prompts.md
-  - SQL & Database:
-    - SQL Support: sql/index.md
-    - SQL Cookbook: sql/cookbook.md
-    - DuckDB Integration: sql/duckdb.md
-    - Database Connections: sql/databases.md
-  - Genomics & BioFrame:
-    - BioFrame Integration: bio/index.md
-    - Genomic Operations: bio/operations.md
-    - Parallel Processing: bio/parallel.md
-  - Graph Processing:
-    - Graph Overview: graph/index.md
-    - Graph CLI: graph/cli.md
-    - Graph Tutorial: graph/tutorial.md
-  - Permissions System:
-    - Permissions Overview: permissions/index.md
-    - CLI Reference: permissions/cli-reference.md
   - Phase 2 Guide:
     - Overview: phase2/README.md
-    - Migration Guide: phase2/MIGRATION_GUIDE.md
+    - Migration from Phase 1: phase2/MIGRATION_GUIDE.md
     - User Guide: phase2/USER_GUIDE.md
+  - Examples & Tutorials:
+    - Todo/Kanban Walkthrough: tutorials/todo-kanban-walkthrough.md
+    - Data Exploration: tutorials/exploration.md
+    - Large Dataset Processing: tutorials/large-data.md
+    - Integration Guide: tutorials/integration.md
+    - Performance Optimization: tutorials/performance.md
+    - ML Pipeline Integration: tutorials/ml-pipeline.md
+    - Examples Gallery: examples.md
+  - Advanced Features:
+    - Performance Tips: performance.md
+    - File Formats: formats.md
+    - Analytics & Statistics: analytics.md
+    - Time Series Analysis: timeseries.md
+    - AI Features:
+      - AI Overview: ai-features.md
+      - AI Usage Guide: AI_USAGE.md
+      - Natural Language Queries: ai/queries.md
+      - Local LLM Setup: ai/setup.md
+      - Prompt Engineering: ai/prompts.md
+    - SQL & Database:
+      - SQL Support: sql/index.md
+      - SQL Cookbook: sql/cookbook.md
+      - DuckDB Integration: sql/duckdb.md
+      - Database Connections: sql/databases.md
+    - Graph Processing:
+      - Graph Overview: graph/index.md
+      - Graph CLI: graph/cli.md
+      - Graph Tutorial: graph/tutorial.md
+    - Genomics & BioFrame:
+      - BioFrame Integration: bio/index.md
+      - Genomic Operations: bio/operations.md
+      - Parallel Processing: bio/parallel.md
+    - Permissions System:
+      - Permissions Overview: permissions/index.md
+      - CLI Reference: permissions/cli-reference.md
   - CLI Guide:
     - CLI Overview: cli/index.md
     - CLI Installation: cli/installation.md
@@ -118,18 +123,15 @@ nav:
     - CLI Commands: workflows/cli-commands.md
     - History & Analytics: workflows/history-analytics.md
     - DAG Visualization: workflows/visualization.md
-    - Advanced Features: workflows/advanced.md
-    - Examples: workflows/examples.md
-  - Tutorials:
-    - Data Exploration: tutorials/exploration.md
-    - Large Dataset Processing: tutorials/large-data.md
-    - Integration Guide: tutorials/integration.md
-    - Performance Optimization: tutorials/performance.md
-    - ML Pipeline Integration: tutorials/ml-pipeline.md
+    - Advanced Workflows: workflows/advanced.md
+    - Workflow Examples: workflows/examples.md
   - API Reference:
     - Core API: api/core.md
     - CLI API: api/cli.md
-    - Examples: examples.md
+  - Legacy Documentation:
+    - Phase 1 Overview: legacy/README.md
+    - Basic Usage (Phase 1): legacy/legacy-basic-usage.md
+    - Backend Selection (Phase 1): legacy/legacy-backends.md
   - Development:
     - Contributing: contributing.md
     - Release Notes: changelog.md
