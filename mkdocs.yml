@@ -127,6 +127,8 @@ nav:
     - Workflow Examples: workflows/examples.md
   - API Reference:
     - Core API: api/core.md
+    - Entity Framework API: api/entities.md
+    - Permissions API: api/permissions.md
     - CLI API: api/cli.md
   - Legacy Documentation:
     - Phase 1 Overview: legacy/README.md
