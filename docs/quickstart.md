@@ -6,7 +6,7 @@ Get up and running with ParquetFrame Phase 2 in minutes!
 
 ## Installation
 
-```bash path=null start=null
+```bash
 pip install parquetframe
 ```
 
@@ -24,7 +24,7 @@ Phase 2 introduces:
 
 ### 1. Initialize Core
 
-```python path=null start=null
+```python
 from parquetframe.core_v2 import core_v2
 
 # Initialize with default engine (pandas)
@@ -38,7 +38,9 @@ core = core_v2(engine="polars")  # pandas, polars, or dask
 
 Use the `@entity` decorator to define data models:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
+
 @entity(storage_path="./kanban_data/tasks", primary_key="task_id")
 @dataclass
 class Task:
@@ -75,7 +77,7 @@ class Task:
 
 ### 3. Create and Save Entities
 
-```python path=null start=null
+```python
 from datetime import datetime
 
 # Create a task instance
@@ -101,7 +103,9 @@ print(f"Task: {loaded_task.title} - {loaded_task.status}")
 
 Use the `@rel` decorator to define relationships between entities:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=190
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=190
+
     @rel("TaskList", foreign_key="list_id")
     def list(self):
         """Get the list this task belongs to."""
@@ -115,7 +119,7 @@ Use the `@rel` decorator to define relationships between entities:
 
 Navigate relationships easily:
 
-```python path=null start=null
+```python
 # Navigate from task to list to board
 task = core.load(Task, task_id="task_001")
 task_list = task.list()  # Get parent list
@@ -135,7 +139,9 @@ for lst in all_lists:
 
 Use Zanzibar-style permissions for fine-grained access control:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=110
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=110
+
     def check_permission(
         self,
         user_id: str,
@@ -172,7 +178,7 @@ Use Zanzibar-style permissions for fine-grained access control:
 
 Usage example:
 
-```python path=null start=null
+```python
 from parquetframe.permissions import PermissionManager
 
 # Initialize permission manager
@@ -200,7 +206,7 @@ if can_edit:
 
 Create YAML workflows for ETL pipelines:
 
-```yaml path=null start=null
+```yaml
 # import_tasks.yml
 name: Import Tasks from CSV
 description: Load tasks from external CSV file
@@ -234,7 +240,7 @@ steps:
 
 Run workflows:
 
-```python path=null start=null
+```python
 from parquetframe.workflow import WorkflowEngine
 
 # Initialize workflow engine
@@ -249,7 +255,7 @@ print(f"Imported {result['records_processed']} tasks")
 
 Switch between compute engines based on your needs:
 
-```python path=null start=null
+```python
 # Start with pandas for small datasets
 core = core_v2(engine="pandas")
 
@@ -267,7 +273,7 @@ tasks = core.query(Task).filter(status="in_progress").all()
 
 Here's a full example bringing it all together:
 
-```python path=null start=null
+```python
 from parquetframe.core_v2 import core_v2
 from parquetframe.permissions import PermissionManager
 from datetime import datetime

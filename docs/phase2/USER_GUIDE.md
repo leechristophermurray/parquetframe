@@ -329,7 +329,8 @@ result = polars_df.filter(pl.col("age") > 30).select(["name", "age"])
 
 Here's a real-world example showing a complete Kanban board system with multiple related entities:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
 @entity(storage_path="./kanban_data/users", primary_key="user_id")
 @dataclass
 class User:
@@ -349,7 +350,8 @@ class User:
         pass
 ```
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=51
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=51
 @entity(storage_path="./kanban_data/boards", primary_key="board_id")
 @dataclass
 class Board:
@@ -379,7 +381,8 @@ class Board:
         pass
 ```
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=141
 @entity(storage_path="./kanban_data/tasks", primary_key="task_id")
 @dataclass
 class Task:
@@ -423,7 +426,7 @@ class Task:
 
 **Using the Todo/Kanban Entities:**
 
-```python path=null start=null
+```python
 from datetime import datetime
 
 # Create user
