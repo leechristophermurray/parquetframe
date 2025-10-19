@@ -30,28 +30,58 @@ A production-ready Kanban board system supporting:
 ### Entity Relationship Diagram
 
 ```mermaid
-graph LR
-    User[User]
-    Board[Board]
-    TaskList[TaskList]
-    Task[Task]
-    PermGraph[Permission Graph<br/>Zanzibar]
+erDiagram
+    User ||--o{ Board : owns
+    Board ||--o{ TaskList : contains
+    TaskList ||--o{ Task : contains
+    User ||--o{ Task : "assigned to"
 
-    User -->|owns| Board
-    Board -->|contains| TaskList
-    TaskList -->|contains| Task
-    User -.->|assigned to| Task
+    User {
+        string user_id PK
+        string username
+        string email
+        datetime created_at
+    }
 
-    Board -.->|shared with users| PermGraph
-    TaskList -.->|inherits permissions| PermGraph
-    Task -.->|inherits permissions| PermGraph
+    Board {
+        string board_id PK
+        string name
+        string description
+        string owner_id FK
+        datetime created_at
+        datetime updated_at
+    }
 
-    style User fill:#e1f5ff
-    style Board fill:#fff9c4
-    style TaskList fill:#f3e5f5
-    style Task fill:#c8e6c9
-    style PermGraph fill:#ffccbc
+    TaskList {
+        string list_id PK
+        string name
+        string board_id FK
+        int position
+        datetime created_at
+        datetime updated_at
+    }
+
+    Task {
+        string task_id PK
+        string title
+        string description
+        string status
+        string priority
+        string list_id FK
+        string assigned_to FK
+        int position
+        datetime created_at
+        datetime updated_at
+    }
 ```
+
+**Permission Graph Integration:**
+
+The Zanzibar permission system creates a separate graph layer that manages access control:
+
+- Board permissions cascade to TaskLists and Tasks
+- Users inherit permissions through group membership
+- Permission checks traverse the graph for indirect access
 
 ### Permission Model
 
