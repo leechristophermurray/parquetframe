@@ -309,6 +309,6 @@ Choose the right format for your use case, and let ParquetFrame handle the compl
 ## Further Reading
 
 - [Performance Benchmarks](performance.md)
-- [Basic Usage Guide](usage.md)
+- [Legacy Basic Usage Guide](legacy/legacy-basic-usage.md)
 - [Advanced Analytics](advanced.md)
-- [Backend Selection](backends.md)
+- [Legacy Backend Selection](legacy/legacy-backends.md)
