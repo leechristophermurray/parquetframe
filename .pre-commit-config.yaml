@@ -64,11 +64,12 @@ repos:
   #       exclude: tests/
 
   # Additional Python checks
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: [--profile=black, --line-length=88]
+  # NOTE: isort disabled - ruff handles import sorting (I rule enabled)
+  # - repo: https://github.com/pycqa/isort
+  #   rev: 5.13.2
+  #   hooks:
+  #     - id: isort
+  #       args: [--profile=black, --line-length=88]
 
   # Pytest - Run quick tests (temporarily disabled)
   # - repo: local
