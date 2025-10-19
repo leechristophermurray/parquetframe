@@ -29,16 +29,6 @@ Functions for loading data from various sources.
 
 Functions for saving data to various formats.
 
-::: parquetframe.DataFrameProxy.to_parquet
-    options:
-      show_root_heading: true
-      show_source: true
-
-::: parquetframe.DataFrameProxy.to_avro
-    options:
-      show_root_heading: true
-      show_source: true
-
 ## Data Processing
 
 ### Filtering and Selection
