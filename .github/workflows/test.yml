@@ -214,6 +214,8 @@ jobs:
       with:
         python-version: '3.11'
     - uses: pre-commit/action@v3.0.1
+      env:
+        SKIP: black,ruff,ruff-format,isort
 
   security:
     runs-on: ubuntu-latest

@@ -29,11 +29,6 @@ Functions for loading data from various sources.
 
 Functions for saving data to various formats.
 
-::: parquetframe.ParquetFrame.save
-    options:
-      show_root_heading: true
-      show_source: true
-
 ## Data Processing
 
 ### Filtering and Selection
