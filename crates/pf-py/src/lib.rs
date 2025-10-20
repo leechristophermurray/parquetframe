@@ -4,8 +4,10 @@
 //! It serves as the bridge between Python and Rust components.
 //!
 //! Phase 1: Graph Core - CSR/CSC, BFS, DFS implementations
+//! Phase 2: I/O Fast-Paths - Parquet metadata and statistics
 
 mod graph;
+mod io;
 
 use pyo3::prelude::*;
 
@@ -44,6 +46,12 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     match graph::register_graph_functions(m) {
         Ok(_) => {},
         Err(e) => eprintln!("Error registering graph functions: {:?}", e),
+    }
+
+    // I/O functions
+    match io::register_io_functions(m) {
+        Ok(_) => {},
+        Err(e) => eprintln!("Error registering I/O functions: {:?}", e),
     }
 
     Ok(())

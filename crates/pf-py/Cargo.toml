@@ -14,3 +14,4 @@ crate-type = ["cdylib"]
 pyo3.workspace = true
 numpy = "0.26"
 pf-graph-core = { path = "../pf-graph-core" }
+pf-io-core = { path = "../pf-io-core" }
