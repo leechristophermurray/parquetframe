@@ -14,7 +14,9 @@ from typing import Any
 
 import pandas as pd
 
-from ..core import ParquetFrame
+from ..core_legacy import (
+    ParquetFrame,  # Internal use only - avoids deprecation warnings
+)
 
 
 @dataclass(frozen=True)

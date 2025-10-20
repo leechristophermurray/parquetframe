@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import pandas as pd
 
-from ..core import ParquetFrame
+from ..core_legacy import (
+    ParquetFrame,  # Internal use only - avoids deprecation warnings
+)
 from ..graph import GraphFrame
 from ..graph.algo.shortest_path import shortest_path
 from .core import RelationTuple, TupleStore

@@ -84,10 +84,8 @@ except ImportError:
     entity = None
 
 # Legacy Phase 1 support (deprecated as of v1.0.0)
-try:
-    from . import legacy  # Phase 1 API with deprecation warnings
-except ImportError:
-    legacy = None
+# Import lazily to avoid triggering warnings unless explicitly used
+legacy = None  # Will be imported on first access via __getattr__
 
 
 # Backward compatibility: ParquetFrame is now DataFrameProxy
@@ -217,3 +215,22 @@ __all__ = [
     # Legacy (deprecated)
     "legacy",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """
+    Lazy loading for submodules to avoid premature deprecation warnings.
+
+    This allows the legacy module to be imported only when explicitly accessed,
+    preventing deprecation warnings from appearing when users import Phase 2 APIs.
+    """
+    global legacy
+
+    if name == "legacy":
+        if legacy is None:
+            from . import legacy as _legacy
+
+            legacy = _legacy
+        return legacy
+
+    raise AttributeError(f"module 'parquetframe' has no attribute '{name}'")
