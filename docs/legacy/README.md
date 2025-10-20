@@ -39,7 +39,7 @@ df.save("output.parquet")
 
 ### Phase 2 API
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 from parquetframe.entity import entity, rel
 from dataclasses import dataclass
 

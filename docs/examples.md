@@ -96,10 +96,10 @@ The complete 850+ line tutorial covers:
 from dataclasses import dataclass
 from datetime import datetime
 from parquetframe.entity import entity, rel
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 
 # Initialize core
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 
 @entity(storage_path="./data/products", primary_key="product_id")
 @dataclass
@@ -305,10 +305,10 @@ Run the workflow:
 ```python
 # path=null start=null
 from parquetframe.workflow import WorkflowEngine
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 
 # Initialize
-core = core_v2()
+df = pf2.read()
 engine = WorkflowEngine(core)
 
 # Run workflow
@@ -322,10 +322,10 @@ print(f"Processed {result['records_processed']} customers")
 
 ```python
 # path=null start=null
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 
 # Start with pandas for small data
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 
 # Create some entities
 product = Product(product_id="p1", name="Widget", price=19.99)
@@ -347,17 +347,17 @@ print(f"Found {len(large_query_result)} electronics products")
 ```python
 # path=null start=null
 # Polars - fastest for single-machine workloads
-core = core_v2(engine="polars")
+df = pf2.read(engine="polars")
 products = core.query(Product).all()
 print(f"Loaded {len(products)} products with Polars")
 
 # Dask - best for distributed/large-scale data
-core = core_v2(engine="dask", dask_scheduler="distributed")
+df = pf2.read(engine="dask", dask_scheduler="distributed")
 tasks = core.query(Task).filter(status="in_progress").all()
 print(f"Processing {len(tasks)} tasks across cluster")
 
 # pandas - compatible with existing ecosystem
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 import matplotlib.pyplot as plt
 
 # Direct pandas access for plotting
@@ -375,11 +375,11 @@ plt.show()
 ```python
 # path=null start=null
 from fastapi import FastAPI, HTTPException
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 from parquetframe.permissions import PermissionManager
 
 app = FastAPI()
-core = core_v2()
+df = pf2.read()
 perm_mgr = PermissionManager()
 
 @app.post("/tasks/")
@@ -429,10 +429,10 @@ def get_task(task_id: str, user_id: str):
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 
 # Initialize
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 
 # Load entities as DataFrame for analysis
 tasks = core.query(Task).to_dataframe()
