@@ -15,9 +15,9 @@ authors = ["Christopher Murray <lee.christopher.murray@gmail.com>"]
 repository = "https://github.com/leechristophermurray/parquetframe"
 
 [workspace.dependencies]
-pyo3 = { version = "0.20", features = ["extension-module"] }
+pyo3 = { version = "0.27", features = ["extension-module"] }
 rayon = "1.8"
-tokio = { version = "1.35", features = ["full"], optional = true }
+tokio = { version = "1.35", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 arrow = "50.0"
 parquet = "50.0"

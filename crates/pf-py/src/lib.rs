@@ -34,7 +34,7 @@ fn rust_version() -> String {
 /// This module is imported by Python as `parquetframe._rustic`.
 /// It provides high-performance implementations of performance-critical operations.
 #[pymodule]
-fn _rustic(_py: Python, m: &PyModule) -> PyResult<()> {
+fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rust_available, m)?)?;
     m.add_function(wrap_pyfunction!(rust_version, m)?)?;
     Ok(())
