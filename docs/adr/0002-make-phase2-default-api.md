@@ -10,9 +10,9 @@
 
 ## Context and Problem Statement
 
-ParquetFrame Phase 2 has been successfully implemented with a robust multi-engine architecture supporting pandas, Polars, and Dask. However, users must explicitly import `parquetframe.core_v2` to access these capabilities, creating a confusing developer experience:
+ParquetFrame Phase 2 has been successfully implemented with a robust multi-engine architecture supporting pandas, Polars, and Dask. However, users must explicitly import `parquetframe.core` to access these capabilities, creating a confusing developer experience:
 
-1. **Namespace Confusion**: Having both `parquetframe` (Phase 1) and `parquetframe.core_v2` (Phase 2) creates uncertainty about which API to use
+1. **Namespace Confusion**: Having both `parquetframe` (Phase 1) and `parquetframe.core` (Phase 2) creates uncertainty about which API to use
 2. **Discovery Problem**: New users may not realize Phase 2 exists and miss out on performance improvements
 3. **Migration Friction**: The "v2" suffix suggests experimental/unstable status despite Phase 2 being production-ready
 4. **Documentation Complexity**: Maintaining parallel documentation for Phase 1 and Phase 2 increases cognitive load
@@ -46,7 +46,7 @@ We will make **Phase 2 multi-engine API the default** for all ParquetFrame impor
 ### Implementation Strategy
 
 **1. Module Restructuring**
-- Keep `src/parquetframe/core_v2/` as-is (implementation remains in separate module)
+- Move `src/parquetframe/core_v2/` to `src/parquetframe/core/` (consolidation complete)
 - Update `src/parquetframe/__init__.py` to import Phase 2 API by default
 - Maintain Phase 1 API in `src/parquetframe/core_legacy.py` for backward compatibility
 - Create `src/parquetframe/legacy/` submodule for explicit Phase 1 access
@@ -63,9 +63,9 @@ import parquetframe as pf
 from parquetframe.legacy import ParquetFrame
 # Triggers deprecation warning pointing to migration guide
 
-# Direct Phase 2 access (still available)
-from parquetframe.core_v2 import DataFrameProxy, read
-# No changes needed for code already using core_v2
+# Direct Phase 2 access (standard import path)
+from parquetframe.core import DataFrameProxy, read
+# Clean consolidated API with core/ subdirectory
 ```
 
 **3. Deprecation Strategy**
@@ -95,7 +95,7 @@ Justification: Making Phase 2 the default changes the return types and API surfa
 
 ### Alternative A: Keep Both APIs Indefinitely (Rejected)
 
-**Approach**: Maintain `parquetframe` (Phase 1) and `parquetframe.core_v2` (Phase 2) indefinitely.
+**Approach**: Maintain `parquetframe` (Phase 1) and `parquetframe.core` (Phase 2) indefinitely.
 
 **Pros**:
 - No breaking changes
