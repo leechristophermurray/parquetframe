@@ -1,0 +1,21 @@
+[package]
+name = "pf-workflow-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+rayon.workspace = true
+crossbeam.workspace = true
+parking_lot.workspace = true
+thiserror.workspace = true
+
+[dependencies.tokio]
+workspace = true
+optional = true
+
+[features]
+async = ["tokio"]
