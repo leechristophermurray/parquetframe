@@ -16,7 +16,8 @@ A complete task management application showcasing all Phase 2 features:
 
 ### Quick Preview
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/models.py start=19
 @entity(storage_path="./kanban_data/users", primary_key="user_id")
 @dataclass
 class User:
@@ -90,7 +91,8 @@ The complete 850+ line tutorial covers:
 
 #### Defining Entities with Decorators
 
-```python path=null start=null
+```python
+# path=null start=null
 from dataclasses import dataclass
 from datetime import datetime
 from parquetframe.entity import entity, rel
@@ -134,7 +136,8 @@ print(f"Loaded: {loaded.name} - ${loaded.price}")
 
 Define relationships between entities:
 
-```python path=null start=null
+```python
+# path=null start=null
 @entity(storage_path="./data/orders", primary_key="order_id")
 @dataclass
 class Order:
@@ -177,7 +180,8 @@ print(f"{customer.name} has {len(all_orders)} orders")
 
 #### Zanzibar Permission Checking
 
-```python path=null start=null
+```python
+# path=null start=null
 from parquetframe.permissions import PermissionManager
 
 # Initialize permission manager
@@ -204,7 +208,8 @@ print(f"User can edit: {can_edit}")
 
 #### List User Permissions
 
-```python path=null start=null
+```python
+# path=null start=null
 # Find all documents user can access - uses expand() API
 accessible_docs = perm_mgr.list_user_permissions(
     user_id="user_001",
@@ -228,7 +233,8 @@ print(f"{len(authorized_users)} users can edit this document")
 
 From the Todo/Kanban example:
 
-```python path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=254
+```python
+# path=/Users/temp/Documents/Projects/parquetframe/examples/integration/todo_kanban/permissions.py start=254
     def grant_board_access(
         self,
         user_id: str,
@@ -258,7 +264,8 @@ From the Todo/Kanban example:
 
 #### ETL Pipeline Example
 
-```yaml path=null start=null
+```yaml
+# path=null start=null
 # data_pipeline.yml
 name: Customer Data ETL
 description: Import customer data from CSV and process
@@ -295,7 +302,8 @@ steps:
 
 Run the workflow:
 
-```python path=null start=null
+```python
+# path=null start=null
 from parquetframe.workflow import WorkflowEngine
 from parquetframe.core_v2 import core_v2
 
@@ -312,7 +320,8 @@ print(f"Processed {result['records_processed']} customers")
 
 #### Switch Between Compute Engines
 
-```python path=null start=null
+```python
+# path=null start=null
 from parquetframe.core_v2 import core_v2
 
 # Start with pandas for small data
@@ -335,7 +344,8 @@ print(f"Found {len(large_query_result)} electronics products")
 
 #### Engine-Specific Optimizations
 
-```python path=null start=null
+```python
+# path=null start=null
 # Polars - fastest for single-machine workloads
 core = core_v2(engine="polars")
 products = core.query(Product).all()
@@ -362,7 +372,8 @@ plt.show()
 
 ### With FastAPI
 
-```python path=null start=null
+```python
+# path=null start=null
 from fastapi import FastAPI, HTTPException
 from parquetframe.core_v2 import core_v2
 from parquetframe.permissions import PermissionManager
@@ -413,7 +424,8 @@ def get_task(task_id: str, user_id: str):
 
 ### With Data Science Tools
 
-```python path=null start=null
+```python
+# path=null start=null
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns

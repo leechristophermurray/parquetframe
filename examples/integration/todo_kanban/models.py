@@ -35,7 +35,7 @@ class User:
     user_id: str
     username: str
     email: str
-    created_at: datetime = None
+    created_at: datetime | None = None
 
     def __post_init__(self):
         """Initialize created_at if not provided."""
@@ -71,8 +71,8 @@ class Board:
     name: str
     description: str
     owner_id: str
-    created_at: datetime = None
-    updated_at: datetime = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     def __post_init__(self):
         """Initialize timestamps if not provided."""
@@ -116,8 +116,8 @@ class TaskList:
     name: str
     board_id: str
     position: int = 0
-    created_at: datetime = None
-    updated_at: datetime = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     def __post_init__(self):
         """Initialize timestamps if not provided."""
@@ -168,8 +168,8 @@ class Task:
     list_id: str = ""
     assigned_to: str | None = None
     position: int = 0  # Position within the list
-    created_at: datetime = None
-    updated_at: datetime = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     def __post_init__(self):
         """Initialize timestamps if not provided."""
