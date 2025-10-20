@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 
 from .data import EdgeSet
+from .rust_backend import RUST_AVAILABLE, build_csc_rust, build_csr_rust
 
 
 class CSRAdjacency:
@@ -167,6 +168,26 @@ class CSRAdjacency:
                 num_vertices=0,
             )
 
+        # Try Rust backend first for performance
+        if RUST_AVAILABLE:
+            try:
+                indptr, indices, weights_out = build_csr_rust(
+                    sources, targets, num_vertices, weights
+                )
+                return cls(
+                    indices=indices,
+                    indptr=indptr,
+                    data=weights_out,
+                    num_vertices=num_vertices,
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"Rust CSR construction failed ({e}), falling back to Python",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        # Fallback to Python implementation
         # Sort edges by source vertex for efficient construction
         sort_idx = np.argsort(sources)
         sources_sorted = sources[sort_idx]
@@ -509,6 +530,26 @@ class CSCAdjacency:
                 num_vertices=0,
             )
 
+        # Try Rust backend first for performance
+        if RUST_AVAILABLE:
+            try:
+                indptr, indices, weights_out = build_csc_rust(
+                    sources, targets, num_vertices, weights
+                )
+                return cls(
+                    indices=indices,
+                    indptr=indptr,
+                    data=weights_out,
+                    num_vertices=num_vertices,
+                )
+            except Exception as e:
+                warnings.warn(
+                    f"Rust CSC construction failed ({e}), falling back to Python",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        # Fallback to Python implementation
         # Sort by target vertex
         sort_idx = np.argsort(targets)
         sources_sorted = sources[sort_idx]
