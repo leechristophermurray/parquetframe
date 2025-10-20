@@ -149,7 +149,7 @@ def example_compression_codecs():
 
         for codec, size in sizes.items():
             print(
-                f"   {codec:10s}: {size:4d} KB ({(1 - size/uncompressed_size)*100:.0f}% reduction)"
+                f"   {codec:10s}: {size:4d} KB ({(1 - size / uncompressed_size) * 100:.0f}% reduction)"
             )
 
         print("\n3. Usage:")

@@ -204,3 +204,9 @@ output_*.parquet
 .uv/
 uv.lock
 CI_FIX_SUMMARY.md
+
+# Rust artifacts
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
