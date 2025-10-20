@@ -572,6 +572,17 @@ Full documentation is available at [https://leechristophermurray.github.io/parqu
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Rust Backend (Optional)
+
+ParquetFrame includes optional Rust acceleration for 5-20x performance improvements.
+
+```bash
+pip install parquetframe[rust]  # With Rust support
+export PARQUETFRAME_DISABLE_RUST=1  # Disable if needed
+```
+
+See [Rust Integration Guide](docs/rust/index.md) for details.
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
