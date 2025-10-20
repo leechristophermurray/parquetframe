@@ -5,24 +5,28 @@
 //! - Concurrency management and resource scheduling
 //! - Backpressure, retries, and timeouts
 //!
-//! Phase 0: Foundation - Placeholder implementation
-//! Phase 5: Workflow executor will be implemented here
+//! # Phase 3.4: Workflow Engine Core
+//!
+//! This implementation provides:
+//! - DAG-based workflow representation with cycle detection
+//! - Topological sorting for execution ordering
+//! - Parallel execution scheduling
+//! - Comprehensive metrics collection
+//! - Configurable retry and timeout behavior
 
-pub mod workflow {
-    /// Placeholder for workflow functionality
-    /// Will be implemented in Phase 5 (Workflow Executor)
-    pub fn init() {
-        // Phase 5 implementation: DAG executor, concurrency control
-    }
-}
+pub mod config;
+pub mod dag;
+pub mod error;
+pub mod executor;
+pub mod metrics;
+pub mod scheduler;
+pub mod step;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_placeholder() {
-        workflow::init();
-        assert!(true, "Placeholder test for Phase 0");
-    }
-}
+// Re-export main types for convenience
+pub use config::{ExecutorConfig, ExecutorConfigBuilder};
+pub use dag::{Node, DAG};
+pub use error::{DAGError, ExecutionError, ResourceError, Result, WorkflowError};
+pub use executor::WorkflowExecutor;
+pub use metrics::{StepMetrics, StepStatus, WorkflowMetrics};
+pub use scheduler::ParallelScheduler;
+pub use step::{ExecutionContext, RetryConfig, Step, StepResult};
