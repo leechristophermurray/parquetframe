@@ -5,24 +5,19 @@
 //! - Graph traversal algorithms (BFS, DFS)
 //! - Advanced algorithms (PageRank, Dijkstra, Connected Components)
 //!
-//! Phase 0: Foundation - Placeholder implementation
-//! Phase 1: Core graph algorithms will be implemented here
+//! Phase 1: Core graph algorithms (CSR/CSC, BFS, DFS)
 
-pub mod graph {
-    /// Placeholder for graph functionality
-    /// Will be implemented in Phase 1 (Graph Core)
-    pub fn init() {
-        // Phase 1 implementation: CSR/CSC builders, BFS, DFS
-    }
-}
+pub mod types;
+pub mod error;
+pub mod csr;
+pub mod csc;
+pub mod bfs;
+pub mod dfs;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_placeholder() {
-        graph::init();
-        assert!(true, "Placeholder test for Phase 0");
-    }
-}
+// Re-export commonly used types
+pub use types::*;
+pub use error::{GraphError, Result};
+pub use csr::CsrGraph;
+pub use csc::CscGraph;
+pub use bfs::{bfs_parallel, bfs_sequential, BfsResult};
+pub use dfs::dfs;

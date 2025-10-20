@@ -10,3 +10,7 @@ repository.workspace = true
 serde.workspace = true
 rayon.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.4"
