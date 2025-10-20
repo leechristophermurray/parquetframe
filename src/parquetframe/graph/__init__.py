@@ -245,7 +245,9 @@ class GraphFrame:
             edge_set = EdgeSet(
                 data=self.edges, edge_type="default", properties={}, schema=None
             )
-            self._csr_adjacency = CSRAdjacency.from_edge_set(edge_set)
+            self._csr_adjacency = CSRAdjacency.from_edge_set(
+                edge_set, num_vertices=self.num_vertices
+            )
         return self._csr_adjacency
 
     def _get_csc_adjacency(self) -> CSCAdjacency:
@@ -262,7 +264,9 @@ class GraphFrame:
             edge_set = EdgeSet(
                 data=self.edges, edge_type="default", properties={}, schema=None
             )
-            self._csc_adjacency = CSCAdjacency.from_edge_set(edge_set)
+            self._csc_adjacency = CSCAdjacency.from_edge_set(
+                edge_set, num_vertices=self.num_vertices
+            )
         return self._csc_adjacency
 
     @property
