@@ -216,7 +216,7 @@ class TestAvroTimestampHandling:
 
     def test_datetime_roundtrip(self, tmp_path):
         """Test datetime values survive roundtrip."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         df = pd.DataFrame(
             {
@@ -274,7 +274,7 @@ class TestAvroIntegration:
 
     def test_read_write_roundtrip_multiple_engines(self, sample_df, tmp_path):
         """Test roundtrip with different engines."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         output_path = tmp_path / "roundtrip.avro"
 
@@ -298,7 +298,7 @@ class TestAvroAutoDetection:
 
     def test_read_with_auto_detection(self, sample_avro_file):
         """Test read() function auto-detects .avro format."""
-        from parquetframe.core_v2 import read
+        from parquetframe.core import read
 
         proxy = read(sample_avro_file)
 
