@@ -182,7 +182,7 @@ impl WorkflowMetrics {
 
     /// Compute the parallelism factor based on step timings.
     fn compute_parallelism_factor(&mut self) {
-        if self.step_metrics.is_empty() || self.total_duration.as_secs_f64() == 0.0 {
+        if self.step_metrics.is_empty() {
             self.parallelism_factor = 1.0;
             return;
         }
@@ -194,11 +194,17 @@ impl WorkflowMetrics {
 
         let workflow_time = self.total_duration.as_secs_f64();
 
-        self.parallelism_factor = if workflow_time > 0.0 {
-            total_step_time / workflow_time
-        } else {
-            1.0
-        };
+        // Handle edge cases for very fast execution
+        const MIN_TIME: f64 = 0.000001; // 1 microsecond
+
+        // If steps execute too fast to measure accurately, assume reasonable parallelism
+        // For sequential execution, this should be close to 1.0
+        if total_step_time < MIN_TIME || workflow_time < MIN_TIME {
+            self.parallelism_factor = 1.0;
+            return;
+        }
+
+        self.parallelism_factor = total_step_time / workflow_time;
     }
 }
 

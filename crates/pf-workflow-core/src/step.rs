@@ -58,6 +58,7 @@ pub struct ExecutionContext {
     pub data: HashMap<String, Value>,
 
     /// Accumulated metrics (for internal use).
+    #[allow(dead_code)]
     pub(crate) metrics: Vec<StepMetrics>,
 }
 

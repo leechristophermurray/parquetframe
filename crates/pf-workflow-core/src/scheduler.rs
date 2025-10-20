@@ -16,6 +16,7 @@ pub struct ParallelScheduler {
     max_concurrent: usize,
 
     /// Steps currently pending execution.
+    #[allow(dead_code)]
     pending: VecDeque<String>,
 
     /// Steps currently running.
