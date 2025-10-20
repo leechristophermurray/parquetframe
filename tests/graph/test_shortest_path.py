@@ -433,10 +433,21 @@ class TestDijkstraRustBackend:
         # Results should match exactly
         for i in range(len(rust_sorted)):
             assert rust_sorted.iloc[i]["distance"] == pandas_sorted.iloc[i]["distance"]
-            assert (
-                rust_sorted.iloc[i]["predecessor"]
-                == pandas_sorted.iloc[i]["predecessor"]
-            )
+
+            # Handle pandas NA values properly in predecessor comparison
+            rust_pred = rust_sorted.iloc[i]["predecessor"]
+            pandas_pred = pandas_sorted.iloc[i]["predecessor"]
+
+            if pd.isna(rust_pred) and pd.isna(pandas_pred):
+                # Both are NA, considered equal
+                continue
+            elif pd.isna(rust_pred) or pd.isna(pandas_pred):
+                pytest.fail(
+                    f"Predecessor mismatch at vertex {i}: "
+                    f"rust={rust_pred}, pandas={pandas_pred}"
+                )
+            else:
+                assert rust_pred == pandas_pred
 
     def test_dijkstra_rust_multi_source(self, weighted_chain_graph):
         """Test Rust Dijkstra with multiple sources."""

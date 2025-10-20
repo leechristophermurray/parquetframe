@@ -154,8 +154,12 @@ def dijkstra(
             return dijkstra_rust_wrapper(
                 graph, sources, weight_column, directed, include_unreachable
             )
-        except Exception as e:
-            # Fallback to pandas if Rust fails (e.g., Panic, runtime errors)
+        except ValueError as e:
+            # Re-raise validation errors (user input errors)
+            error_msg = str(e)
+            if "not found" in error_msg or "negative" in error_msg:
+                raise
+            # Fall back for other ValueError types
             import warnings
 
             warnings.warn(
@@ -163,7 +167,15 @@ def dijkstra(
                 RuntimeWarning,
                 stacklevel=2,
             )
-            pass
+        except (IndexError, RuntimeError) as e:
+            # Fallback to pandas for runtime errors
+            import warnings
+
+            warnings.warn(
+                f"Rust backend failed ({type(e).__name__}), falling back to Python: {e}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
     # Continue with pandas implementation
     return dijkstra_pandas(graph, sources, weight_column, directed, include_unreachable)
@@ -216,6 +228,13 @@ def dijkstra_rust_wrapper(
         # The CSR should already include reverse edges for undirected graphs
         adj = graph.csr_adjacency
 
+    # Defensive check: ensure CSR indptr has correct size
+    if len(adj.indptr) != graph.num_vertices + 1:
+        raise ValueError(
+            f"CSR indptr size mismatch: expected {graph.num_vertices + 1}, "
+            f"got {len(adj.indptr)}. This indicates a graph construction issue."
+        )
+
     # 3. Get edge weights in CSR order
     edges_df = graph.edges
     if hasattr(edges_df, "pandas_df"):
@@ -254,8 +273,8 @@ def dijkstra_rust_wrapper(
 
     edge_weights = np.array(edge_weights_list, dtype=np.float64)
 
-    # Check for negative weights
-    if edge_weights.min() < 0:
+    # Check for negative weights (only if there are edges)
+    if len(edge_weights) > 0 and edge_weights.min() < 0:
         raise ValueError("Dijkstra's algorithm requires non-negative edge weights")
 
     # 4. Normalize sources to array
