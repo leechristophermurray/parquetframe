@@ -106,8 +106,15 @@ def pagerank(
                 return pagerank_rust_wrapper(
                     graph, alpha, tol, max_iter, weight_column, personalized, directed
                 )
-            except Exception:
-                # Fallback to Python if Rust fails
+            except Exception as e:
+                # Fallback to Python if Rust fails (e.g., Panic, runtime errors)
+                import warnings
+
+                warnings.warn(
+                    f"Rust backend failed ({type(e).__name__}), falling back to Python: {e}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
                 pass
         # Fallback to existing Python backend selection
         if hasattr(graph.edges, "islazy") and graph.edges.islazy:

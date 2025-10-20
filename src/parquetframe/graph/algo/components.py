@@ -97,8 +97,15 @@ def connected_components(
         if is_rust_available():
             try:
                 return connected_components_rust_wrapper(graph, directed)
-            except Exception:
-                # Fallback to Python if Rust fails
+            except Exception as e:
+                # Fallback to Python if Rust fails (e.g., Panic, runtime errors)
+                import warnings
+
+                warnings.warn(
+                    f"Rust backend failed ({type(e).__name__}), falling back to Python: {e}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
                 pass
         # Fallback to existing Python backend selection
         if hasattr(graph.edges, "islazy") and graph.edges.islazy:

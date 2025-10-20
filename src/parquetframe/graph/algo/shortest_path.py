@@ -154,8 +154,15 @@ def dijkstra(
             return dijkstra_rust_wrapper(
                 graph, sources, weight_column, directed, include_unreachable
             )
-        except Exception:
-            # Fallback to pandas if Rust fails
+        except Exception as e:
+            # Fallback to pandas if Rust fails (e.g., Panic, runtime errors)
+            import warnings
+
+            warnings.warn(
+                f"Rust backend failed ({type(e).__name__}), falling back to Python: {e}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             pass
 
     # Continue with pandas implementation
