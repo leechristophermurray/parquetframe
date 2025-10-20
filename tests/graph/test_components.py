@@ -346,3 +346,163 @@ class TestLabelPropagationComponents:
         computed_result = lazy_result.compute()
         assert len(computed_result) == 5
         assert len(computed_result["component_id"].unique()) == 1
+
+
+@pytest.mark.graph
+class TestConnectedComponentsRustBackend:
+    """Test Rust backend integration for connected components algorithm."""
+
+    def test_components_rust_backend_when_available(self, simple_chain_graph):
+        """Test that Rust backend works when explicitly requested and available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Explicitly request Rust backend
+        result = connected_components(simple_chain_graph, backend="rust")
+
+        # Should have all vertices in one component
+        assert len(result) == 5
+        assert len(result["component_id"].unique()) == 1
+        assert result["vertex"].dtype == "int64"
+        assert result["component_id"].dtype == "int64"
+
+    def test_components_rust_backend_unavailable_error(self, simple_chain_graph):
+        """Test RuntimeError when Rust backend requested but unavailable."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if is_rust_available():
+            pytest.skip("Rust backend is available, cannot test unavailable scenario")
+
+        # Should raise RuntimeError when Rust explicitly requested but unavailable
+        with pytest.raises(
+            RuntimeError, match="Rust backend requested but not available"
+        ):
+            connected_components(simple_chain_graph, backend="rust")
+
+    def test_components_auto_prefers_rust(self, disconnected_graph):
+        """Test that backend='auto' prefers Rust when available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Auto should prefer Rust
+        result = connected_components(disconnected_graph, backend="auto")
+
+        # Should succeed and return valid results
+        assert len(result) == 5
+        assert len(result["component_id"].unique()) == 3
+
+    def test_components_rust_parity_with_pandas(self, disconnected_graph):
+        """Test that Rust results match pandas implementation."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Run both implementations
+        rust_result = connected_components(disconnected_graph, backend="rust")
+        pandas_result = connected_components(disconnected_graph, backend="pandas")
+
+        # Both should find the same number of components
+        assert len(rust_result["component_id"].unique()) == len(
+            pandas_result["component_id"].unique()
+        )
+
+        # Create component maps for comparison
+        rust_map = dict(
+            zip(rust_result["vertex"], rust_result["component_id"], strict=False)
+        )
+        pandas_map = dict(
+            zip(pandas_result["vertex"], pandas_result["component_id"], strict=False)
+        )
+
+        # Vertices in same component should stay together (component IDs may differ)
+        assert (rust_map[0] == rust_map[1]) == (pandas_map[0] == pandas_map[1])
+        assert (rust_map[2] == rust_map[3]) == (pandas_map[2] == pandas_map[3])
+
+    def test_components_rust_single_component(self, simple_chain_graph):
+        """Test Rust components on single connected component."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = connected_components(simple_chain_graph, backend="rust")
+
+        # All vertices should be in one component
+        assert len(result) == 5
+        assert len(result["component_id"].unique()) == 1
+
+    def test_components_rust_multiple_components(self, disconnected_graph):
+        """Test Rust components on disconnected graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = connected_components(disconnected_graph, backend="rust")
+
+        # Should have 3 components: {0,1}, {2,3}, {4}
+        assert len(result) == 5
+        assert len(result["component_id"].unique()) == 3
+
+        # Check component assignments
+        component_map = dict(
+            zip(result["vertex"], result["component_id"], strict=False)
+        )
+
+        # Vertices 0 and 1 should be in same component
+        assert component_map[0] == component_map[1]
+
+        # Vertices 2 and 3 should be in same component
+        assert component_map[2] == component_map[3]
+
+        # Vertex 4 should be in its own component
+        assert component_map[4] not in [component_map[0], component_map[2]]
+
+    def test_components_rust_single_vertex(self, single_vertex_graph):
+        """Test Rust components on single vertex graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = connected_components(single_vertex_graph, backend="rust")
+
+        # Should have one vertex in one component
+        assert len(result) == 1
+        assert result.iloc[0]["vertex"] == 0
+        assert result.iloc[0]["component_id"] == 0
+
+    def test_components_rust_undirected(self, undirected_triangle_graph):
+        """Test Rust components on undirected graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = connected_components(
+            undirected_triangle_graph, backend="rust", directed=False
+        )
+
+        # All vertices should be in one component
+        assert len(result) == 3
+        assert len(result["component_id"].unique()) == 1
+
+    def test_components_rust_weakly_connected(self, directed_weakly_connected_graph):
+        """Test Rust components for weakly connected directed graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = connected_components(
+            directed_weakly_connected_graph, backend="rust", method="weak"
+        )
+
+        # All vertices should be weakly connected
+        assert len(result) == 4
+        assert len(result["component_id"].unique()) == 1

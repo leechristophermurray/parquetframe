@@ -5,24 +5,14 @@
 //! - Avro schema resolution and fast deserialization
 //! - Columnar data operations on Arrow buffers
 //!
-//! Phase 0: Foundation - Placeholder implementation
-//! Phase 2: I/O fast-paths will be implemented here
+//! Phase 2: I/O Fast-Paths Implementation
 
-pub mod io {
-    /// Placeholder for I/O functionality
-    /// Will be implemented in Phase 2 (I/O Fast-Paths)
-    pub fn init() {
-        // Phase 2 implementation: Parquet/Avro metadata, filters
-    }
-}
+/// Error types for I/O operations
+pub mod error;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Parquet metadata reading and statistics
+pub mod parquet_meta;
 
-    #[test]
-    fn test_placeholder() {
-        io::init();
-        assert!(true, "Placeholder test for Phase 0");
-    }
-}
+// Re-export common types
+pub use error::{IoError, Result};
+pub use parquet_meta::{ColumnStatistics, ParquetMetadata};

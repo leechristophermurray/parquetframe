@@ -3,7 +3,7 @@
 //! Provides Python-accessible functions for CSR/CSC construction and graph traversal.
 
 use numpy::{PyArray1, PyReadonlyArray1, PyArrayMethods};
-use pf_graph_core::{bfs_parallel, bfs_sequential, dfs, CscGraph, CsrGraph};
+use pf_graph_core::{bfs_parallel, bfs_sequential, dfs, dijkstra_rust, pagerank_rust, union_find_components, CscGraph, CsrGraph};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -156,6 +156,157 @@ fn dfs_rust<'py>(
     Ok(PyArray1::from_vec(py, result).to_owned().into())
 }
 
+/// Compute PageRank scores using power iteration.
+///
+/// # Arguments
+/// * `indptr` - CSR indptr array (int64)
+/// * `indices` - CSR indices array (int32)
+/// * `num_vertices` - Total number of vertices
+/// * `alpha` - Damping factor (typically 0.85)
+/// * `tol` - Convergence tolerance (default 1e-6)
+/// * `max_iter` - Maximum iterations (default 100)
+/// * `personalization` - Optional personalization vector (float64)
+///
+/// # Returns
+/// PageRank scores as numpy array (float64)
+#[pyfunction]
+fn pagerank_rust_py<'py>(
+    py: Python<'py>,
+    indptr: PyReadonlyArray1<i64>,
+    indices: PyReadonlyArray1<i32>,
+    num_vertices: usize,
+    alpha: f64,
+    tol: f64,
+    max_iter: usize,
+    personalization: Option<PyReadonlyArray1<f64>>,
+) -> PyResult<Py<PyArray1<f64>>> {
+    // Convert numpy arrays to Rust slices
+    let indptr_vec = indptr.to_vec()?;
+    let indices_vec = indices.to_vec()?
+        .into_iter()
+        .map(|x| x as i32)
+        .collect::<Vec<_>>();
+    let personalization_vec = personalization
+        .as_ref()
+        .map(|p| p.to_vec())
+        .transpose()?;
+
+    // Build CSR graph structure
+    let csr = CsrGraph {
+        indptr: indptr_vec,
+        indices: indices_vec,
+        weights: None,
+        num_vertices,
+    };
+
+    // Release GIL and compute PageRank
+    let scores = py.allow_threads(|| {
+        pagerank_rust(
+            &csr,
+            alpha,
+            tol,
+            max_iter,
+            personalization_vec.as_deref(),
+        )
+    })
+    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+
+    // Convert results to numpy array
+    Ok(PyArray1::from_vec(py, scores).to_owned().into())
+}
+
+/// Compute shortest paths using Dijkstra's algorithm.
+///
+/// # Arguments
+/// * `indptr` - CSR indptr array (int64)
+/// * `indices` - CSR indices array (int32)
+/// * `num_vertices` - Total number of vertices
+/// * `sources` - Source vertex IDs (int32)
+/// * `weights` - Edge weights (float64)
+///
+/// # Returns
+/// Tuple of (distances, predecessors) as numpy arrays
+#[pyfunction]
+fn dijkstra_rust_py<'py>(
+    py: Python<'py>,
+    indptr: PyReadonlyArray1<i64>,
+    indices: PyReadonlyArray1<i32>,
+    num_vertices: usize,
+    sources: PyReadonlyArray1<i32>,
+    weights: PyReadonlyArray1<f64>,
+) -> PyResult<(Py<PyArray1<f64>>, Py<PyArray1<i32>>)> {
+    // Convert numpy arrays to Rust types
+    let indptr_vec = indptr.to_vec()?;
+    let indices_vec = indices.to_vec()?;
+    let sources_vec = sources.to_vec()?;
+    let weights_vec = weights.to_vec()?;
+
+    // Build CSR graph structure
+    let csr = CsrGraph {
+        indptr: indptr_vec,
+        indices: indices_vec,
+        weights: Some(weights_vec.clone()),
+        num_vertices,
+    };
+
+    // Release GIL and compute shortest paths
+    let (distances, predecessors) = py.allow_threads(|| {
+        dijkstra_rust(&csr, &sources_vec, &weights_vec)
+    })
+    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+
+    // Convert results to numpy arrays
+    let distances_arr: Py<PyArray1<f64>> = PyArray1::from_vec(py, distances).to_owned().into();
+    let predecessors_arr: Py<PyArray1<i32>> = PyArray1::from_vec(py, predecessors).to_owned().into();
+
+    Ok((distances_arr, predecessors_arr))
+}
+
+/// Find connected components using union-find algorithm.
+///
+/// # Arguments
+/// * `sources` - Source vertex IDs (usize/uint64)
+/// * `targets` - Target vertex IDs (usize/uint64)
+/// * `num_vertices` - Total number of vertices
+/// * `directed` - Whether graph is directed (for weak components)
+///
+/// # Returns
+/// Component labels as numpy array (usize/uint64)
+#[pyfunction]
+fn connected_components_rust_py<'py>(
+    py: Python<'py>,
+    sources: PyReadonlyArray1<i64>,
+    targets: PyReadonlyArray1<i64>,
+    num_vertices: usize,
+    directed: bool,
+) -> PyResult<Py<PyArray1<i64>>> {
+    // Convert numpy arrays to edge list
+    let sources_vec = sources.to_vec()?;
+    let targets_vec = targets.to_vec()?;
+
+    if sources_vec.len() != targets_vec.len() {
+        return Err(PyValueError::new_err(
+            "Sources and targets must have same length",
+        ));
+    }
+
+    let edges: Vec<(usize, usize)> = sources_vec
+        .iter()
+        .zip(targets_vec.iter())
+        .map(|(&s, &t)| (s as usize, t as usize))
+        .collect();
+
+    // Release GIL and compute components
+    let components = py.allow_threads(|| {
+        union_find_components(&edges, num_vertices, directed)
+    })
+    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+
+    // Convert results to numpy array
+    let components_i64: Vec<i64> = components.iter().map(|&c| c as i64).collect();
+    Ok(PyArray1::from_vec(py, components_i64).to_owned().into())
+}
+
 /// Simple test function to verify module loading.
 #[pyfunction]
 fn graph_test() -> String {
@@ -169,5 +320,9 @@ pub fn register_graph_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(build_csc_rust, m)?)?;
     m.add_function(wrap_pyfunction!(bfs_rust, m)?)?;
     m.add_function(wrap_pyfunction!(dfs_rust, m)?)?;
+    // Phase 3 algorithms
+    m.add_function(wrap_pyfunction!(pagerank_rust_py, m)?)?;
+    m.add_function(wrap_pyfunction!(dijkstra_rust_py, m)?)?;
+    m.add_function(wrap_pyfunction!(connected_components_rust_py, m)?)?;
     Ok(())
 }

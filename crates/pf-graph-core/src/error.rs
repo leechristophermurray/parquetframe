@@ -16,6 +16,12 @@ pub enum GraphError {
 
     #[error("Out of bounds: {0}")]
     OutOfBounds(String),
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+
+    #[error("Algorithm did not converge: {0}")]
+    ConvergenceFailed(String),
 }
 
 /// Result type alias for graph operations

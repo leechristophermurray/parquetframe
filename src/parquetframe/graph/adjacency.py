@@ -91,6 +91,7 @@ class CSRAdjacency:
         edge_set: EdgeSet,
         include_weights: bool = False,
         weight_column: str | None = None,
+        num_vertices: int | None = None,
     ) -> "CSRAdjacency":
         """
         Create CSR adjacency from an EdgeSet.
@@ -99,6 +100,7 @@ class CSRAdjacency:
             edge_set: EdgeSet containing edge data
             include_weights: Whether to include edge weights in data array
             weight_column: Column name for edge weights (auto-detected if None)
+            num_vertices: Explicit vertex count (inferred from edges if None)
 
         Returns:
             CSRAdjacency instance
@@ -153,10 +155,12 @@ class CSRAdjacency:
                     )
 
         # Determine vertex range
-        if len(sources) == 0:
-            num_vertices = 0
-        else:
-            num_vertices = max(sources.max(), targets.max()) + 1
+        if num_vertices is None:
+            # Infer from edges if not explicitly provided
+            if len(sources) == 0:
+                num_vertices = 0
+            else:
+                num_vertices = max(sources.max(), targets.max()) + 1
 
         # Build CSR format
         if num_vertices == 0:
@@ -458,6 +462,7 @@ class CSCAdjacency:
         edge_set: EdgeSet,
         include_weights: bool = False,
         weight_column: str | None = None,
+        num_vertices: int | None = None,
     ) -> "CSCAdjacency":
         """
         Create CSC adjacency from an EdgeSet.
@@ -466,6 +471,7 @@ class CSCAdjacency:
             edge_set: EdgeSet containing edge data
             include_weights: Whether to include edge weights in data array
             weight_column: Column name for edge weights (auto-detected if None)
+            num_vertices: Explicit vertex count (inferred from edges if None)
 
         Returns:
             CSCAdjacency instance
@@ -515,10 +521,12 @@ class CSCAdjacency:
                     )
 
         # Determine vertex range
-        if len(sources) == 0:
-            num_vertices = 0
-        else:
-            num_vertices = max(sources.max(), targets.max()) + 1
+        if num_vertices is None:
+            # Infer from edges if not explicitly provided
+            if len(sources) == 0:
+                num_vertices = 0
+            else:
+                num_vertices = max(sources.max(), targets.max()) + 1
 
         # Build CSC format
         if num_vertices == 0:
