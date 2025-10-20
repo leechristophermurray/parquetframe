@@ -25,13 +25,13 @@ Phase 2 introduces:
 ### 1. Initialize Core
 
 ```python
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 
 # Initialize with default engine (pandas)
-core = core_v2()
+df = pf2.read()
 
 # Or specify engine explicitly
-core = core_v2(engine="polars")  # pandas, polars, or dask
+df = pf2.read(engine="polars")  # pandas, polars, or dask
 ```
 
 ### 2. Define Entities
@@ -257,7 +257,7 @@ Switch between compute engines based on your needs:
 
 ```python
 # Start with pandas for small datasets
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 
 # Switch to Polars for faster operations
 core.switch_engine("polars")
@@ -274,12 +274,12 @@ tasks = core.query(Task).filter(status="in_progress").all()
 Here's a full example bringing it all together:
 
 ```python
-from parquetframe.core_v2 import core_v2
+import parquetframe.core as pf2
 from parquetframe.permissions import PermissionManager
 from datetime import datetime
 
 # Initialize
-core = core_v2(engine="pandas")
+df = pf2.read(engine="pandas")
 perm_mgr = PermissionManager()
 
 # Create entities
@@ -355,7 +355,7 @@ if can_edit:
 
 **API Documentation:**
 
-- **[Core API Reference](api/core.md)** - Complete core_v2 documentation
+- **[Core API Reference](api/core.md)** - Complete core API documentation
 - **[Entity API Reference](api/entities.md)** - Entity framework APIs
 - **[Permissions API Reference](api/permissions.md)** - Zanzibar permission APIs
 

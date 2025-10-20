@@ -74,7 +74,7 @@
 === "Phase 2: Multi-Engine"
 
     ```python
-    import parquetframe.core_v2 as pf2
+    import parquetframe.core as pf2
 
     # Automatic engine selection (pandas/Polars/Dask)
     df = pf2.read("data.parquet")  # Auto-selects best engine

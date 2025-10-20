@@ -11,7 +11,7 @@ Tests cover:
 import pandas as pd
 import pytest
 
-from parquetframe.core_v2 import DataFrameProxy, read, read_csv, read_parquet
+from parquetframe.core import DataFrameProxy, read, read_csv, read_parquet
 
 
 @pytest.fixture

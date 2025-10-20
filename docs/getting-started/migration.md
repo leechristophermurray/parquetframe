@@ -10,7 +10,7 @@ Phase 2 is **100% backward compatible** with Phase 1. Your existing code will co
 
 | Feature | Phase 1 | Phase 2 |
 |---------|---------|---------|
-| **Import** | `import parquetframe as pf` | `import parquetframe.core_v2 as pf2` |
+| **Import** | `import parquetframe as pf` | `import parquetframe.core as pf2` |
 | **Engines** | pandas or Dask | pandas, Polars, or Dask |
 | **Selection** | Manual threshold | Intelligent automatic selection |
 | **Formats** | CSV, JSON, Parquet, ORC | + Avro support |
@@ -42,7 +42,7 @@ import parquetframe as pf
 old_df = pf.read("old_data.csv")
 
 # New code
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 new_df = pf2.read("new_data.csv")
 ```
 
@@ -61,9 +61,9 @@ import parquetframe as pf
 
 **Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 # or
-from parquetframe.core_v2 import read, read_csv, read_parquet
+from parquetframe.core import read, read_csv, read_parquet
 ```
 
 ### 2. Reading Data
@@ -81,7 +81,7 @@ df = pf.read("data.csv", islazy=True)  # Force Dask
 
 **Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Auto-detect with intelligent selection
 df = pf2.read("data.csv")
@@ -168,7 +168,7 @@ df = pf.read("medium_data.csv")  # Uses pandas or Dask
 
 **After:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 df = pf2.read("medium_data.csv")  # Auto-selects Polars for medium files
 # Or force it:
@@ -230,7 +230,7 @@ df3 = pf.read("file3.csv", threshold_mb=50)
 **After:**
 ```python
 from parquetframe import set_config
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Set once
 set_config(pandas_threshold_mb=50.0)
@@ -247,7 +247,7 @@ Use Avro for better schema evolution and compression.
 
 **New in Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Read Avro
 df = pf2.read_avro("data.avro")
@@ -281,7 +281,7 @@ df.save("output.parquet")
 
 **Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 df = pf2.read("input.csv")
 filtered = df[df["age"] > 30]
@@ -302,7 +302,7 @@ result = result.compute()  # Trigger computation
 
 **Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 from parquetframe import set_config
 
 # Auto-select Dask for large files
@@ -330,7 +330,7 @@ merged = pd.merge(csv_df.df, json_df.df, on="id")
 
 **Phase 2:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 csv_df = pf2.read_csv("data.csv")
 json_df = pf2.read("data.json")  # Auto-detects JSON
@@ -380,7 +380,7 @@ Both have similar interfaces, so most code works identically.
 
 ```python
 # Error
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 # ImportError: No module named 'polars'
 ```
 

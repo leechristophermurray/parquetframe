@@ -490,7 +490,7 @@ def read(path: str | Path, engine: str | None = None, **kwargs: Any) -> DataFram
         DataFrameProxy with optimal engine selected
 
     Examples:
-        >>> import parquetframe.core_v2 as pf2
+        >>> import parquetframe.core as pf2
         >>> # Automatic engine selection based on file size
         >>> df = pf2.read("data.parquet")
         >>> print(f"Using {df.engine_name} engine")

@@ -31,7 +31,7 @@ python examples/phase2/engine_selection.py
 
 **Key Concepts:**
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Automatic selection based on file size
 df = pf2.read("data.parquet")  # Auto-selects best engine

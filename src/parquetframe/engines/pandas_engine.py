@@ -10,7 +10,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..core_v2.base import DataFrameLike, Engine
+from ..core.base import DataFrameLike, Engine
 
 
 class PandasEngine(Engine):

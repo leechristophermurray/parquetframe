@@ -1,8 +1,8 @@
 """
-Unified core module for ParquetFrame.
+Core multi-engine DataFrame framework for ParquetFrame Phase 2.
 
-This module provides the Phase 2 multi-engine DataFrame API as the default,
-while maintaining deprecated access to Phase 1 features with warnings.
+This module provides the unified DataFrame abstraction layer with intelligent
+backend selection across pandas, Polars, and Dask engines.
 
 Phase 2 API (Default):
     - DataFrameProxy: Unified DataFrame interface
@@ -13,46 +13,33 @@ Phase 2 API (Default):
 Phase 1 API (Deprecated):
     - ParquetFrame: Original DataFrame wrapper (deprecated, use DataFrameProxy)
     - Access via: from parquetframe.core import ParquetFrame (triggers warning)
-
-Examples:
-    Phase 2 (Recommended):
-        >>> from parquetframe.core import DataFrameProxy, read
-        >>> df = read("data.csv")  # Auto-selects optimal engine
-        >>> print(f"Using {df.engine_name} engine")
-
-    Phase 1 (Deprecated):
-        >>> from parquetframe.core import ParquetFrame  # DeprecationWarning
-        >>> df = ParquetFrame.read("data.csv", islazy=True)
 """
 
 import warnings
 from typing import Any
 
-# Phase 2 API - Import directly from core/ subdirectory
-from .core.base import DataFrameLike, Engine, EngineCapabilities
-from .core.frame import DataFrameProxy
-from .core.heuristics import EngineHeuristics
-from .core.reader import read, read_avro, read_csv, read_json, read_orc, read_parquet
-from .core.registry import EngineRegistry
+from .base import DataFrameLike, Engine, EngineCapabilities
+from .frame import DataFrameProxy
+from .heuristics import EngineHeuristics
+from .reader import read, read_avro, read_csv, read_json, read_orc, read_parquet
+from .registry import EngineRegistry
 
 __all__ = [
-    # Phase 2 Core types
+    # Base types
     "DataFrameLike",
     "Engine",
     "EngineCapabilities",
-    # Phase 2 Core classes
+    # Core classes
     "DataFrameProxy",
     "EngineRegistry",
     "EngineHeuristics",
-    # Phase 2 Reader functions
+    # Reader functions
     "read",
     "read_parquet",
     "read_csv",
     "read_json",
     "read_orc",
     "read_avro",
-    # Phase 1 (deprecated) - available via __getattr__
-    # "ParquetFrame",
 ]
 
 
@@ -72,13 +59,9 @@ def __getattr__(name: str) -> Any:
 
     Raises:
         AttributeError: If the attribute doesn't exist in Phase 1 either
-
-    Examples:
-        >>> from parquetframe.core import ParquetFrame  # DeprecationWarning
-        >>> df = ParquetFrame.read("data.csv")
     """
     # Import Phase 1 module lazily to avoid circular imports
-    from . import core_legacy
+    from .. import core_legacy
 
     # Map of Phase 1 exports that should trigger deprecation warnings
     phase1_exports = {
@@ -90,6 +73,7 @@ def __getattr__(name: str) -> Any:
         "CsvHandler": core_legacy.CsvHandler,
         "JsonHandler": core_legacy.JsonHandler,
         "OrcHandler": core_legacy.OrcHandler,
+        "FORMAT_HANDLERS": core_legacy.FORMAT_HANDLERS,
     }
 
     if name in phase1_exports:
@@ -129,7 +113,3 @@ def __getattr__(name: str) -> Any:
         return phase1_exports[name]
 
     raise AttributeError(f"module 'parquetframe.core' has no attribute '{name}'")
-
-
-# Expose Phase 2 as the module-level interface
-# This allows: from parquetframe import core; core.read(...)

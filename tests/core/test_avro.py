@@ -19,7 +19,7 @@ try:
 except ImportError:
     FASTAVRO_AVAILABLE = False
 
-from parquetframe.core_v2 import DataFrameProxy, read_avro
+from parquetframe.core import DataFrameProxy, read_avro
 
 # Skip all tests if fastavro not available
 pytestmark = pytest.mark.skipif(not FASTAVRO_AVAILABLE, reason="fastavro not available")
@@ -103,7 +103,7 @@ class TestAvroWriting:
 
     def test_write_avro_pandas(self, sample_df, tmp_path):
         """Test writing Avro from pandas DataFrame."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         proxy = DataFrameProxy(data=sample_df, engine="pandas")
         output_path = tmp_path / "output.avro"
@@ -126,7 +126,7 @@ class TestAvroWriting:
 
     def test_write_avro_with_compression(self, sample_df, tmp_path):
         """Test writing Avro with compression."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         proxy = DataFrameProxy(data=sample_df, engine="pandas")
         output_path = tmp_path / "compressed.avro"
@@ -149,7 +149,7 @@ class TestAvroWriting:
 
     def test_write_avro_empty_raises_error(self, tmp_path):
         """Test writing empty DataFrame raises error."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         proxy = DataFrameProxy()
         output_path = tmp_path / "empty.avro"
@@ -216,7 +216,7 @@ class TestAvroTimestampHandling:
 
     def test_datetime_roundtrip(self, tmp_path):
         """Test datetime values survive roundtrip."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         df = pd.DataFrame(
             {
@@ -274,7 +274,7 @@ class TestAvroIntegration:
 
     def test_read_write_roundtrip_multiple_engines(self, sample_df, tmp_path):
         """Test roundtrip with different engines."""
-        from parquetframe.core_v2 import DataFrameProxy
+        from parquetframe.core import DataFrameProxy
 
         output_path = tmp_path / "roundtrip.avro"
 
@@ -298,7 +298,7 @@ class TestAvroAutoDetection:
 
     def test_read_with_auto_detection(self, sample_avro_file):
         """Test read() function auto-detects .avro format."""
-        from parquetframe.core_v2 import read
+        from parquetframe.core import read
 
         proxy = read(sample_avro_file)
 

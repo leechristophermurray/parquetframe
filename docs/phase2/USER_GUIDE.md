@@ -29,7 +29,7 @@ pip install fastavro  # For Avro format support
 ### Basic Reading
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Read with automatic engine selection
 df = pf2.read("data.parquet")
@@ -56,7 +56,7 @@ Phase 2 automatically selects the best DataFrame engine based on data size and s
 ### Automatic Engine Selection
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Automatic selection based on file size
 small_df = pf2.read("small.csv")      # Uses pandas
@@ -259,7 +259,7 @@ export PARQUETFRAME_VERBOSE=1
 
 ```python
 from parquetframe import config_context
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Temporary configuration change
 with config_context(default_engine="dask"):
@@ -294,7 +294,7 @@ with config_context(default_engine="dask"):
 ### Multi-Format Workflows
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 from parquetframe import set_config
 
 # Read from multiple formats
@@ -313,7 +313,7 @@ merged = sales_pd.native.merge(customers_pd.native, on="customer_id")
 ### Engine Switching
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Start with pandas
 df = pf2.read("data.csv", engine="pandas")
@@ -550,7 +550,7 @@ print(f"{customer.name} ordered {order.quantity}x {product.name}")
 
 ```python
 from parquetframe import set_config
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Optimize for large datasets
 set_config(
@@ -595,7 +595,7 @@ df = pf2.read("large_dataset.parquet")
 
 ```python
 # Check available engines
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 # Available engines will be auto-detected at import
 ```
 

@@ -18,7 +18,7 @@ except ImportError:
 
 import pandas as pd
 
-from ..core_v2.base import DataFrameLike, Engine
+from ..core.base import DataFrameLike, Engine
 
 
 class DaskEngine(Engine):

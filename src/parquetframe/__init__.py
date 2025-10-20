@@ -46,7 +46,7 @@ from typing import Any
 from .config import config_context, get_config, reset_config, set_config
 
 # Phase 2 multi-engine core (default as of v1.0.0)
-from .core_v2 import (
+from .core import (
     DataFrameProxy,
     Engine,
     EngineCapabilities,
@@ -56,13 +56,13 @@ from .core_v2 import (
     read_orc,
     read_parquet,
 )
-from .core_v2 import read as _read_v2
+from .core import read as _read_v2
 
 # Phase 2 multi-engine components (available for direct import)
 try:
-    from . import core_v2  # New multi-engine core
+    from . import core  # Multi-engine core
 except ImportError:
-    core_v2 = None
+    core = None
 
 # Import submodules
 try:
@@ -84,10 +84,8 @@ except ImportError:
     entity = None
 
 # Legacy Phase 1 support (deprecated as of v1.0.0)
-try:
-    from . import legacy  # Phase 1 API with deprecation warnings
-except ImportError:
-    legacy = None
+# Import lazily to avoid triggering warnings unless explicitly used
+legacy = None  # Will be imported on first access via __getattr__
 
 
 # Backward compatibility: ParquetFrame is now DataFrameProxy
@@ -213,7 +211,26 @@ __all__ = [
     "graph",
     "permissions",
     "entity",
-    "core_v2",
+    "core",
     # Legacy (deprecated)
     "legacy",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """
+    Lazy loading for submodules to avoid premature deprecation warnings.
+
+    This allows the legacy module to be imported only when explicitly accessed,
+    preventing deprecation warnings from appearing when users import Phase 2 APIs.
+    """
+    global legacy
+
+    if name == "legacy":
+        if legacy is None:
+            from . import legacy as _legacy
+
+            legacy = _legacy
+        return legacy
+
+    raise AttributeError(f"module 'parquetframe' has no attribute '{name}'")

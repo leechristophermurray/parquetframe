@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from parquetframe.config import config_context, reset_config, set_config
-from parquetframe.core_v2 import read, read_csv, read_parquet
+from parquetframe.core import read, read_csv, read_parquet
 from parquetframe.entity import entity, rel
 from parquetframe.entity.metadata import registry
 

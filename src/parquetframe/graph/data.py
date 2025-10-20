@@ -10,7 +10,9 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-from ..core import ParquetFrame
+from ..core_legacy import (
+    ParquetFrame,  # Internal use only - avoids deprecation warnings
+)
 
 
 class VertexSet:

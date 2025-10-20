@@ -27,7 +27,9 @@ Examples:
 from pathlib import Path
 from typing import Any, Literal
 
-from ..core import ParquetFrame
+from ..core_legacy import (
+    ParquetFrame,  # Internal use only - avoids deprecation warnings
+)
 from .adjacency import CSCAdjacency, CSRAdjacency
 
 

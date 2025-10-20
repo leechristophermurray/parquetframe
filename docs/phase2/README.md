@@ -34,7 +34,7 @@ pip install fastavro  # Avro support
 ### Basic Usage
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Read with automatic engine selection
 df = pf2.read("data.parquet")
@@ -229,7 +229,7 @@ pytest tests/benchmarks/bench_phase2.py --benchmark-only
 ### Example 1: Multi-Format Pipeline
 
 ```python
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Read from different formats
 sales = pf2.read_csv("sales.csv")
@@ -287,7 +287,7 @@ author = Post.find(1).author()  # User
 
 ```python
 from parquetframe import set_config, config_context
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 # Global configuration
 set_config(
@@ -322,10 +322,10 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
 
 ```bash
 # Run all Phase 2 tests
-pytest tests/core_v2/ tests/entity/ tests/integration/ tests/test_config.py
+pytest tests/core/ tests/entity/ tests/integration/ tests/test_config.py
 
 # Run with coverage
-pytest --cov=src/parquetframe/core_v2 --cov=src/parquetframe/entity --cov=src/parquetframe/config
+pytest --cov=src/parquetframe/core --cov=src/parquetframe/entity --cov=src/parquetframe/config
 
 # Run benchmarks
 pytest tests/benchmarks/ --benchmark-only
