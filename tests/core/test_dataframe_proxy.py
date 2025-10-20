@@ -11,7 +11,7 @@ Tests cover:
 import pandas as pd
 import pytest
 
-from parquetframe.core_v2 import DataFrameProxy
+from parquetframe.core import DataFrameProxy
 
 
 class TestDataFrameProxyInit:

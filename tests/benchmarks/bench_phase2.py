@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from parquetframe.config import config_context, reset_config
-from parquetframe.core_v2 import read_csv, read_parquet
+from parquetframe.core import read_csv, read_parquet
 
 
 @pytest.fixture

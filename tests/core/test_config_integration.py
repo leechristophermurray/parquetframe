@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from parquetframe.config import config_context, get_config, reset_config, set_config
-from parquetframe.core_v2 import read_csv
+from parquetframe.core import read_csv
 
 
 @pytest.fixture(autouse=True)
