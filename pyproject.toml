@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.4,<2.0"]
+build-backend = "maturin"
 
 [project]
 name = "parquetframe"
@@ -92,6 +92,7 @@ ai = [
     "ollama>=0.1.7",  # For LLM integration
     "prompt-toolkit>=3.0.0",  # For interactive CLI
 ]
+rust = []  # Marker for Rust-enabled builds
 all = [
     # Phase 2 multi-engine
     "polars>=0.19.0",
@@ -121,15 +122,11 @@ Changelog = "https://github.com/leechristophermurray/parquetframe/blob/main/CHAN
 [project.scripts]
 pframe = "parquetframe.cli:main [cli]"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/parquetframe"]
-
-[tool.hatch.build.targets.sdist]
-exclude = [
-    "/.github",
-    "/docs",
-    "/tests",
-]
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "parquetframe._rustic"
+python-source = "src"
+manifest-path = "crates/pf-py/Cargo.toml"
 
 # Tool configurations
 [tool.ruff]
