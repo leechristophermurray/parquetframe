@@ -202,7 +202,7 @@ mod tests {
         let weights = vec![1.0, 2.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, predecessors) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, predecessors) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 1.0, 1e-9);
@@ -222,7 +222,7 @@ mod tests {
         let weights = vec![4.0, 1.0, 2.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, _) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, _) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 3.0, 1e-9); // Via vertex 2
@@ -238,7 +238,7 @@ mod tests {
         let weights = vec![5.0, 1.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, predecessors) = dijkstra_rust(&csr, &[0, 1], &weights).unwrap();
+        let (distances, predecessors) = dijkstra_rust(&csr, &[0, 1], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 0.0, 1e-9);
@@ -254,7 +254,7 @@ mod tests {
         let weights = vec![1.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, predecessors) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, predecessors) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 1.0, 1e-9);
@@ -270,7 +270,7 @@ mod tests {
         let weights = vec![1.0];
         let csr = CsrGraph::from_edges(&src, &dst, 1, Some(&weights)).unwrap();
 
-        let (distances, predecessors) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, predecessors) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_eq!(predecessors[0], -1);
@@ -285,7 +285,7 @@ mod tests {
         let weights = vec![2.0, 3.0, 10.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, predecessors) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, predecessors) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 2.0, 1e-9);
@@ -302,7 +302,7 @@ mod tests {
         let weights = vec![0.0, 0.0];
         let csr = CsrGraph::from_edges(&src, &dst, 3, Some(&weights)).unwrap();
 
-        let (distances, _) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, _) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 0.0, 1e-9);
@@ -368,7 +368,7 @@ mod tests {
         let weights = vec![1.0, 4.0, 2.0, 5.0, 1.0];
         let csr = CsrGraph::from_edges(&src, &dst, 4, Some(&weights)).unwrap();
 
-        let (distances, _) = dijkstra_rust(&csr, &[0], &weights).unwrap();
+        let (distances, _) = dijkstra_rust(&csr, &[0], csr.weights.as_ref().unwrap()).unwrap();
 
         assert_approx_eq(distances[0], 0.0, 1e-9);
         assert_approx_eq(distances[1], 1.0, 1e-9);
