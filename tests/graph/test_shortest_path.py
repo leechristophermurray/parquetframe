@@ -354,3 +354,171 @@ class TestBFSShortestPath:
         assert len(result) == 2
         assert set(result["vertex"]) == {0, 1}
         assert all(result["distance"] < np.inf)
+
+
+@pytest.mark.graph
+class TestDijkstraRustBackend:
+    """Test Rust backend integration for Dijkstra shortest path algorithm."""
+
+    def test_dijkstra_rust_backend_when_available(self, weighted_chain_graph):
+        """Test that Rust backend works when explicitly requested and available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Explicitly request Rust backend
+        result = shortest_path(
+            weighted_chain_graph, sources=0, weight_column="weight", backend="rust"
+        )
+
+        # Should have correct basic properties
+        assert len(result) == 5
+        expected_distances = [0.0, 2.0, 5.0, 6.0, 10.0]
+        actual_distances = list(result.sort_values("vertex")["distance"])
+        assert actual_distances == expected_distances
+
+    def test_dijkstra_rust_backend_unavailable_error(self, weighted_chain_graph):
+        """Test RuntimeError when Rust backend requested but unavailable."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if is_rust_available():
+            pytest.skip("Rust backend is available, cannot test unavailable scenario")
+
+        # Should raise RuntimeError when Rust explicitly requested but unavailable
+        with pytest.raises(
+            RuntimeError, match="Rust backend requested but not available"
+        ):
+            shortest_path(
+                weighted_chain_graph, sources=0, weight_column="weight", backend="rust"
+            )
+
+    def test_dijkstra_auto_prefers_rust(self, weighted_chain_graph):
+        """Test that backend='auto' prefers Rust when available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Auto should prefer Rust
+        result = shortest_path(
+            weighted_chain_graph, sources=0, weight_column="weight", backend="auto"
+        )
+
+        # Should succeed and return valid results
+        assert len(result) == 5
+        expected_distances = [0.0, 2.0, 5.0, 6.0, 10.0]
+        actual_distances = list(result.sort_values("vertex")["distance"])
+        assert actual_distances == expected_distances
+
+    def test_dijkstra_rust_parity_with_pandas(self, weighted_diamond_graph):
+        """Test that Rust results match pandas implementation."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Run both implementations
+        rust_result = dijkstra(
+            weighted_diamond_graph, sources=0, weight_column="weight", backend="rust"
+        )
+        pandas_result = dijkstra(
+            weighted_diamond_graph, sources=0, weight_column="weight", backend="pandas"
+        )
+
+        # Sort by vertex for comparison
+        rust_sorted = rust_result.sort_values("vertex").reset_index(drop=True)
+        pandas_sorted = pandas_result.sort_values("vertex").reset_index(drop=True)
+
+        # Results should match exactly
+        for i in range(len(rust_sorted)):
+            assert rust_sorted.iloc[i]["distance"] == pandas_sorted.iloc[i]["distance"]
+            assert (
+                rust_sorted.iloc[i]["predecessor"]
+                == pandas_sorted.iloc[i]["predecessor"]
+            )
+
+    def test_dijkstra_rust_multi_source(self, weighted_chain_graph):
+        """Test Rust Dijkstra with multiple sources."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = shortest_path(
+            weighted_chain_graph, sources=[0, 4], weight_column="weight", backend="rust"
+        )
+
+        # Sources should have distance 0
+        source_results = result[result["vertex"].isin([0, 4])]
+        assert all(source_results["distance"] == 0.0)
+
+    def test_dijkstra_rust_unreachable_vertices(self, disconnected_weighted_graph):
+        """Test Rust Dijkstra with unreachable vertices."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = shortest_path(
+            disconnected_weighted_graph,
+            sources=0,
+            weight_column="weight",
+            backend="rust",
+            include_unreachable=True,
+        )
+
+        # Should include all vertices
+        assert len(result) == 5
+
+        # Reachable vertices have finite distances
+        reachable = result[result["vertex"].isin([0, 1])]
+        assert list(reachable.sort_values("vertex")["distance"]) == [0.0, 2.5]
+
+        # Unreachable vertices have infinite distances
+        unreachable = result[result["vertex"].isin([2, 3, 4])]
+        assert all(unreachable["distance"] == np.inf)
+
+    def test_dijkstra_rust_negative_weights_error(self):
+        """Test that Rust Dijkstra raises error on negative weights."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Create graph with negative weight
+        vertex_data = pd.DataFrame({"vertex_id": [0, 1, 2]})
+        edge_data = pd.DataFrame({"src": [0, 1], "dst": [1, 2], "weight": [1.0, -2.0]})
+        neg_graph = GraphFrame(
+            vertices=ParquetFrame(vertex_data),
+            edges=ParquetFrame(edge_data),
+            metadata={"directed": True},
+        )
+
+        # Should raise ValueError for negative weights
+        with pytest.raises(ValueError, match="non-negative edge weights"):
+            shortest_path(neg_graph, sources=0, weight_column="weight", backend="rust")
+
+    def test_dijkstra_rust_single_vertex(self):
+        """Test Rust Dijkstra on single vertex graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Single vertex with no edges
+        vertex_data = pd.DataFrame({"vertex_id": [0]})
+        edge_data = pd.DataFrame({"src": [], "dst": [], "weight": []})
+        single_graph = GraphFrame(
+            vertices=ParquetFrame(vertex_data),
+            edges=ParquetFrame(edge_data),
+            metadata={"directed": True},
+        )
+
+        result = shortest_path(
+            single_graph, sources=0, weight_column="weight", backend="rust"
+        )
+
+        # Single source vertex should have distance 0
+        assert len(result) == 1
+        assert result.iloc[0]["distance"] == 0.0

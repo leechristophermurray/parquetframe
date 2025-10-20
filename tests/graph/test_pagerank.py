@@ -429,3 +429,158 @@ class TestPageRankDask:
         assert (
             abs(computed_result["rank"].sum() - 1.0) < 0.7
         )  # Very loose for Dask - may not fully converge
+
+
+@pytest.mark.graph
+class TestPageRankRustBackend:
+    """Test Rust backend integration for PageRank algorithm."""
+
+    def test_pagerank_rust_backend_when_available(self, triangle_graph):
+        """Test that Rust backend works when explicitly requested and available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Explicitly request Rust backend
+        result = pagerank(triangle_graph, backend="rust", alpha=0.85, max_iter=100)
+
+        # Should have correct basic properties
+        assert len(result) == 3
+        assert abs(result["rank"].sum() - 1.0) < 0.01
+        assert result["vertex"].dtype == "int64"
+        assert result["rank"].dtype == "float64"
+
+    def test_pagerank_rust_backend_unavailable_error(self, triangle_graph):
+        """Test RuntimeError when Rust backend requested but unavailable."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if is_rust_available():
+            pytest.skip("Rust backend is available, cannot test unavailable scenario")
+
+        # Should raise RuntimeError when Rust explicitly requested but unavailable
+        with pytest.raises(
+            RuntimeError, match="Rust backend requested but not available"
+        ):
+            pagerank(triangle_graph, backend="rust", alpha=0.85, max_iter=100)
+
+    def test_pagerank_auto_prefers_rust(self, simple_chain_graph):
+        """Test that backend='auto' prefers Rust when available."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Auto should prefer Rust
+        result = pagerank(simple_chain_graph, backend="auto", alpha=0.85, max_iter=100)
+
+        # Should succeed and return valid results
+        assert len(result) == 5
+        assert abs(result["rank"].sum() - 1.0) < 0.01
+
+    def test_pagerank_rust_parity_with_pandas(self, triangle_graph):
+        """Test that Rust results match pandas implementation."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Run both implementations
+        rust_result = pagerank(
+            triangle_graph, backend="rust", alpha=0.85, tol=1e-6, max_iter=100
+        )
+        pandas_result = pagerank(
+            triangle_graph, backend="pandas", alpha=0.85, tol=1e-6, max_iter=100
+        )
+
+        # Sort by vertex for comparison
+        rust_sorted = rust_result.sort_values("vertex").reset_index(drop=True)
+        pandas_sorted = pandas_result.sort_values("vertex").reset_index(drop=True)
+
+        # Results should be very close (within tolerance)
+        for i in range(len(rust_sorted)):
+            assert (
+                abs(rust_sorted.iloc[i]["rank"] - pandas_sorted.iloc[i]["rank"]) < 0.01
+            )
+
+    def test_pagerank_rust_single_vertex(self):
+        """Test Rust PageRank on single vertex graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Single vertex with no edges
+        vertex_data = pd.DataFrame({"vertex_id": [0]})
+        edge_data = pd.DataFrame({"src": [], "dst": []})
+        single_graph = GraphFrame(
+            vertices=ParquetFrame(vertex_data),
+            edges=ParquetFrame(edge_data),
+            metadata={"directed": True},
+        )
+
+        result = pagerank(single_graph, backend="rust", alpha=0.85, max_iter=100)
+
+        # Single vertex should have all the rank
+        assert len(result) == 1
+        assert abs(result.iloc[0]["rank"] - 1.0) < 0.01
+
+    def test_pagerank_rust_disconnected_graph(self, disconnected_graph):
+        """Test Rust PageRank on disconnected graph."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        result = pagerank(disconnected_graph, backend="rust", alpha=0.85, max_iter=100)
+
+        # Should handle disconnected components
+        assert len(result) == 5
+        assert abs(result["rank"].sum() - 1.0) < 0.01
+
+        # All vertices should have non-zero ranks (due to random jump)
+        assert all(result["rank"] > 0)
+
+    def test_pagerank_rust_weighted_not_supported(self, weighted_graph):
+        """Test that weighted PageRank raises appropriate error in Rust."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Rust backend doesn't support weighted PageRank in Phase 3.3
+        with pytest.raises(
+            ValueError, match="Weighted PageRank not yet supported in Rust backend"
+        ):
+            pagerank(
+                weighted_graph,
+                backend="rust",
+                weight_column="weight",
+                alpha=0.85,
+                max_iter=100,
+            )
+
+    def test_pagerank_rust_personalized(self, triangle_graph):
+        """Test Rust PageRank with personalization."""
+        from parquetframe.graph.rust_backend import is_rust_available
+
+        if not is_rust_available():
+            pytest.skip("Rust backend not available")
+
+        # Personalized PageRank biased towards vertex 0
+        personalized = {0: 1.0}
+        result = pagerank(
+            triangle_graph,
+            backend="rust",
+            personalized=personalized,
+            alpha=0.85,
+            max_iter=100,
+        )
+
+        # Should have valid results
+        assert len(result) == 3
+        assert abs(result["rank"].sum() - 1.0) < 0.01
+
+        # Vertex 0 should have higher rank due to personalization
+        vertex_0_rank = result[result["vertex"] == 0].iloc[0]["rank"]
+        assert vertex_0_rank > 0.3  # Should be biased towards vertex 0
