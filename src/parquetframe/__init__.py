@@ -46,7 +46,7 @@ from typing import Any
 from .config import config_context, get_config, reset_config, set_config
 
 # Phase 2 multi-engine core (default as of v1.0.0)
-from .core_v2 import (
+from .core import (
     DataFrameProxy,
     Engine,
     EngineCapabilities,
@@ -56,13 +56,13 @@ from .core_v2 import (
     read_orc,
     read_parquet,
 )
-from .core_v2 import read as _read_v2
+from .core import read as _read_v2
 
 # Phase 2 multi-engine components (available for direct import)
 try:
-    from . import core_v2  # New multi-engine core
+    from . import core  # Multi-engine core
 except ImportError:
-    core_v2 = None
+    core = None
 
 # Import submodules
 try:
@@ -213,7 +213,7 @@ __all__ = [
     "graph",
     "permissions",
     "entity",
-    "core_v2",
+    "core",
     # Legacy (deprecated)
     "legacy",
 ]

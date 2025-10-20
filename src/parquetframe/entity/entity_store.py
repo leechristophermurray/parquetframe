@@ -9,7 +9,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..core_v2.reader import read_avro, read_parquet
+from ..core.reader import read_avro, read_parquet
 
 
 class EntityStore:
