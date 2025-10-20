@@ -231,30 +231,34 @@ class TestPerformance:
     def test_large_row_count(self):
         """Test row count extraction on larger file."""
         with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as f:
+            temp_path = f.name
             # Create larger dataset
             df = pd.DataFrame({"id": range(10000), "value": range(10000)})
-            df.to_parquet(f.name, index=False)
+            df.to_parquet(temp_path, index=False)
 
-            try:
-                row_count = get_parquet_row_count_fast(f.name)
-                assert row_count == 10000
-            finally:
-                Path(f.name).unlink()
+        # File is now closed, safe to read and delete on Windows
+        try:
+            row_count = get_parquet_row_count_fast(temp_path)
+            assert row_count == 10000
+        finally:
+            Path(temp_path).unlink()
 
     def test_many_columns(self):
         """Test metadata extraction with many columns."""
         with tempfile.NamedTemporaryFile(suffix=".parquet", delete=False) as f:
+            temp_path = f.name
             # Create dataset with many columns
             data = {f"col_{i}": [i] * 100 for i in range(50)}
             df = pd.DataFrame(data)
-            df.to_parquet(f.name, index=False)
+            df.to_parquet(temp_path, index=False)
 
-            try:
-                metadata = read_parquet_metadata_fast(f.name)
-                assert metadata["num_columns"] == 50
-                assert len(metadata["column_names"]) == 50
-            finally:
-                Path(f.name).unlink()
+        # File is now closed, safe to read and delete on Windows
+        try:
+            metadata = read_parquet_metadata_fast(temp_path)
+            assert metadata["num_columns"] == 50
+            assert len(metadata["column_names"]) == 50
+        finally:
+            Path(temp_path).unlink()
 
 
 @pytest.mark.skipif(not RUST_AVAILABLE, reason="Rust backend not available")
