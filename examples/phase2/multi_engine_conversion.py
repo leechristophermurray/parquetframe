@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 
 
 def create_sample_data(n_rows: int = 10000) -> pd.DataFrame:

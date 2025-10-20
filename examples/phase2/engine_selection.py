@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import parquetframe.core_v2 as pf2
+import parquetframe.core as pf2
 from parquetframe import set_config
 
 
