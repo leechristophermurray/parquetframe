@@ -19,8 +19,8 @@ pyo3 = { version = "0.26", features = ["extension-module"] }
 rayon = "1.8"
 tokio = { version = "1.35", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
-arrow = "50.0"
-parquet = "50.0"
+arrow = "48.0"
+parquet = "48.0"
 crossbeam = "0.8"
 parking_lot = "0.12"
 thiserror = "1.0"
