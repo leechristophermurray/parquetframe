@@ -34,5 +34,5 @@ pub use executor::WorkflowExecutor;
 pub use metrics::{StepMetrics, StepStatus, WorkflowMetrics};
 pub use pools::ThreadPoolManager;
 pub use progress::{ConsoleProgressCallback, NoOpCallback, ProgressCallback, ProgressEvent};
-pub use scheduler::ParallelScheduler;
+pub use scheduler::{ParallelScheduler, ResourceLimits};
 pub use step::{ExecutionContext, ResourceHint, RetryConfig, Step, StepResult};
