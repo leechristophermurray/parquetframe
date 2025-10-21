@@ -344,9 +344,9 @@ class RustBackendBenchmark:
             print(f"\n{result.operation.upper()} ({result.rows:,} rows)")
             print(f"  File Size: {result.file_size_mb:.2f} MB")
             if result.rust_time:
-                print(f"  Rust:      {result.rust_time*1000:.2f} ms")
+                print(f"  Rust:      {result.rust_time * 1000:.2f} ms")
             if result.python_time:
-                print(f"  PyArrow:   {result.python_time*1000:.2f} ms")
+                print(f"  PyArrow:   {result.python_time * 1000:.2f} ms")
             if result.speedup:
                 emoji = "🚀" if result.speedup > 1 else "🐌"
                 print(f"  Speedup:   {result.speedup:.2f}x {emoji}")
