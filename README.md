@@ -25,6 +25,8 @@
 
 🚀 **Intelligent Backend Selection**: Memory-aware automatic switching between pandas and Dask based on file size, system resources, and file characteristics
 
+⚡ **Rust-Powered Performance**: Optional Rust backend for 5-20x faster I/O operations with graceful Python fallback
+
 📁 **Multi-Format Support**: Seamlessly work with CSV, JSON, ORC, and Parquet files with automatic format detection
 
 📁 **Smart File Handling**: Reads files without requiring extensions - supports `.parquet`, `.pqt`, `.csv`, `.tsv`, `.json`, `.jsonl`, `.ndjson`, `.orc`
@@ -572,16 +574,80 @@ Full documentation is available at [https://leechristophermurray.github.io/parqu
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Rust Backend (Optional)
+## Rust Backend (Performance Acceleration)
 
-ParquetFrame includes optional Rust acceleration for 5-20x performance improvements.
+ParquetFrame includes optional Rust acceleration for **5-20x performance improvements** on I/O and graph operations.
+
+### Features
+
+- ⚡ **Fast Metadata Reading**: Read Parquet metadata (row count, columns, statistics) without loading data
+- 🚀 **Accelerated I/O**: High-performance row count and column name extraction
+- 📊 **Graph Algorithms**: Rust-powered graph processing (coming soon)
+- 🔄 **Graceful Fallback**: Automatically falls back to Python/PyArrow when needed
+- ⚙️ **Configurable**: Enable/disable via environment variables or config API
+
+### Installation
 
 ```bash
-pip install parquetframe[rust]  # With Rust support
-export PARQUETFRAME_DISABLE_RUST=1  # Disable if needed
+# Rust backend is included by default when available
+pip install parquetframe
+
+# Force reinstall to ensure Rust backend is compiled
+pip install --upgrade --force-reinstall parquetframe
+
+# Check if Rust backend is available
+pframe deps
 ```
 
-See [Rust Integration Guide](docs/rust/index.md) for details.
+### Configuration
+
+Control Rust backend behavior via environment variables:
+
+```bash
+# Disable all Rust acceleration
+export PARQUETFRAME_DISABLE_RUST=1
+
+# Disable only Rust I/O (keep graph algorithms enabled)
+export PARQUETFRAME_DISABLE_RUST_IO=1
+
+# Disable only Rust graph algorithms
+export PARQUETFRAME_DISABLE_RUST_GRAPH=1
+```
+
+Or use the configuration API:
+
+```python
+import parquetframe as pf
+
+# Disable Rust I/O
+pf.set_config(rust_io_enabled=False)
+
+# Check backend status
+from parquetframe.io.io_backend import get_backend_info
+info = get_backend_info()
+print(info)  # {'rust_compiled': True, 'rust_io_enabled': True, 'rust_io_available': True}
+```
+
+### Performance Benefits
+
+Rust backend provides significant speedups for:
+
+- **Metadata Operations**: 5-10x faster for reading file metadata
+- **Row Counting**: 10-20x faster than PyArrow for large files
+- **CLI Operations**: `pframe info` uses metadata-only mode (no data loading)
+
+### Benchmarking
+
+Run benchmarks to measure Rust performance on your system:
+
+```python
+from parquetframe.benchmark_rust import run_rust_benchmark
+
+results = run_rust_benchmark(verbose=True)
+# Outputs detailed comparison of Rust vs Python performance
+```
+
+See [Rust Integration Guide](docs/rust/index.md) for more details.
 
 ## License
 
