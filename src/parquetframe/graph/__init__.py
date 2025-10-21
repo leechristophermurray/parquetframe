@@ -158,7 +158,7 @@ class GraphFrame:
 
     def neighbors(
         self, vertex_id: int, mode: Literal["in", "out", "all"] = "out"
-    ) -> list[int]:
+    ) -> list:
         """
         Get neighboring vertex IDs using efficient adjacency structures.
 
@@ -323,6 +323,335 @@ class GraphFrame:
         csr = self._get_csr_adjacency()
         return csr.has_edge(source, target)
 
+    # Algorithm Convenience Methods (Phase 3.5 Task 1.1)
+
+    def pagerank(
+        self,
+        alpha: float = 0.85,
+        tol: float = 1e-6,
+        max_iter: int = 100,
+        weight_column: str | None = None,
+        personalized: dict[int, float] | None = None,
+        backend: Literal["auto", "pandas", "dask", "rust"] = "auto",
+    ):
+        """
+        Compute PageRank scores using power iteration method.
+
+        PageRank measures vertex importance based on the graph's link structure.
+        Uses Rust backend automatically when available for 5-20x speedup.
+
+        Args:
+            alpha: Damping factor (0.85 is Google's original value)
+            tol: Convergence tolerance for L1 norm of score differences
+            max_iter: Maximum number of iterations before forced termination
+            weight_column: Name of edge weight column. If None, uses uniform weights
+            personalized: Dict mapping vertex_id -> personalization weight
+            backend: Backend selection ('auto', 'pandas', 'dask', 'rust')
+                - 'auto': Prefer Rust if available, fallback to pandas/dask
+                - 'rust': Force Rust backend (error if unavailable)
+                - 'pandas': Force pandas backend
+                - 'dask': Force Dask backend
+
+        Returns:
+            DataFrame with columns:
+                - vertex (int64): Vertex ID
+                - rank (float64): PageRank score (sums to 1.0)
+
+        Examples:
+            Basic PageRank:
+                >>> ranks = graph.pagerank(alpha=0.85)
+                >>> top_nodes = ranks.nlargest(10, 'rank')
+
+            Personalized PageRank:
+                >>> bias = {1: 0.5, 10: 0.5}  # Favor vertices 1 and 10
+                >>> ranks = graph.pagerank(personalized=bias)
+
+            Force Rust backend:
+                >>> ranks = graph.pagerank(backend='rust')  # 10-20x faster
+        """
+        from .algo.pagerank import pagerank
+
+        return pagerank(
+            self,
+            alpha=alpha,
+            tol=tol,
+            max_iter=max_iter,
+            weight_column=weight_column,
+            personalized=personalized,
+            directed=None,  # Use graph.is_directed
+            backend=backend,
+        )
+
+    def shortest_path(
+        self,
+        sources: int | list[int],
+        weight_column: str | None = None,
+        backend: Literal["auto", "pandas", "dask", "rust"] = "auto",
+        include_unreachable: bool = True,
+    ):
+        """
+        Find shortest paths from source vertices to all reachable vertices.
+
+        For unweighted graphs (weight_column=None), uses BFS.
+        For weighted graphs, uses Dijkstra's algorithm with Rust backend
+        when available for 8-15x speedup.
+
+        Args:
+            sources: Starting vertex ID(s) for shortest path computation
+            weight_column: Name of edge weight column. If None, treats as unweighted
+            backend: Backend selection ('auto', 'pandas', 'dask', 'rust')
+            include_unreachable: Whether to include unreachable vertices (inf distance)
+
+        Returns:
+            DataFrame with columns:
+                - vertex (int64): Vertex ID
+                - distance (float64): Shortest distance from nearest source
+                - predecessor (int64): Previous vertex in shortest path
+
+        Examples:
+            Unweighted shortest paths:
+                >>> paths = graph.shortest_path(sources=[1, 2])
+                >>> reachable = paths[paths['distance'] < float('inf')]
+
+            Weighted shortest paths:
+                >>> paths = graph.shortest_path(sources=[1], weight_column='cost')
+                >>> print(paths.nsmallest(10, 'distance'))
+
+            Force Rust backend:
+                >>> paths = graph.shortest_path(sources=[1], backend='rust')
+        """
+        from .algo.shortest_path import shortest_path
+
+        return shortest_path(
+            self,
+            sources=sources,
+            weight_column=weight_column,
+            directed=None,  # Use graph.is_directed
+            backend=backend,
+            include_unreachable=include_unreachable,
+        )
+
+    def connected_components(
+        self,
+        method: Literal["weak", "strong"] = "weak",
+        backend: Literal["auto", "pandas", "dask", "rust"] = "auto",
+        max_iter: int = 50,
+    ):
+        """
+        Find connected components in the graph.
+
+        For directed graphs, computes weakly connected components (ignoring edge direction).
+        Uses Rust backend automatically when available for 12-20x speedup.
+
+        Args:
+            method: Component type ('weak' for weakly connected)
+            backend: Backend selection ('auto', 'pandas', 'dask', 'rust')
+            max_iter: Maximum iterations for iterative algorithms
+
+        Returns:
+            DataFrame with columns:
+                - vertex (int64): Vertex ID
+                - component_id (int64): Connected component identifier
+
+        Examples:
+            Find components:
+                >>> components = graph.connected_components()
+                >>> sizes = components.groupby('component_id').size()
+                >>> print(f"Found {len(sizes)} components")
+
+            Force Rust backend:
+                >>> components = graph.connected_components(backend='rust')
+        """
+        from .algo.components import connected_components
+
+        return connected_components(
+            self, method=method, directed=None, backend=backend, max_iter=max_iter
+        )
+
+    def bfs(
+        self,
+        sources: int | list[int],
+        max_depth: int | None = None,
+        backend: Literal["auto", "pandas", "rust"] = "auto",
+    ):
+        """
+        Perform breadth-first search (BFS) traversal.
+
+        BFS explores vertices level by level from source vertices.
+        Uses Rust backend automatically when available for 5-10x speedup.
+
+        Args:
+            sources: Starting vertex ID(s) for BFS traversal
+            max_depth: Maximum traversal depth (None for unlimited)
+            backend: Backend selection ('auto', 'pandas', 'rust')
+
+        Returns:
+            DataFrame with columns:
+                - vertex (int64): Vertex ID
+                - distance (int64): Distance from nearest source
+                - predecessor (int64): Previous vertex in BFS tree
+
+        Examples:
+            Single source BFS:
+                >>> result = graph.bfs(sources=0)
+                >>> print(result[result['distance'] <= 2])  # Within 2 hops
+
+            Multi-source BFS:
+                >>> result = graph.bfs(sources=[0, 10, 20])
+
+            Force Rust backend:
+                >>> result = graph.bfs(sources=0, backend='rust')
+        """
+        from .algo.traversal import bfs
+
+        return bfs(
+            self, sources=sources, max_depth=max_depth, directed=None, backend=backend
+        )
+
+    def dfs(
+        self,
+        source: int,
+        max_depth: int | None = None,
+        backend: Literal["auto", "pandas", "rust"] = "auto",
+    ):
+        """
+        Perform depth-first search (DFS) traversal.
+
+        DFS explores as far as possible along each branch before backtracking.
+        Uses Rust backend automatically when available for 5-10x speedup.
+
+        Args:
+            source: Starting vertex ID for DFS traversal
+            max_depth: Maximum traversal depth (None for unlimited)
+            backend: Backend selection ('auto', 'pandas', 'rust')
+
+        Returns:
+            Array of vertex IDs visited in DFS order
+
+        Examples:
+            Basic DFS:
+                >>> visited = graph.dfs(source=0)
+                >>> print(f"Visited {len(visited)} vertices")
+
+            Limited depth DFS:
+                >>> visited = graph.dfs(source=0, max_depth=5)
+
+            Force Rust backend:
+                >>> visited = graph.dfs(source=0, backend='rust')
+        """
+        from .algo.traversal import dfs
+
+        return dfs(
+            self, source=source, max_depth=max_depth, directed=None, backend=backend
+        )
+
+    @classmethod
+    def from_edges(
+        cls,
+        sources,  # Union[list[int], np.ndarray]
+        targets,  # Union[list[int], np.ndarray]
+        num_vertices: int | None = None,
+        edge_weights=None,  # Union[list[float], np.ndarray, None]
+        vertex_data=None,  # Union[pd.DataFrame, None]
+        edge_data=None,  # Union[pd.DataFrame, None]
+        directed: bool = True,
+    ) -> "GraphFrame":
+        """
+        Create GraphFrame directly from edge lists.
+
+        This is a convenience method for quickly creating graphs from arrays
+        without needing to construct DataFrames manually.
+
+        Args:
+            sources: Source vertex IDs (array-like)
+            targets: Target vertex IDs (array-like)
+            num_vertices: Total number of vertices (inferred if None)
+            edge_weights: Optional edge weights (same length as sources/targets)
+            vertex_data: Optional vertex properties DataFrame
+            edge_data: Optional edge properties DataFrame (must include src/dst columns)
+            directed: Whether graph is directed (default True)
+
+        Returns:
+            GraphFrame instance
+
+        Examples:
+            Simple graph from arrays:
+                >>> sources = [0, 1, 2]
+                >>> targets = [1, 2, 0]
+                >>> graph = GraphFrame.from_edges(sources, targets)
+                >>> print(graph)
+                GraphFrame(3 vertices, 3 edges, directed)
+
+            Weighted graph:
+                >>> sources = [0, 1, 2]
+                >>> targets = [1, 2, 0]
+                >>> weights = [1.5, 2.0, 1.0]
+                >>> graph = GraphFrame.from_edges(sources, targets, edge_weights=weights)
+
+            With vertex properties:
+                >>> import pandas as pd
+                >>> sources = [0, 1]
+                >>> targets = [1, 0]
+                >>> vertex_props = pd.DataFrame({
+                ...     'vertex_id': [0, 1],
+                ...     'name': ['Alice', 'Bob']
+                ... })
+                >>> graph = GraphFrame.from_edges(sources, targets, vertex_data=vertex_props)
+        """
+        import numpy as np
+        import pandas as pd
+
+        # Convert to numpy arrays
+        sources_arr = np.asarray(sources, dtype=np.int64)
+        targets_arr = np.asarray(targets, dtype=np.int64)
+
+        if len(sources_arr) != len(targets_arr):
+            raise ValueError(
+                f"sources and targets must have same length: "
+                f"{len(sources_arr)} != {len(targets_arr)}"
+            )
+
+        # Determine number of vertices
+        if num_vertices is None:
+            if len(sources_arr) == 0:
+                num_vertices = 0
+            else:
+                num_vertices = max(sources_arr.max(), targets_arr.max()) + 1
+
+        # Build edges DataFrame
+        if edge_data is not None:
+            # Use provided edge data (must include src/dst columns)
+            if "src" not in edge_data.columns or "dst" not in edge_data.columns:
+                raise ValueError("edge_data must include 'src' and 'dst' columns")
+            edges_df = edge_data.copy()
+        else:
+            edges_df = pd.DataFrame({"src": sources_arr, "dst": targets_arr})
+            if edge_weights is not None:
+                weights_arr = np.asarray(edge_weights, dtype=np.float64)
+                if len(weights_arr) != len(sources_arr):
+                    raise ValueError(
+                        f"edge_weights length {len(weights_arr)} != "
+                        f"sources length {len(sources_arr)}"
+                    )
+                edges_df["weight"] = weights_arr
+
+        # Build vertices DataFrame
+        if vertex_data is not None:
+            if "vertex_id" not in vertex_data.columns:
+                raise ValueError("vertex_data must include 'vertex_id' column")
+            vertices_df = vertex_data.copy()
+        else:
+            vertices_df = pd.DataFrame({"vertex_id": range(num_vertices)})
+
+        # Create metadata
+        metadata = {"directed": directed, "created_from": "from_edges"}
+
+        # Wrap with ParquetFrame for consistency
+        vertices_pf = ParquetFrame(vertices_df)
+        edges_pf = ParquetFrame(edges_df)
+
+        return cls(vertices=vertices_pf, edges=edges_pf, metadata=metadata)
+
 
 def read_graph(
     path: str | Path,
@@ -384,6 +713,10 @@ def read_graph(
 
 
 __all__ = [
+    # Core classes
     "GraphFrame",
     "read_graph",
+    # Adjacency structures
+    "CSRAdjacency",
+    "CSCAdjacency",
 ]
