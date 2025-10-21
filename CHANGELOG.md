@@ -8,7 +8,195 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Future enhancements and features will be listed here
+
+#### 🔄 Phase 3.4: Workflow Engine Core (2025-10-21)
+
+**High-performance DAG-based workflow orchestration engine with parallel execution, cancellation, and progress tracking.**
+
+##### Core Infrastructure
+- 📊 **DAG (Directed Acyclic Graph)** with cycle detection and topological sorting
+  - Automatic dependency resolution and execution ordering
+  - Kahn's algorithm for topological sort
+  - Comprehensive cycle detection with detailed error messages
+- 🎯 **Step Trait System** with flexible execution model
+  - Resource hints (LightCPU, HeavyCPU, LightIO, HeavyIO, Memory)
+  - Configurable retry behavior with exponential backoff
+  - Timeout support per step
+  - Dependency management
+- ⚙️ **Executor Configuration** with builder pattern
+  - Configurable parallelism (max_parallel_steps)
+  - Global retry settings
+  - Step timeout configuration
+- 🚨 **Comprehensive Error Handling** with custom error types
+  - DAGError for graph-related errors (cycles, missing nodes)
+  - ExecutionError for runtime failures
+  - ResourceError for resource management issues
+  - Detailed error context and propagation
+
+##### Execution Modes
+- ▶️ **Sequential Execution** with progress tracking and cancellation
+  - Topological order execution
+  - Automatic retry with exponential backoff
+  - Graceful cancellation with cleanup
+  - Progress events (Started, Completed, Failed, Cancelled)
+- ⚡ **Parallel Execution** with resource-aware scheduling
+  - Wave-based execution respecting dependencies
+  - Resource hints for intelligent scheduling
+  - Configurable parallelism factor
+  - Automatic load balancing
+  - Thread pool management for CPU/IO-bound tasks
+
+##### Advanced Features
+- 🛑 **Cancellation Support** with thread-safe token
+  - <10ns check latency (atomic operations)
+  - Clone-able tokens for multi-threaded use
+  - Graceful shutdown with partial result cleanup
+  - Check at multiple execution points
+- 📊 **Progress Tracking** with event system
+  - ConsoleProgressCallback for terminal output
+  - FileProgressTracker for JSON lines logging
+  - CallbackProgressTracker for custom closures
+  - Thread-safe event emission
+  - Timestamped events with structured data
+- 📈 **Metrics Collection**
+  - Step-level timing and status
+  - Workflow-level parallelism factor
+  - Resource utilization tracking
+  - Retry count and failure tracking
+  - Memory usage estimation
+- 🧵 **Thread Pool Manager** for hybrid CPU/IO execution
+  - Separate pools for CPU and IO-bound tasks
+  - Configurable pool sizes
+  - Resource-aware task routing
+
+##### Convenience APIs
+- `execute()` - Simple sequential execution
+- `execute_parallel()` - Simple parallel execution
+- `execute_with_cancellation(token)` - Sequential with cancellation
+- `execute_with_progress(callback)` - Sequential with progress
+- `execute_parallel_with_cancellation(token)` - Parallel with cancellation
+- `execute_parallel_with_progress(callback)` - Parallel with progress
+- `execute_with_options(token, callback)` - Full control sequential
+- `execute_parallel_with_options(token, callback)` - Full control parallel
+
+##### Testing & Quality
+- ✅ **167 Total Tests** (126 unit + 11 integration + 30 doc tests)
+  - Sequential execution tests
+  - Parallel execution tests (21 comprehensive tests)
+  - DAG operation tests
+  - Cancellation tests
+  - Progress tracking tests
+  - Error handling tests
+  - Resource scheduling tests
+  - Integration tests covering real-world patterns
+- 🎯 **Integration Tests** for end-to-end scenarios
+  - ETL pipeline (Extract → Transform → Load)
+  - Parallel data ingestion with aggregation
+  - Complex DAG workflows (diamond, tree, deep)
+  - Retry on transient failures
+  - Cancellation in long-running workflows
+  - Progress tracking integration
+  - Error propagation
+  - High-volume workflows (50+ steps)
+- 📊 **Performance Benchmarks** (30 benchmarks across 8 suites)
+  - Sequential overhead measurement
+  - Parallel speedup analysis
+  - Cancellation check latency (<10ns)
+  - DAG operation performance
+  - Step execution cost
+  - Executor construction overhead
+  - Parallel scaling (1-8 threads)
+  - Resource hints impact
+
+##### Documentation & Examples
+- 📚 **Comprehensive Documentation**
+  - Library overview with features and concepts
+  - Quick start guide with runnable examples
+  - Core concepts (Steps, Dependencies, Parallel Execution)
+  - Progress tracking patterns
+  - Cancellation patterns
+- 📖 **4 Complete Examples**
+  - `basic_sequential.rs` - ETL pipeline demonstration
+  - `parallel_execution.rs` - Performance comparison
+  - `progress_tracking.rs` - 4 tracking methods
+  - `cancellation.rs` - 4 cancellation patterns
+- 🔬 **Benchmark Suite** with criterion
+  - HTML report generation
+  - Statistical analysis
+  - Performance regression detection
+
+##### Technical Details
+- **Language**: Rust (safe, concurrent, performant)
+- **Dependencies**:
+  - `rayon` for parallel execution
+  - `crossbeam` for concurrent data structures
+  - `parking_lot` for efficient synchronization
+  - `serde_json` for progress event serialization
+- **Architecture**:
+  - Trait-based step abstraction
+  - DAG for dependency management
+  - Resource-aware scheduler
+  - Thread pool manager
+  - Event-driven progress system
+- **Performance**:
+  - Minimal per-step overhead
+  - Lock-free cancellation checks
+  - Efficient parallel scheduling
+  - Zero-cost abstractions where possible
+
+##### Code Quality
+- ✅ Clippy passes with `-D warnings`
+- ✅ rustfmt compliance
+- ✅ Comprehensive documentation
+- ✅ All examples compile and run
+- ✅ Benchmarks compile and execute
+
+##### Usage Example
+```rust
+use pf_workflow_core::{
+    ExecutorConfig, WorkflowExecutor, Step, StepResult,
+    ExecutionContext, StepMetrics,
+};
+use serde_json::Value;
+
+// Define a step
+struct ProcessStep {
+    id: String,
+}
+
+impl Step for ProcessStep {
+    fn id(&self) -> &str { &self.id }
+    fn dependencies(&self) -> &[String] { &[] }
+
+    fn execute(&self, _ctx: &mut ExecutionContext)
+        -> pf_workflow_core::Result<StepResult> {
+        // Do work
+        let metrics = StepMetrics::new(self.id.clone());
+        Ok(StepResult::new(Value::Null, metrics))
+    }
+}
+
+// Build and execute workflow
+let config = ExecutorConfig::builder()
+    .max_parallel_steps(4)
+    .build();
+let mut executor = WorkflowExecutor::new(config);
+
+executor.add_step(Box::new(ProcessStep {
+    id: "step1".to_string()
+}));
+
+let metrics = executor.execute_parallel()?;
+println!("Completed {} steps", metrics.successful_steps);
+```
+
+##### Breaking Changes
+- None - This is a new crate (`pf-workflow-core`)
+
+##### Migration Notes
+- New crate, no migration required
+- Can be used standalone or integrated with ParquetFrame
+- Designed for future data processing pipeline integration
 
 ## [1.0.1] - 2025-10-19
 

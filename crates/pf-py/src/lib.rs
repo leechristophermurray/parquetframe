@@ -44,13 +44,13 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Graph algorithm functions
     match graph::register_graph_functions(m) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => eprintln!("Error registering graph functions: {:?}", e),
     }
 
     // I/O functions
     match io::register_io_functions(m) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => eprintln!("Error registering I/O functions: {:?}", e),
     }
 

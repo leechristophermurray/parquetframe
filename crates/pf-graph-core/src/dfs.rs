@@ -22,11 +22,7 @@ pub type DfsResult = Vec<VertexId>;
 ///
 /// # Errors
 /// Returns error if source vertex is invalid
-pub fn dfs(
-    csr: &CsrGraph,
-    source: VertexId,
-    max_depth: Option<i32>,
-) -> Result<DfsResult> {
+pub fn dfs(csr: &CsrGraph, source: VertexId, max_depth: Option<i32>) -> Result<DfsResult> {
     let n = csr.num_vertices;
     let max_d = max_depth.unwrap_or(i32::MAX);
 

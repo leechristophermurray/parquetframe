@@ -65,9 +65,7 @@ pub fn read_parquet_metadata<P: AsRef<Path>>(path: P) -> Result<ParquetMetadata>
 
     // Check file exists
     if !path_ref.exists() {
-        return Err(IoError::FileNotFound(
-            path_ref.display().to_string(),
-        ));
+        return Err(IoError::FileNotFound(path_ref.display().to_string()));
     }
 
     // Open file and create reader
@@ -115,9 +113,7 @@ pub fn get_row_count<P: AsRef<Path>>(path: P) -> Result<i64> {
     let path_ref = path.as_ref();
 
     if !path_ref.exists() {
-        return Err(IoError::FileNotFound(
-            path_ref.display().to_string(),
-        ));
+        return Err(IoError::FileNotFound(path_ref.display().to_string()));
     }
 
     let file = File::open(path_ref)?;
@@ -140,9 +136,7 @@ pub fn get_column_names<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
     let path_ref = path.as_ref();
 
     if !path_ref.exists() {
-        return Err(IoError::FileNotFound(
-            path_ref.display().to_string(),
-        ));
+        return Err(IoError::FileNotFound(path_ref.display().to_string()));
     }
 
     let file = File::open(path_ref)?;
@@ -172,9 +166,7 @@ pub fn get_column_statistics<P: AsRef<Path>>(path: P) -> Result<Vec<ColumnStatis
     let path_ref = path.as_ref();
 
     if !path_ref.exists() {
-        return Err(IoError::FileNotFound(
-            path_ref.display().to_string(),
-        ));
+        return Err(IoError::FileNotFound(path_ref.display().to_string()));
     }
 
     let file = File::open(path_ref)?;
@@ -206,11 +198,9 @@ pub fn get_column_statistics<P: AsRef<Path>>(path: P) -> Result<Vec<ColumnStatis
                 }
 
                 // Track min/max (simplified - just use first row group's values)
-                if rg_idx == 0 {
-                    if stats.has_min_max_set() {
-                        min_value = Some(format!("{:?}", stats.min_bytes()));
-                        max_value = Some(format!("{:?}", stats.max_bytes()));
-                    }
+                if rg_idx == 0 && stats.has_min_max_set() {
+                    min_value = Some(format!("{:?}", stats.min_bytes()));
+                    max_value = Some(format!("{:?}", stats.max_bytes()));
                 }
             } else {
                 total_null_count = None;
@@ -296,7 +286,7 @@ mod tests {
         assert!(result.is_err());
 
         match result {
-            Err(IoError::FileNotFound(_)) => {},
+            Err(IoError::FileNotFound(_)) => {}
             _ => panic!("Expected FileNotFound error"),
         }
     }

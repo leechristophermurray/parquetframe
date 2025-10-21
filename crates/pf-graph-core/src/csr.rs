@@ -15,7 +15,7 @@ use rayon::prelude::*;
 /// - `weights`: Optional edge weights
 #[derive(Debug, Clone)]
 pub struct CsrGraph {
-    /// Boundary pointers: indptr[v] to indptr[v+1] are edges from vertex v
+    /// Boundary pointers: indptr\[v\] to indptr\[v+1\] are edges from vertex v
     pub indptr: Vec<EdgeIndex>,
     /// Target vertex IDs for each edge
     pub indices: Vec<VertexId>,

@@ -2,10 +2,26 @@
 //!
 //! Provides Python-accessible functions for CSR/CSC construction and graph traversal.
 
-use numpy::{PyArray1, PyReadonlyArray1, PyArrayMethods};
-use pf_graph_core::{bfs_parallel, bfs_sequential, dfs, dijkstra_rust, pagerank_rust, union_find_components, CscGraph, CsrGraph};
+use numpy::{PyArray1, PyArrayMethods, PyReadonlyArray1};
+use pf_graph_core::{
+    bfs_parallel, bfs_sequential, dfs, dijkstra_rust, pagerank_rust, union_find_components,
+    CscGraph, CsrGraph,
+};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+
+// Type alias for CSR/CSC return types to simplify function signatures
+type CsrResult<'py> = (
+    Py<PyArray1<i64>>,
+    Py<PyArray1<i32>>,
+    Option<Py<PyArray1<f64>>>,
+);
+
+// Type alias for BFS result
+type BfsResult<'py> = (Py<PyArray1<i32>>, Py<PyArray1<i32>>);
+
+// Type alias for Dijkstra result
+type DijkstraResult<'py> = (Py<PyArray1<f64>>, Py<PyArray1<i32>>);
 
 /// Build CSR adjacency structure from edge lists.
 ///
@@ -24,11 +40,7 @@ fn build_csr_rust<'py>(
     dst: PyReadonlyArray1<i32>,
     num_vertices: usize,
     weights: Option<PyReadonlyArray1<f64>>,
-) -> PyResult<(
-    Py<PyArray1<i64>>,
-    Py<PyArray1<i32>>,
-    Option<Py<PyArray1<f64>>>,
-)> {
+) -> PyResult<CsrResult<'py>> {
     let src_slice = src.as_slice()?;
     let dst_slice = dst.as_slice()?;
     let weights_slice = weights.as_ref().map(|w| w.as_slice()).transpose()?;
@@ -62,11 +74,7 @@ fn build_csc_rust<'py>(
     dst: PyReadonlyArray1<i32>,
     num_vertices: usize,
     weights: Option<PyReadonlyArray1<f64>>,
-) -> PyResult<(
-    Py<PyArray1<i64>>,
-    Py<PyArray1<i32>>,
-    Option<Py<PyArray1<f64>>>,
-)> {
+) -> PyResult<CsrResult<'py>> {
     let src_slice = src.as_slice()?;
     let dst_slice = dst.as_slice()?;
     let weights_slice = weights.as_ref().map(|w| w.as_slice()).transpose()?;
@@ -102,7 +110,7 @@ fn bfs_rust<'py>(
     num_vertices: usize,
     sources: PyReadonlyArray1<i32>,
     max_depth: Option<i32>,
-) -> PyResult<(Py<PyArray1<i32>>, Py<PyArray1<i32>>)> {
+) -> PyResult<BfsResult<'py>> {
     let csr = CsrGraph {
         indptr: indptr.to_vec()?,
         indices: indices.to_vec()?,
@@ -119,7 +127,9 @@ fn bfs_rust<'py>(
     .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
     let distances: Py<PyArray1<i32>> = PyArray1::from_vec(py, result.distances).to_owned().into();
-    let predecessors: Py<PyArray1<i32>> = PyArray1::from_vec(py, result.predecessors).to_owned().into();
+    let predecessors: Py<PyArray1<i32>> = PyArray1::from_vec(py, result.predecessors)
+        .to_owned()
+        .into();
 
     Ok((distances, predecessors))
 }
@@ -170,6 +180,7 @@ fn dfs_rust<'py>(
 /// # Returns
 /// PageRank scores as numpy array (float64)
 #[pyfunction]
+#[allow(clippy::too_many_arguments)]
 fn pagerank_rust_py<'py>(
     py: Python<'py>,
     indptr: PyReadonlyArray1<i64>,
@@ -182,14 +193,8 @@ fn pagerank_rust_py<'py>(
 ) -> PyResult<Py<PyArray1<f64>>> {
     // Convert numpy arrays to Rust slices
     let indptr_vec = indptr.to_vec()?;
-    let indices_vec = indices.to_vec()?
-        .into_iter()
-        .map(|x| x as i32)
-        .collect::<Vec<_>>();
-    let personalization_vec = personalization
-        .as_ref()
-        .map(|p| p.to_vec())
-        .transpose()?;
+    let indices_vec = indices.to_vec()?;
+    let personalization_vec = personalization.as_ref().map(|p| p.to_vec()).transpose()?;
 
     // Build CSR graph structure
     let csr = CsrGraph {
@@ -199,17 +204,9 @@ fn pagerank_rust_py<'py>(
         num_vertices,
     };
 
-    // Release GIL and compute PageRank
-    let scores = py.allow_threads(|| {
-        pagerank_rust(
-            &csr,
-            alpha,
-            tol,
-            max_iter,
-            personalization_vec.as_deref(),
-        )
-    })
-    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    // Compute PageRank (no GIL release needed for pure Rust computation)
+    let scores = pagerank_rust(&csr, alpha, tol, max_iter, personalization_vec.as_deref())
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
     // Convert results to numpy array
     Ok(PyArray1::from_vec(py, scores).to_owned().into())
@@ -234,7 +231,7 @@ fn dijkstra_rust_py<'py>(
     num_vertices: usize,
     sources: PyReadonlyArray1<i32>,
     weights: PyReadonlyArray1<f64>,
-) -> PyResult<(Py<PyArray1<f64>>, Py<PyArray1<i32>>)> {
+) -> PyResult<DijkstraResult<'py>> {
     // Convert numpy arrays to Rust types
     let indptr_vec = indptr.to_vec()?;
     let indices_vec = indices.to_vec()?;
@@ -249,15 +246,14 @@ fn dijkstra_rust_py<'py>(
         num_vertices,
     };
 
-    // Release GIL and compute shortest paths
-    let (distances, predecessors) = py.allow_threads(|| {
-        dijkstra_rust(&csr, &sources_vec, &weights_vec)
-    })
-    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    // Compute shortest paths (no GIL release needed for pure Rust computation)
+    let (distances, predecessors) = dijkstra_rust(&csr, &sources_vec, &weights_vec)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
     // Convert results to numpy arrays
     let distances_arr: Py<PyArray1<f64>> = PyArray1::from_vec(py, distances).to_owned().into();
-    let predecessors_arr: Py<PyArray1<i32>> = PyArray1::from_vec(py, predecessors).to_owned().into();
+    let predecessors_arr: Py<PyArray1<i32>> =
+        PyArray1::from_vec(py, predecessors).to_owned().into();
 
     Ok((distances_arr, predecessors_arr))
 }
@@ -296,11 +292,9 @@ fn connected_components_rust_py<'py>(
         .map(|(&s, &t)| (s as usize, t as usize))
         .collect();
 
-    // Release GIL and compute components
-    let components = py.allow_threads(|| {
-        union_find_components(&edges, num_vertices, directed)
-    })
-    .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    // Compute components (no GIL release needed for pure Rust computation)
+    let components = union_find_components(&edges, num_vertices, directed)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
 
     // Convert results to numpy array
     let components_i64: Vec<i64> = components.iter().map(|&c| c as i64).collect();

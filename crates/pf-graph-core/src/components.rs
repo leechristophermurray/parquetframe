@@ -171,10 +171,11 @@ pub fn union_find_components(
     let mut next_component_id = 0;
 
     for &root in &roots {
-        if !root_to_component.contains_key(&root) {
-            root_to_component.insert(root, next_component_id);
+        root_to_component.entry(root).or_insert_with(|| {
+            let id = next_component_id;
             next_component_id += 1;
-        }
+            id
+        });
     }
 
     // Assign component IDs to all vertices
@@ -342,15 +343,15 @@ mod tests {
 
         // First 100 vertices should be in same component
         let comp0 = components[0];
-        for i in 1..100 {
-            assert_eq!(components[i], comp0);
+        for component in components.iter().take(100).skip(1) {
+            assert_eq!(*component, comp0);
         }
 
         // Next 100 vertices should be in same component (but different from first)
         let comp100 = components[100];
         assert_ne!(comp0, comp100);
-        for i in 101..200 {
-            assert_eq!(components[i], comp100);
+        for component in components.iter().skip(101).take(99) {
+            assert_eq!(*component, comp100);
         }
     }
 
@@ -401,7 +402,7 @@ mod tests {
 
         assert!(result.is_err());
         match result {
-            Err(GraphError::InvalidInput(_)) => {},
+            Err(GraphError::InvalidInput(_)) => {}
             _ => panic!("Expected InvalidInput error"),
         }
     }

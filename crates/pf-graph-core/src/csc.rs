@@ -15,7 +15,7 @@ use rayon::prelude::*;
 /// - `weights`: Optional edge weights
 #[derive(Debug, Clone)]
 pub struct CscGraph {
-    /// Boundary pointers: indptr[v] to indptr[v+1] are edges to vertex v
+    /// Boundary pointers: indptr\[v\] to indptr\[v+1\] are edges to vertex v
     pub indptr: Vec<EdgeIndex>,
     /// Source vertex IDs for each edge
     pub indices: Vec<VertexId>,

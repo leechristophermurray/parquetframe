@@ -367,11 +367,10 @@ mod tests {
             let barrier_clone = Arc::clone(&barrier);
 
             let handle = thread::spawn(move || {
-                let result = manager_clone.execute_cpu(move || {
+                manager_clone.execute_cpu(move || {
                     barrier_clone.wait();
                     i * 2
-                });
-                result
+                })
             });
             handles.push(handle);
         }

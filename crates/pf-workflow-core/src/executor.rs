@@ -1308,7 +1308,7 @@ mod tests {
         assert!(result.is_err());
 
         let events = tracker.get_events();
-        assert!(events.len() >= 1); // At least one Cancelled event
+        assert!(!events.is_empty()); // At least one Cancelled event
 
         // Find the cancelled event
         let has_cancelled = events
@@ -1436,7 +1436,7 @@ mod tests {
             .map(|i| {
                 let t = tracker.clone();
                 thread::spawn(move || {
-                    t.on_progress(ProgressEvent::started(&format!("step{}", i)));
+                    t.on_progress(ProgressEvent::started(format!("step{}", i)));
                 })
             })
             .collect();

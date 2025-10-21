@@ -148,8 +148,10 @@ mod tests {
         let config = ExecutorConfig::default();
         assert!(config.validate().is_ok());
 
-        let mut bad_config = ExecutorConfig::default();
-        bad_config.max_parallel_steps = Some(0);
+        let bad_config = ExecutorConfig {
+            max_parallel_steps: Some(0),
+            ..Default::default()
+        };
         assert!(bad_config.validate().is_err());
     }
 

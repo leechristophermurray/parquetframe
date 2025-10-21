@@ -8,27 +8,27 @@
 //! # Phase 1: Core graph algorithms (CSR/CSC, BFS, DFS)
 //! # Phase 3: Advanced graph algorithms (PageRank, Dijkstra, Connected Components)
 
-pub mod types;
-pub mod error;
-pub mod csr;
-pub mod csc;
 pub mod bfs;
+pub mod csc;
+pub mod csr;
 pub mod dfs;
+pub mod error;
+pub mod types;
 
 // Phase 3: Advanced graph algorithms
-pub mod pagerank;
-pub mod dijkstra;
 pub mod components;
+pub mod dijkstra;
+pub mod pagerank;
 
 // Re-export commonly used types
-pub use types::*;
-pub use error::{GraphError, Result};
-pub use csr::CsrGraph;
-pub use csc::CscGraph;
 pub use bfs::{bfs_parallel, bfs_sequential, BfsResult};
+pub use csc::CscGraph;
+pub use csr::CsrGraph;
 pub use dfs::dfs;
+pub use error::{GraphError, Result};
+pub use types::*;
 
 // Re-export Phase 3 algorithm functions
-pub use pagerank::pagerank_rust;
-pub use dijkstra::dijkstra_rust;
 pub use components::union_find_components;
+pub use dijkstra::dijkstra_rust;
+pub use pagerank::pagerank_rust;
