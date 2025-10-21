@@ -9,8 +9,10 @@ use crate::dag::DAG;
 use crate::error::{ExecutionError, Result};
 use crate::metrics::{StepMetrics, WorkflowMetrics};
 use crate::progress::{NoOpCallback, ProgressCallback, ProgressEvent};
+use crate::scheduler::{ParallelScheduler, ResourceLimits};
 use crate::step::{ExecutionContext, Step, StepResult};
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -357,13 +359,273 @@ impl WorkflowExecutor {
         Ok(result)
     }
 
-    /// Execute the workflow in parallel.
+    /// Execute the workflow in parallel with optional cancellation and progress tracking.
     ///
-    /// # Phase 3.4 Note
-    /// This is a stub. Full implementation in Task 7.
+    /// This method uses wave-based parallel execution where steps within each wave
+    /// can run concurrently, while respecting DAG dependencies and resource limits.
+    ///
+    /// # Arguments
+    ///
+    /// * `cancellation_token` - Optional token to check for cancellation
+    /// * `progress_callback` - Optional callback for progress events
+    ///
+    /// # Returns
+    ///
+    /// Workflow metrics on success, or an error if execution fails or is cancelled.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use pf_workflow_core::{ExecutorConfig, WorkflowExecutor, CancellationToken};
+    ///
+    /// let config = ExecutorConfig::default();
+    /// let mut executor = WorkflowExecutor::new(config);
+    ///
+    /// let token = CancellationToken::new();
+    /// let metrics = executor.execute_parallel_with_options(Some(token), None)?;
+    /// # Ok::<(), pf_workflow_core::WorkflowError>(())
+    /// ```
+    pub fn execute_parallel_with_options(
+        &mut self,
+        cancellation_token: Option<CancellationToken>,
+        progress_callback: Option<Box<dyn ProgressCallback>>,
+    ) -> Result<WorkflowMetrics> {
+        let workflow_start = Instant::now();
+
+        // Use no-op callback if none provided
+        let callback: Arc<Box<dyn ProgressCallback>> = Arc::new(
+            progress_callback.unwrap_or_else(|| Box::new(NoOpCallback))
+        );
+
+        // Create scheduler with resource limits from config
+        let limits = ResourceLimits {
+            max_cpu_tasks: self.config.max_parallel_steps.unwrap_or_else(num_cpus::get),
+            max_io_tasks: self.config.max_parallel_steps.unwrap_or_else(num_cpus::get) * 2,
+            max_memory_bytes: usize::MAX,
+        };
+        let scheduler = ParallelScheduler::with_limits(limits);
+
+        // Compute execution waves
+        let waves = scheduler.schedule_parallel(&self.dag, &self.steps);
+
+        if waves.is_empty() {
+            return Ok(WorkflowMetrics::new());
+        }
+
+        // Shared execution context (protected by mutex for parallel access)
+        let ctx = Arc::new(Mutex::new(ExecutionContext::new()));
+        let workflow_metrics = Arc::new(Mutex::new(WorkflowMetrics::new()));
+        let completed_steps = Arc::new(Mutex::new(HashSet::new()));
+
+        // Execute each wave
+        for (wave_idx, wave) in waves.iter().enumerate() {
+            // Check for cancellation before starting wave
+            if let Some(ref token) = cancellation_token {
+                if token.is_cancelled() {
+                    // Emit cancelled events for remaining steps
+                    for step_id in wave {
+                        callback.on_progress(ProgressEvent::cancelled(step_id));
+                    }
+                    self.cleanup_partial_results(&completed_steps.lock().unwrap());
+                    return Err(ExecutionError::Cancelled.into());
+                }
+            }
+
+            // Execute wave in parallel
+            let wave_result = self.execute_wave(
+                wave,
+                ctx.clone(),
+                workflow_metrics.clone(),
+                completed_steps.clone(),
+                cancellation_token.clone(),
+                callback.clone(),
+            );
+
+            // Handle wave errors
+            if let Err(e) = wave_result {
+                // Cancel remaining waves
+                for remaining_wave_idx in (wave_idx + 1)..waves.len() {
+                    for step_id in &waves[remaining_wave_idx] {
+                        callback.on_progress(ProgressEvent::cancelled(step_id));
+                    }
+                }
+
+                self.cleanup_partial_results(&completed_steps.lock().unwrap());
+                return Err(e);
+            }
+        }
+
+        // Finalize workflow metrics
+        let total_duration = workflow_start.elapsed();
+        let mut metrics = match Arc::try_unwrap(workflow_metrics) {
+            Ok(mutex) => mutex.into_inner().unwrap(),
+            Err(arc) => arc.lock().unwrap().clone(),
+        };
+        metrics.finalize(total_duration);
+
+        Ok(metrics)
+    }
+
+    /// Execute a single wave of steps in parallel.
+    ///
+    /// All steps in the wave can run concurrently as they have no dependencies on each other.
+    fn execute_wave(
+        &self,
+        wave: &[String],
+        ctx: Arc<Mutex<ExecutionContext>>,
+        workflow_metrics: Arc<Mutex<WorkflowMetrics>>,
+        completed_steps: Arc<Mutex<HashSet<String>>>,
+        cancellation_token: Option<CancellationToken>,
+        callback: Arc<Box<dyn ProgressCallback>>,
+    ) -> Result<()> {
+        // Track errors in the wave
+        let errors: Arc<Mutex<Vec<(String, String)>>> = Arc::new(Mutex::new(Vec::new()));
+        let results: Arc<Mutex<HashMap<String, StepResult>>> = Arc::new(Mutex::new(HashMap::new()));
+
+        // Use rayon scoped threads for proper borrowing
+        rayon::scope(|s| {
+            for step_id in wave {
+                let step_id = step_id.clone();
+                let ctx = ctx.clone();
+                let cancellation_token = cancellation_token.clone();
+                let callback = callback.clone();
+                let errors = errors.clone();
+                let results = results.clone();
+
+                // Get step reference
+                let step = match self.steps.get(&step_id) {
+                    Some(step) => step.as_ref(),
+                    None => {
+                        errors.lock().unwrap().push((step_id.clone(), "Step not found".to_string()));
+                        continue;
+                    }
+                };
+
+                // Extract step configuration
+                let retry_config = step.retry_config();
+                let _step_timeout = step.timeout().or(self.config.step_timeout);
+                let base_backoff = Duration::from_millis(self.config.retry_backoff_ms);
+
+                // Spawn parallel task
+                s.spawn(move |_| {
+                    // Check cancellation before starting
+                    if let Some(ref token) = cancellation_token {
+                        if token.is_cancelled() {
+                            callback.on_progress(ProgressEvent::cancelled(&step_id));
+                            return;
+                        }
+                    }
+
+                    // Emit started event
+                    callback.on_progress(ProgressEvent::started(&step_id));
+
+                    // Execute step with retry
+                    let mut step_metrics = StepMetrics::new(step_id.clone());
+                    step_metrics.start();
+
+                    let mut last_error = None;
+                    let mut success = false;
+
+                    for attempt in 0..=retry_config.max_attempts {
+                        // Check cancellation between retries
+                        if let Some(ref token) = cancellation_token {
+                            if token.is_cancelled() {
+                                step_metrics.fail("Cancelled".to_string());
+                                callback.on_progress(ProgressEvent::cancelled(&step_id));
+                                return;
+                            }
+                        }
+
+                        if attempt > 0 {
+                            step_metrics.increment_retry();
+                            let backoff = base_backoff * 2_u32.pow(attempt - 1);
+                            thread::sleep(backoff);
+                        }
+
+                        // Execute step (with lock on context)
+                        let result = {
+                            let mut context = ctx.lock().unwrap();
+                            step.execute(&mut context)
+                        };
+
+                        match result {
+                            Ok(step_result) => {
+                                step_metrics.complete();
+                                callback.on_progress(ProgressEvent::completed(&step_id));
+
+                                // Store result
+                                results.lock().unwrap().insert(
+                                    step_id.clone(),
+                                    StepResult::new(step_result.output.clone(), step_metrics.clone())
+                                );
+                                success = true;
+                                break;
+                            }
+                            Err(e) => {
+                                last_error = Some(e);
+                                if attempt >= retry_config.max_attempts {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if !success {
+                        let error_msg = last_error
+                            .map(|e| e.to_string())
+                            .unwrap_or_else(|| "Unknown error".to_string());
+                        let mut failed_metrics = step_metrics.clone();
+                        failed_metrics.fail(error_msg.clone());
+
+                        let full_error = format!("Step '{}' failed after {} attempts: {}",
+                            step_id,
+                            retry_config.max_attempts + 1,
+                            error_msg
+                        );
+
+                        callback.on_progress(ProgressEvent::failed(&step_id, &full_error));
+                        errors.lock().unwrap().push((step_id.clone(), full_error));
+                    }
+                });
+            }
+        });
+
+        // Process results
+        let result_map = results.lock().unwrap();
+        for (step_id, step_result) in result_map.iter() {
+            // Store output in context
+            ctx.lock().unwrap().set(step_id.clone(), step_result.output.clone());
+
+            // Add metrics
+            workflow_metrics.lock().unwrap().add_step(step_result.metrics.clone());
+
+            // Mark completed
+            completed_steps.lock().unwrap().insert(step_id.clone());
+        }
+
+        // Check if any errors occurred
+        let error_list = errors.lock().unwrap();
+        if !error_list.is_empty() {
+            let error_summary = error_list.iter()
+                .map(|(id, msg)| format!("{}: {}", id, msg))
+                .collect::<Vec<_>>()
+                .join("; ");
+
+            return Err(ExecutionError::StepFailed {
+                step_id: "wave_execution".to_string(),
+                reason: format!("Wave execution failed: {}", error_summary),
+            }.into());
+        }
+
+        Ok(())
+    }
+
+    /// Execute the workflow in parallel (convenience method).
+    ///
+    /// This is a convenience method that calls `execute_parallel_with_options` with no
+    /// cancellation or progress tracking.
     pub fn execute_parallel(&mut self) -> Result<WorkflowMetrics> {
-        // Stub: return empty metrics
-        Ok(WorkflowMetrics::new())
+        self.execute_parallel_with_options(None, None)
     }
 }
 
