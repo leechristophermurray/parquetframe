@@ -35,6 +35,9 @@ def clean_env(monkeypatch):
         "PARQUETFRAME_VERBOSE",
         "PARQUETFRAME_QUIET",
         "PARQUETFRAME_PROGRESS",
+        "PARQUETFRAME_DISABLE_RUST",
+        "PARQUETFRAME_DISABLE_RUST_IO",
+        "PARQUETFRAME_DISABLE_RUST_GRAPH",
     ]
     for var in env_vars:
         monkeypatch.delenv(var, raising=False)
@@ -59,6 +62,9 @@ class TestConfigDefaults:
         assert config.progress_bar is False
         assert config.parallel_read is True
         assert config.max_workers is None
+        assert config.use_rust_backend is True
+        assert config.rust_io_enabled is True
+        assert config.rust_graph_enabled is True
 
     def test_get_config_singleton(self):
         """Test get_config returns singleton."""
@@ -173,6 +179,33 @@ class TestConfigEnvironment:
         config = Config()
 
         assert config.progress_bar is True
+
+    def test_rust_disable_from_env(self, monkeypatch):
+        """Test disabling Rust backend from environment."""
+        monkeypatch.setenv("PARQUETFRAME_DISABLE_RUST", "1")
+        config = Config()
+
+        assert config.use_rust_backend is False
+        assert config.rust_io_enabled is False
+        assert config.rust_graph_enabled is False
+
+    def test_rust_disable_io_only_from_env(self, monkeypatch):
+        """Test disabling only Rust I/O from environment."""
+        monkeypatch.setenv("PARQUETFRAME_DISABLE_RUST_IO", "1")
+        config = Config()
+
+        assert config.use_rust_backend is True  # General flag still enabled
+        assert config.rust_io_enabled is False
+        assert config.rust_graph_enabled is True
+
+    def test_rust_disable_graph_only_from_env(self, monkeypatch):
+        """Test disabling only Rust graph from environment."""
+        monkeypatch.setenv("PARQUETFRAME_DISABLE_RUST_GRAPH", "1")
+        config = Config()
+
+        assert config.use_rust_backend is True
+        assert config.rust_io_enabled is True
+        assert config.rust_graph_enabled is False
 
 
 class TestConfigReset:
