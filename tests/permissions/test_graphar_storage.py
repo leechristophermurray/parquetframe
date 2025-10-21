@@ -34,15 +34,19 @@ class TestGraphArStructure:
         assert (storage_path / "vertices").exists()
         assert (storage_path / "edges").exists()
 
-    def test_save_empty_store_skips_creation(self, tmp_path):
-        """Test that empty stores don't create directory structure."""
+    def test_save_empty_store_creates_structure(self, tmp_path):
+        """Test that empty stores create valid GraphAr directory structure."""
         store = TupleStore()
         storage_path = tmp_path / "empty_permissions"
 
         store.save(str(storage_path))
 
-        # Empty store should skip creation
-        assert not storage_path.exists()
+        # Empty store should create minimal valid structure
+        assert storage_path.exists()
+        assert (storage_path / "_metadata.yaml").exists()
+        assert (storage_path / "_schema.yaml").exists()
+        assert (storage_path / "vertices").exists()
+        assert (storage_path / "edges").exists()
 
     def test_metadata_yaml_structure(self, tmp_path):
         """Test _metadata.yaml has correct structure."""
