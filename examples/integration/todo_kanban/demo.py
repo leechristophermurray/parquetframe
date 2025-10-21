@@ -357,7 +357,7 @@ def main():
     print_step(15, "Save permissions to disk (GraphAr format)")
 
     app.permissions.save()
-    print_success("Permissions saved to ./kanban_data/permissions/")
+    print_success("Permissions saved to ./kanban_data/permissions_graph/")
     print_info("Format: GraphAr-compliant directory structure")
     print_info("Contents: vertices/ (subjects, objects), edges/ (relations)")
     print_info("Metadata: _metadata.yaml, _schema.yaml")
@@ -371,7 +371,7 @@ def main():
     print_info("The permissions are stored as a GraphAr-compliant graph")
     print_info("This enables:")
     print_info(
-        "  • Loading permissions with: pf.read_graph('./kanban_data/permissions')"
+        "  • Loading permissions with: pf.read_graph('./kanban_data/permissions_graph')"
     )
     print_info("  • Analyzing with graph algorithms (PageRank, shortest paths, etc.)")
     print_info("  • Visualizing permission hierarchies")

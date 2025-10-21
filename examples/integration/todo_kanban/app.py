@@ -56,9 +56,14 @@ class TodoKanbanApp:
 
         Args:
             storage_base: Base path for entity and permission storage
+
+        Note:
+            The application uses a two-graph architecture:
+            - Application data: Entity storage at {storage_base}/users, /boards, etc.
+            - Permissions data: GraphAr graph at {storage_base}/permissions_graph
         """
         self.storage_base = storage_base
-        self.permissions = PermissionManager(f"{storage_base}/permissions")
+        self.permissions = PermissionManager(f"{storage_base}/permissions_graph")
 
     # =========================================================================
     # User Management
