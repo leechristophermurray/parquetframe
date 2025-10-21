@@ -4,12 +4,13 @@ build-backend = "maturin"
 
 [project]
 name = "parquetframe"
-version = "1.0.1"
+version = "2.0.0a0"
 authors = [
     {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
 description = "A universal data processing framework with multi-engine support (pandas, Polars, Dask) and multi-format I/O (CSV, JSON, Parquet, ORC, Avro) with intelligent backend selection"
 readme = "README.md"
+license = {file = "LICENSE"}
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -127,6 +128,7 @@ features = ["pyo3/extension-module"]
 module-name = "parquetframe._rustic"
 python-source = "src"
 manifest-path = "crates/pf-py/Cargo.toml"
+include = ["LICENSE", "README.md", "CHANGELOG.md"]
 
 # Tool configurations
 [tool.ruff]

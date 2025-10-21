@@ -352,9 +352,42 @@ def main():
     print_info(f"Charlie can see {len(charlie_boards)} boards (expected: 0)")
 
     # =========================================================================
-    # Step 15: Cleanup
+    # Step 15: Save permissions to disk
     # =========================================================================
-    print_step(15, "Cleanup demo data")
+    print_step(15, "Save permissions to disk (GraphAr format)")
+
+    app.permissions.save()
+    print_success("Permissions saved to ./kanban_data/permissions_graph/")
+    print_info("Format: GraphAr-compliant directory structure")
+    print_info("Contents: vertices/ (subjects, objects), edges/ (relations)")
+    print_info("Metadata: _metadata.yaml, _schema.yaml")
+    print_info("✓ Permissions can now be loaded as a graph with pf.read_graph()")
+
+    # =========================================================================
+    # Step 16: Demonstrate graph analysis
+    # =========================================================================
+    print_step(16, "Demonstrate graph analysis of permissions")
+
+    print_info("The permissions are stored as a GraphAr-compliant graph")
+    print_info("This enables:")
+    print_info(
+        "  • Loading permissions with: pf.read_graph('./kanban_data/permissions_graph')"
+    )
+    print_info("  • Analyzing with graph algorithms (PageRank, shortest paths, etc.)")
+    print_info("  • Visualizing permission hierarchies")
+    print_info("  • Querying with graph traversal")
+    print_info("  • Exporting to other graph formats")
+
+    print_info("\nExample analyses:")
+    print_info("  1. Find all users with transitive access to a resource")
+    print_info("  2. Identify permission bottlenecks or over-privileged users")
+    print_info("  3. Audit permission inheritance chains")
+    print_info("  4. Detect circular permission references")
+
+    # =========================================================================
+    # Step 17: Cleanup
+    # =========================================================================
+    print_step(17, "Cleanup demo data")
 
     cleanup_demo_data()
 
@@ -364,6 +397,9 @@ def main():
     print_header("Demo Summary")
     print("\n✅ Features Demonstrated:")
     print_info("Entity Framework - @entity and @rel decorators working")
+    print_info("GraphAr Storage - Two separate GraphAr-compliant graphs")
+    print_info("  • Application graph: entities with metadata and schema")
+    print_info("  • Permissions graph: Zanzibar tuples as edges")
     print_info("Permission Management - Zanzibar ReBAC implementation")
     print_info("All 4 Zanzibar APIs - check, expand, list_objects, list_subjects")
     print_info("Permission Inheritance - board → list → task hierarchy")

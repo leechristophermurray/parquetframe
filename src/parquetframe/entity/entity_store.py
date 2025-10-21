@@ -8,6 +8,7 @@ from dataclasses import asdict
 from typing import Any
 
 import pandas as pd
+import yaml
 
 from ..core.reader import read_avro, read_parquet
 
@@ -65,6 +66,76 @@ class EntityStore:
                 raise ImportError("fastavro required for Avro format") from e
         else:
             raise ValueError(f"Unsupported format: {self.metadata.format}")
+
+        # Generate GraphAr metadata files
+        self._write_graphar_metadata(df)
+
+    def _write_graphar_metadata(self, df: pd.DataFrame) -> None:
+        """Write GraphAr-compliant metadata files."""
+        storage_path = self.metadata.storage_path
+
+        # Generate _metadata.yaml
+        metadata_content = {
+            "name": self.metadata.name,
+            "version": "0.1.0",
+            "format": "graphar",
+            "vertices": [
+                {
+                    "label": self.metadata.name,
+                    "prefix": f"vertices/{self.metadata.name}/",
+                    "count": len(df),
+                }
+            ],
+            "edges": [],  # Entities don't have edges by default
+        }
+
+        metadata_file = storage_path / "_metadata.yaml"
+        with open(metadata_file, "w") as f:
+            yaml.dump(metadata_content, f, default_flow_style=False, sort_keys=False)
+
+        # Generate _schema.yaml
+        schema_content = self._generate_schema(df)
+        schema_file = storage_path / "_schema.yaml"
+        with open(schema_file, "w") as f:
+            yaml.dump(schema_content, f, default_flow_style=False, sort_keys=False)
+
+    def _generate_schema(self, df: pd.DataFrame) -> dict:
+        """Generate GraphAr schema from DataFrame."""
+        # Map pandas dtypes to GraphAr types
+        type_mapping = {
+            "int64": "int64",
+            "int32": "int32",
+            "float64": "double",
+            "float32": "float",
+            "object": "string",
+            "bool": "bool",
+            "datetime64[ns]": "timestamp",
+        }
+
+        properties = []
+        for col_name, dtype in df.dtypes.items():
+            dtype_str = str(dtype)
+            graphar_type = type_mapping.get(dtype_str, "string")
+            properties.append(
+                {
+                    "name": col_name,
+                    "type": graphar_type,
+                    "nullable": bool(df[col_name].isnull().any()),
+                }
+            )
+
+        schema = {
+            "vertices": [
+                {
+                    "label": self.metadata.name,
+                    "properties": properties,
+                    "primary_key": self.metadata.primary_key,
+                }
+            ],
+            "edges": [],
+        }
+
+        return schema
 
     def save(self, instance: Any) -> None:
         """

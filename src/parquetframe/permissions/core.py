@@ -10,9 +10,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import yaml
 
 from ..core_legacy import (
     ParquetFrame,  # Internal use only - avoids deprecation warnings
@@ -410,14 +413,102 @@ class TupleStore:
         return not self.is_empty()
 
     def save(self, path: str) -> None:
-        """Save the tuple store to a parquet file."""
-        self._data.save(path)
+        """Save the tuple store as a GraphAr-compliant permission graph.
+
+        Creates a directory structure following Apache GraphAr specification:
+        - _metadata.yaml: Graph metadata
+        - _schema.yaml: Vertex and edge schemas
+        - vertices/: Subject and object vertices
+        - edges/: Permission tuples as edges grouped by relation
+
+        Args:
+            path: Directory path for the GraphAr permission graph
+
+        Example:
+            >>> store.save("./permissions_graph")
+            # Creates:
+            # permissions_graph/
+            # ├── _metadata.yaml
+            # ├── _schema.yaml
+            # ├── vertices/
+            # │   ├── user/part0.parquet
+            # │   ├── board/part0.parquet
+            # │   └── ...
+            # └── edges/
+            #     ├── owner/part0.parquet
+            #     ├── editor/part0.parquet
+            #     └── viewer/part0.parquet
+        """
+        base_path = Path(path)
+        base_path.mkdir(parents=True, exist_ok=True)
+
+        # Write GraphAr metadata and schema files (even for empty stores)
+        self._write_graphar_metadata(base_path, "permissions")
+        self._write_graphar_schema(base_path)
+
+        # Create required directories (even for empty stores)
+        vertices_path = base_path / "vertices"
+        edges_path = base_path / "edges"
+        vertices_path.mkdir(parents=True, exist_ok=True)
+        edges_path.mkdir(parents=True, exist_ok=True)
+
+        # Only create vertex/edge files if store has data
+        if not self.is_empty():
+            # Group tuples by relation type (owner/editor/viewer)
+            edges_by_relation = self._group_by_relation()
+
+            # Extract and save unique vertices
+            vertices = self._extract_vertex_sets()
+            self._save_vertices(base_path / "vertices", vertices)
+
+            # Save edges by relation type
+            self._save_edges(base_path / "edges", edges_by_relation)
 
     @classmethod
     def load(cls, path: str) -> TupleStore:
-        """Load a tuple store from a parquet file."""
-        data = ParquetFrame.read(path)
-        return cls(data)
+        """Load a tuple store from a GraphAr-compliant permission graph.
+
+        Reads from a GraphAr directory structure and reconstructs relation tuples
+        from the vertices and edges.
+
+        Args:
+            path: Directory path to the GraphAr permission graph
+
+        Returns:
+            TupleStore instance with loaded tuples
+
+        Raises:
+            FileNotFoundError: If the path doesn't exist
+            ValueError: If the GraphAr structure is invalid
+
+        Example:
+            >>> store = TupleStore.load("./permissions_graph")
+            >>> print(f"Loaded {len(store)} tuples")
+        """
+        base_path = Path(path)
+
+        if not base_path.exists():
+            raise FileNotFoundError(f"Permission graph not found: {path}")
+
+        # Validate GraphAr structure
+        cls._validate_graphar_structure(base_path)
+
+        # Load all edges from relation directories
+        tuples = []
+        edges_path = base_path / "edges"
+
+        if edges_path.exists() and edges_path.is_dir():
+            for relation_dir in edges_path.iterdir():
+                if relation_dir.is_dir():
+                    relation_tuples = cls._load_relation_edges(relation_dir)
+                    tuples.extend(relation_tuples)
+
+        # Create TupleStore with loaded tuples
+        store = cls()
+        if tuples:
+            store.add_tuples(tuples)
+
+        return store
 
     def stats(self) -> dict[str, Any]:
         """Get statistics about the tuple store."""
@@ -439,3 +530,363 @@ class TupleStore:
             "unique_namespaces": df["namespace"].nunique()
             + df["subject_namespace"].nunique(),
         }
+
+    # =========================================================================
+    # GraphAr Compliance Helper Methods
+    # =========================================================================
+
+    def _write_graphar_metadata(self, base_path: Path, graph_name: str) -> None:
+        """Generate _metadata.yaml for permission graph.
+
+        Args:
+            base_path: Base directory for the graph
+            graph_name: Name of the graph (e.g., "permissions")
+        """
+        # Get vertex and edge info for metadata
+        vertices_info = []
+        edges_info = []
+
+        # Add subjects vertex metadata
+        subject_count = (
+            len(self._data._df[["subject_namespace", "subject_id"]].drop_duplicates())
+            if not self.is_empty()
+            else 0
+        )
+        vertices_info.append(
+            {
+                "label": "subjects",
+                "prefix": "vertices/subjects/",
+                "count": subject_count,
+            }
+        )
+
+        # Add objects vertex metadata
+        object_count = (
+            len(self._data._df[["namespace", "object_id"]].drop_duplicates())
+            if not self.is_empty()
+            else 0
+        )
+        vertices_info.append(
+            {
+                "label": "objects",
+                "prefix": "vertices/objects/",
+                "count": object_count,
+            }
+        )
+
+        # Add edge metadata for each relation type
+        relations = self.get_relations()
+        for relation in sorted(relations):
+            # Count edges for this relation
+            edge_count = (
+                len(self._data._df[self._data._df["relation"] == relation])
+                if not self.is_empty()
+                else 0
+            )
+            edges_info.append(
+                {
+                    "label": relation,
+                    "prefix": f"edges/{relation}/",
+                    "source": "subjects",
+                    "target": "objects",
+                    "count": edge_count,
+                }
+            )
+
+        metadata = {
+            "name": graph_name,
+            "format": "graphar",
+            "version": "1.0",
+            "directed": True,
+            "description": "Zanzibar-style permission graph with relation-based access control",
+            "creator": "ParquetFrame Permissions System",
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "vertices": vertices_info,
+            "edges": edges_info,
+        }
+
+        metadata_path = base_path / "_metadata.yaml"
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            yaml.dump(metadata, f, default_flow_style=False, sort_keys=False)
+
+    def _write_graphar_schema(self, base_path: Path) -> None:
+        """Generate _schema.yaml for permission graph.
+
+        Args:
+            base_path: Base directory for the graph
+        """
+        # Get unique namespaces from tuples
+        relations = self.get_relations()
+
+        # Build vertex schemas - use "subjects" and "objects" as labels
+        vertices = [
+            {
+                "label": "subjects",
+                "properties": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "description": "Subject identifier",
+                    },
+                    {
+                        "name": "namespace",
+                        "type": "string",
+                        "description": "Subject namespace/type",
+                    },
+                ],
+            },
+            {
+                "label": "objects",
+                "properties": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "description": "Object identifier",
+                    },
+                    {
+                        "name": "namespace",
+                        "type": "string",
+                        "description": "Object namespace/type",
+                    },
+                ],
+            },
+        ]
+
+        # Build edge schemas (one per relation type)
+        edges = []
+        for relation in sorted(relations):
+            edges.append(
+                {
+                    "label": relation,
+                    "source": "subjects",
+                    "target": "objects",
+                    "properties": [
+                        {
+                            "name": "subject_id",
+                            "type": "string",
+                            "description": "Subject ID",
+                        },
+                        {
+                            "name": "object_id",
+                            "type": "string",
+                            "description": "Object ID",
+                        },
+                        {
+                            "name": "subject_namespace",
+                            "type": "string",
+                            "description": "Type of subject",
+                        },
+                        {
+                            "name": "object_namespace",
+                            "type": "string",
+                            "description": "Type of object",
+                        },
+                    ],
+                }
+            )
+
+        schema = {
+            "vertices": vertices,
+            "edges": edges,
+        }
+
+        schema_path = base_path / "_schema.yaml"
+        with open(schema_path, "w", encoding="utf-8") as f:
+            yaml.dump(schema, f, default_flow_style=False, sort_keys=False)
+
+    def _extract_vertex_sets(self) -> dict[str, set[str]]:
+        """Extract unique subjects and objects as vertex sets.
+
+        Returns:
+            Dictionary mapping namespace to set of vertex IDs
+        """
+        vertices: dict[str, set[str]] = {}
+
+        if self.is_empty():
+            return vertices
+
+        df = self._data._df
+
+        # Extract subjects
+        for _, row in (
+            df[["subject_namespace", "subject_id"]].drop_duplicates().iterrows()
+        ):
+            ns = row["subject_namespace"]
+            vid = row["subject_id"]
+            if ns not in vertices:
+                vertices[ns] = set()
+            vertices[ns].add(vid)
+
+        # Extract objects
+        for _, row in df[["namespace", "object_id"]].drop_duplicates().iterrows():
+            ns = row["namespace"]
+            vid = row["object_id"]
+            if ns not in vertices:
+                vertices[ns] = set()
+            vertices[ns].add(vid)
+
+        return vertices
+
+    def _group_by_relation(self) -> dict[str, list[RelationTuple]]:
+        """Group tuples by relation type.
+
+        Returns:
+            Dictionary mapping relation type to list of tuples
+        """
+        groups: dict[str, list[RelationTuple]] = {}
+
+        for tuple_obj in self:
+            relation = tuple_obj.relation
+            if relation not in groups:
+                groups[relation] = []
+            groups[relation].append(tuple_obj)
+
+        return groups
+
+    def _save_vertices(
+        self, vertices_path: Path, vertices: dict[str, set[str]]
+    ) -> None:
+        """Save vertex sets to parquet files.
+
+        Args:
+            vertices_path: Base path for vertices directory
+            vertices: Dictionary mapping namespace to vertex IDs
+        """
+        vertices_path.mkdir(parents=True, exist_ok=True)
+
+        # Separate subjects and objects
+        subject_namespaces = self.get_subject_namespaces()
+        object_namespaces = self.get_namespaces()
+
+        # Collect all subjects
+        subjects_data = []
+        for ns in subject_namespaces:
+            if ns in vertices:
+                for vid in vertices[ns]:
+                    subjects_data.append({"id": vid, "namespace": ns})
+
+        # Collect all objects
+        objects_data = []
+        for ns in object_namespaces:
+            if ns in vertices:
+                for vid in vertices[ns]:
+                    objects_data.append({"id": vid, "namespace": ns})
+
+        # Save subjects
+        if subjects_data:
+            subjects_dir = vertices_path / "subjects"
+            subjects_dir.mkdir(exist_ok=True)
+            subjects_df = pd.DataFrame(subjects_data)
+            subjects_df = subjects_df.drop_duplicates()
+            output_path = subjects_dir / "part0.parquet"
+            subjects_df.to_parquet(output_path, index=False, compression="snappy")
+
+        # Save objects
+        if objects_data:
+            objects_dir = vertices_path / "objects"
+            objects_dir.mkdir(exist_ok=True)
+            objects_df = pd.DataFrame(objects_data)
+            objects_df = objects_df.drop_duplicates()
+            output_path = objects_dir / "part0.parquet"
+            objects_df.to_parquet(output_path, index=False, compression="snappy")
+
+    def _save_edges(
+        self, edges_path: Path, edges_by_relation: dict[str, list[RelationTuple]]
+    ) -> None:
+        """Save edges grouped by relation type.
+
+        Args:
+            edges_path: Base path for edges directory
+            edges_by_relation: Dictionary mapping relation to tuples
+        """
+        edges_path.mkdir(parents=True, exist_ok=True)
+
+        for relation, tuples in edges_by_relation.items():
+            relation_dir = edges_path / relation
+            relation_dir.mkdir(exist_ok=True)
+
+            # Create DataFrame with edge data
+            edge_data = []
+            for t in tuples:
+                edge_data.append(
+                    {
+                        "subject_id": t.subject_id,
+                        "object_id": t.object_id,
+                        "subject_namespace": t.subject_namespace,
+                        "object_namespace": t.namespace,
+                    }
+                )
+
+            edge_df = pd.DataFrame(edge_data)
+
+            # Save to parquet
+            output_path = relation_dir / "part0.parquet"
+            edge_df.to_parquet(output_path, index=False, compression="snappy")
+
+    @classmethod
+    def _validate_graphar_structure(cls, base_path: Path) -> None:
+        """Validate that the directory follows GraphAr structure.
+
+        Args:
+            base_path: Base directory to validate
+
+        Raises:
+            ValueError: If structure is invalid
+        """
+        required_files = ["_metadata.yaml", "_schema.yaml"]
+        for filename in required_files:
+            file_path = base_path / filename
+            if not file_path.exists():
+                raise FileNotFoundError(
+                    f"Invalid GraphAr structure: missing {filename}. "
+                    f"Expected GraphAr-compliant directory with metadata and schema files."
+                )
+
+        # Check for vertices and edges directories
+        vertices_path = base_path / "vertices"
+        edges_path = base_path / "edges"
+
+        if not vertices_path.exists() or not vertices_path.is_dir():
+            raise FileNotFoundError(
+                "Invalid GraphAr structure: missing vertices/ directory. "
+                "Permission graph must contain vertex data."
+            )
+
+        if not edges_path.exists() or not edges_path.is_dir():
+            raise FileNotFoundError(
+                "Invalid GraphAr structure: missing edges/ directory. "
+                "Permission graph must contain edges with relation types."
+            )
+
+    @classmethod
+    def _load_relation_edges(cls, relation_dir: Path) -> list[RelationTuple]:
+        """Load edges from a single relation directory.
+
+        Args:
+            relation_dir: Directory containing edges for one relation type
+
+        Returns:
+            List of RelationTuple objects
+        """
+        tuples = []
+        relation = relation_dir.name
+
+        # Read all parquet files in the relation directory
+        for parquet_file in relation_dir.glob("*.parquet"):
+            edge_df = pd.read_parquet(parquet_file)
+
+            for _, row in edge_df.iterrows():
+                # Handle both old (src/dst) and new (subject_id/object_id) column names
+                subject_id = row.get("subject_id", row.get("src"))
+                object_id = row.get("object_id", row.get("dst"))
+
+                tuple_obj = RelationTuple(
+                    namespace=row["object_namespace"],
+                    object_id=object_id,
+                    relation=relation,
+                    subject_namespace=row["subject_namespace"],
+                    subject_id=subject_id,
+                )
+                tuples.append(tuple_obj)
+
+        return tuples
