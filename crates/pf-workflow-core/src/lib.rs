@@ -20,6 +20,7 @@ pub mod dag;
 pub mod error;
 pub mod executor;
 pub mod metrics;
+pub mod progress;
 pub mod scheduler;
 pub mod step;
 
@@ -30,5 +31,6 @@ pub use dag::{Node, DAG};
 pub use error::{DAGError, ExecutionError, ResourceError, Result, WorkflowError};
 pub use executor::WorkflowExecutor;
 pub use metrics::{StepMetrics, StepStatus, WorkflowMetrics};
+pub use progress::{ConsoleProgressCallback, NoOpCallback, ProgressCallback, ProgressEvent};
 pub use scheduler::ParallelScheduler;
 pub use step::{ExecutionContext, RetryConfig, Step, StepResult};
