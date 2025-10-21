@@ -439,30 +439,30 @@ class TupleStore:
             #     ├── editor/part0.parquet
             #     └── viewer/part0.parquet
         """
-        # Don't create structure for empty stores
-        if self.is_empty():
-            return
-
         base_path = Path(path)
         base_path.mkdir(parents=True, exist_ok=True)
 
-        # Write GraphAr metadata and schema files
+        # Write GraphAr metadata and schema files (even for empty stores)
         self._write_graphar_metadata(base_path, "permissions")
         self._write_graphar_schema(base_path)
 
-        # Create edges directory (required by validation)
+        # Create required directories (even for empty stores)
+        vertices_path = base_path / "vertices"
         edges_path = base_path / "edges"
+        vertices_path.mkdir(parents=True, exist_ok=True)
         edges_path.mkdir(parents=True, exist_ok=True)
 
-        # Group tuples by relation type (owner/editor/viewer)
-        edges_by_relation = self._group_by_relation()
+        # Only create vertex/edge files if store has data
+        if not self.is_empty():
+            # Group tuples by relation type (owner/editor/viewer)
+            edges_by_relation = self._group_by_relation()
 
-        # Extract and save unique vertices
-        vertices = self._extract_vertex_sets()
-        self._save_vertices(base_path / "vertices", vertices)
+            # Extract and save unique vertices
+            vertices = self._extract_vertex_sets()
+            self._save_vertices(base_path / "vertices", vertices)
 
-        # Save edges by relation type
-        self._save_edges(base_path / "edges", edges_by_relation)
+            # Save edges by relation type
+            self._save_edges(base_path / "edges", edges_by_relation)
 
     @classmethod
     def load(cls, path: str) -> TupleStore:
