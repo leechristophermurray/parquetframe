@@ -14,6 +14,7 @@
 //! - Comprehensive metrics collection
 //! - Configurable retry and timeout behavior
 
+pub mod cancellation;
 pub mod config;
 pub mod dag;
 pub mod error;
@@ -23,6 +24,7 @@ pub mod scheduler;
 pub mod step;
 
 // Re-export main types for convenience
+pub use cancellation::CancellationToken;
 pub use config::{ExecutorConfig, ExecutorConfigBuilder};
 pub use dag::{Node, DAG};
 pub use error::{DAGError, ExecutionError, ResourceError, Result, WorkflowError};
