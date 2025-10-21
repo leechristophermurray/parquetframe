@@ -25,6 +25,10 @@
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::fs::{File, OpenOptions};
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 /// Progress event types during workflow execution.
@@ -323,6 +327,153 @@ impl ProgressCallback for ConsoleProgressCallback {
     }
 }
 
+/// A callback-based progress tracker that wraps a closure.
+///
+/// This allows you to easily create custom progress tracking behavior
+/// using closures or function pointers without implementing the full trait.
+///
+/// # Examples
+///
+/// ```
+/// use pf_workflow_core::{CallbackProgressTracker, ProgressEvent};
+/// use std::sync::{Arc, Mutex};
+///
+/// let events = Arc::new(Mutex::new(Vec::new()));
+/// let events_clone = Arc::clone(&events);
+///
+/// let tracker = CallbackProgressTracker::new(move |event: ProgressEvent| {
+///     events_clone.lock().unwrap().push(event);
+/// });
+///
+/// // Use with executor:
+/// // executor.execute_with_progress(Box::new(tracker))
+/// ```
+pub struct CallbackProgressTracker<F>
+where
+    F: Fn(ProgressEvent) + Send + Sync,
+{
+    callback: F,
+}
+
+impl<F> CallbackProgressTracker<F>
+where
+    F: Fn(ProgressEvent) + Send + Sync,
+{
+    /// Create a new callback-based progress tracker.
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - A function or closure that will be called for each progress event
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use pf_workflow_core::CallbackProgressTracker;
+    ///
+    /// let tracker = CallbackProgressTracker::new(|event| {
+    ///     println!("Event: {}", event);
+    /// });
+    /// ```
+    pub fn new(callback: F) -> Self {
+        Self { callback }
+    }
+}
+
+impl<F> ProgressCallback for CallbackProgressTracker<F>
+where
+    F: Fn(ProgressEvent) + Send + Sync,
+{
+    fn on_progress(&self, event: ProgressEvent) {
+        (self.callback)(event);
+    }
+}
+
+/// A file-based progress tracker that logs events to a file.
+///
+/// Events are written as JSON lines (one JSON object per line) for easy parsing.
+/// The file is created if it doesn't exist and appended to if it does.
+///
+/// # Thread Safety
+///
+/// This tracker is thread-safe and can be used with parallel execution.
+/// Events from different threads are serialized through a mutex.
+///
+/// # Examples
+///
+/// ```no_run
+/// use pf_workflow_core::FileProgressTracker;
+///
+/// let tracker = FileProgressTracker::new("workflow_progress.jsonl")
+///     .expect("Failed to create progress tracker");
+///
+/// // Use with executor:
+/// // executor.execute_with_progress(Box::new(tracker))
+/// ```
+pub struct FileProgressTracker {
+    file: Arc<Mutex<File>>,
+    path: PathBuf,
+}
+
+impl FileProgressTracker {
+    /// Create a new file-based progress tracker.
+    ///
+    /// The file will be created if it doesn't exist, or appended to if it does.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the log file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be created or opened.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use pf_workflow_core::FileProgressTracker;
+    ///
+    /// let tracker = FileProgressTracker::new("progress.log")?;
+    /// # Ok::<(), std::io::Error>(())
+    /// ```
+    pub fn new<P: AsRef<Path>>(path: P) -> std::io::Result<Self> {
+        let path_buf = path.as_ref().to_path_buf();
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path_buf)?;
+
+        Ok(Self {
+            file: Arc::new(Mutex::new(file)),
+            path: path_buf,
+        })
+    }
+
+    /// Get the path to the log file.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl ProgressCallback for FileProgressTracker {
+    fn on_progress(&self, event: ProgressEvent) {
+        // Serialize event to JSON and write to file
+        if let Ok(json) = serde_json::to_string(&event) {
+            if let Ok(mut file) = self.file.lock() {
+                let _ = writeln!(file, "{}", json);
+                let _ = file.flush(); // Ensure it's written immediately
+            }
+        }
+    }
+}
+
+impl std::fmt::Debug for FileProgressTracker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FileProgressTracker")
+            .field("path", &self.path)
+            .finish()
+    }
+}
+
 /// Helper module for SystemTime serialization/deserialization.
 mod systemtime_serde {
     use serde::{Deserialize, Deserializer, Serializer};
@@ -350,6 +501,7 @@ mod systemtime_serde {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::BufRead;
     use std::sync::{Arc, Mutex};
     use std::thread;
     use std::time::Duration;
@@ -563,5 +715,101 @@ mod tests {
 
         let callback: Box<dyn ProgressCallback> = Box::new(CollectorCallback::new());
         callback.on_progress(ProgressEvent::failed("test", "error"));
+    }
+
+    #[test]
+    fn test_callback_progress_tracker() {
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let events_clone = Arc::clone(&events);
+
+        let tracker = CallbackProgressTracker::new(move |event: ProgressEvent| {
+            events_clone.lock().unwrap().push(event);
+        });
+
+        tracker.on_progress(ProgressEvent::started("step1"));
+        tracker.on_progress(ProgressEvent::completed("step1"));
+
+        let collected = events.lock().unwrap();
+        assert_eq!(collected.len(), 2);
+        assert!(matches!(collected[0], ProgressEvent::Started { .. }));
+        assert!(matches!(collected[1], ProgressEvent::Completed { .. }));
+    }
+
+    #[test]
+    fn test_file_progress_tracker() {
+        let temp_dir = std::env::temp_dir();
+        let log_path = temp_dir.join("test_progress.jsonl");
+
+        // Clean up any existing file
+        let _ = std::fs::remove_file(&log_path);
+
+        let tracker = FileProgressTracker::new(&log_path)
+            .expect("Failed to create file tracker");
+
+        assert_eq!(tracker.path(), log_path.as_path());
+
+        // Log some events
+        tracker.on_progress(ProgressEvent::started("step1"));
+        tracker.on_progress(ProgressEvent::completed("step1"));
+        tracker.on_progress(ProgressEvent::started("step2"));
+        tracker.on_progress(ProgressEvent::failed("step2", "test error"));
+
+        // Drop tracker to ensure file is flushed
+        drop(tracker);
+
+        // Read back and verify
+        let file = std::fs::File::open(&log_path).expect("Failed to open log file");
+        let reader = std::io::BufReader::new(file);
+        let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
+
+        assert_eq!(lines.len(), 4);
+
+        // Verify each line is valid JSON
+        for line in &lines {
+            let _event: ProgressEvent = serde_json::from_str(line)
+                .expect("Failed to parse JSON");
+        }
+
+        // Clean up
+        let _ = std::fs::remove_file(&log_path);
+    }
+
+    #[test]
+    fn test_file_tracker_thread_safety() {
+        let temp_dir = std::env::temp_dir();
+        let log_path = temp_dir.join("test_progress_concurrent.jsonl");
+
+        let _ = std::fs::remove_file(&log_path);
+
+        let tracker = Arc::new(
+            FileProgressTracker::new(&log_path).expect("Failed to create tracker")
+        );
+
+        let mut handles = vec![];
+
+        // Spawn multiple threads writing events
+        for i in 0..5 {
+            let tracker_clone = Arc::clone(&tracker);
+            let handle = thread::spawn(move || {
+                tracker_clone.on_progress(ProgressEvent::started(format!("step{}", i)));
+                tracker_clone.on_progress(ProgressEvent::completed(format!("step{}", i)));
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        drop(tracker);
+
+        // Verify all events were written
+        let file = std::fs::File::open(&log_path).expect("Failed to open log file");
+        let reader = std::io::BufReader::new(file);
+        let lines: Vec<String> = reader.lines().map(|l| l.unwrap()).collect();
+
+        assert_eq!(lines.len(), 10); // 5 threads * 2 events each
+
+        let _ = std::fs::remove_file(&log_path);
     }
 }
