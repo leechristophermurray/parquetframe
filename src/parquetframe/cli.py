@@ -414,6 +414,11 @@ def info(filepath, format):
                     "Metadata Source",
                     fast_metadata.get("backend_used", "unknown").upper(),
                 )
+                # Add backend recommendation based on file size
+                backend_recommended = (
+                    "Dask (lazy)" if file_size_mb >= 100 else "pandas (eager)"
+                )
+                info_table.add_row("Recommended Backend", backend_recommended)
             else:
                 # Determine backend used and recommended
                 backend_used = "Dask (lazy)" if pf.islazy else "pandas (eager)"
