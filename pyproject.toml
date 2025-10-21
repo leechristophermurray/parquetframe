@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "parquetframe"
-version = "2.0.0a0"
+version = "2.0.0a5"
 authors = [
     {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
