@@ -115,7 +115,6 @@ def assert_permission_granted(app, user_id, resource_type, resource_id, relation
 
 
 def assert_permission_denied(app, user_id, resource_type, resource_id, relation):
-    """Assert that user does NOT have the specified permission."""
     has_permission = app.permissions.check_permission(
         user_id, resource_type, resource_id, relation
     )
