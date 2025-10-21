@@ -439,26 +439,27 @@ class TupleStore:
             #     ├── editor/part0.parquet
             #     └── viewer/part0.parquet
         """
-        if self.is_empty():
-            # Don't create empty graph structure
-            return
-
         base_path = Path(path)
         base_path.mkdir(parents=True, exist_ok=True)
 
-        # Write GraphAr metadata and schema files
+        # Write GraphAr metadata and schema files (even for empty stores)
         self._write_graphar_metadata(base_path, "permissions")
         self._write_graphar_schema(base_path)
 
-        # Group tuples by relation type (owner/editor/viewer)
-        edges_by_relation = self._group_by_relation()
+        # Create edges directory (required by validation)
+        edges_path = base_path / "edges"
+        edges_path.mkdir(parents=True, exist_ok=True)
 
-        # Extract and save unique vertices
-        vertices = self._extract_vertex_sets()
-        self._save_vertices(base_path / "vertices", vertices)
+        if not self.is_empty():
+            # Group tuples by relation type (owner/editor/viewer)
+            edges_by_relation = self._group_by_relation()
 
-        # Save edges by relation type
-        self._save_edges(base_path / "edges", edges_by_relation)
+            # Extract and save unique vertices
+            vertices = self._extract_vertex_sets()
+            self._save_vertices(base_path / "vertices", vertices)
+
+            # Save edges by relation type
+            self._save_edges(base_path / "edges", edges_by_relation)
 
     @classmethod
     def load(cls, path: str) -> TupleStore:
@@ -538,13 +539,51 @@ class TupleStore:
             base_path: Base directory for the graph
             graph_name: Name of the graph (e.g., "permissions")
         """
+        # Get vertex and edge info for metadata
+        vertices_info = []
+        edges_info = []
+
+        if not self.is_empty():
+            # Add subjects vertex metadata
+            subject_namespaces = self.get_subject_namespaces()
+            if subject_namespaces:
+                vertices_info.append(
+                    {
+                        "label": "subjects",
+                        "prefix": "vertices/subjects/",
+                    }
+                )
+
+            # Add objects vertex metadata
+            object_namespaces = self.get_namespaces()
+            if object_namespaces:
+                vertices_info.append(
+                    {
+                        "label": "objects",
+                        "prefix": "vertices/objects/",
+                    }
+                )
+
+            # Add edge metadata for each relation type
+            relations = self.get_relations()
+            for relation in sorted(relations):
+                edges_info.append(
+                    {
+                        "label": relation,
+                        "prefix": f"edges/{relation}/",
+                    }
+                )
+
         metadata = {
             "name": graph_name,
+            "format": "graphar",
             "version": "1.0",
             "directed": True,
             "description": "Zanzibar-style permission graph with relation-based access control",
             "creator": "ParquetFrame Permissions System",
             "created_at": datetime.utcnow().isoformat() + "Z",
+            "vertices": vertices_info,
+            "edges": edges_info,
         }
 
         metadata_path = base_path / "_metadata.yaml"
@@ -558,53 +597,76 @@ class TupleStore:
             base_path: Base directory for the graph
         """
         # Get unique namespaces from tuples
-        object_namespaces = self.get_namespaces()
-        subject_namespaces = self.get_subject_namespaces()
         relations = self.get_relations()
 
-        # Build vertex schemas
-        vertices = {}
-        all_namespaces = object_namespaces | subject_namespaces
-
-        for ns in sorted(all_namespaces):
-            vertices[ns] = {
-                "properties": {
-                    "id": {
+        # Build vertex schemas - use "subjects" and "objects" as labels
+        vertices = [
+            {
+                "label": "subjects",
+                "properties": [
+                    {
+                        "name": "id",
                         "type": "string",
-                        "primary": True,
-                        "description": f"Unique {ns} identifier",
-                    }
-                }
-            }
+                        "description": "Subject identifier",
+                    },
+                    {
+                        "name": "namespace",
+                        "type": "string",
+                        "description": "Subject namespace/type",
+                    },
+                ],
+            },
+            {
+                "label": "objects",
+                "properties": [
+                    {
+                        "name": "id",
+                        "type": "string",
+                        "description": "Object identifier",
+                    },
+                    {
+                        "name": "namespace",
+                        "type": "string",
+                        "description": "Object namespace/type",
+                    },
+                ],
+            },
+        ]
 
         # Build edge schemas (one per relation type)
-        edges = {}
+        edges = []
         for relation in sorted(relations):
-            edges[relation] = {
-                "properties": {
-                    "src": {
-                        "type": "string",
-                        "source": True,
-                        "description": "Subject ID",
-                    },
-                    "dst": {
-                        "type": "string",
-                        "target": True,
-                        "description": "Object ID",
-                    },
-                    "subject_namespace": {
-                        "type": "string",
-                        "description": "Type of subject",
-                    },
-                    "object_namespace": {
-                        "type": "string",
-                        "description": "Type of object",
-                    },
+            edges.append(
+                {
+                    "label": relation,
+                    "source": "subjects",
+                    "target": "objects",
+                    "properties": [
+                        {
+                            "name": "subject_id",
+                            "type": "string",
+                            "description": "Subject ID",
+                        },
+                        {
+                            "name": "object_id",
+                            "type": "string",
+                            "description": "Object ID",
+                        },
+                        {
+                            "name": "subject_namespace",
+                            "type": "string",
+                            "description": "Type of subject",
+                        },
+                        {
+                            "name": "object_namespace",
+                            "type": "string",
+                            "description": "Type of object",
+                        },
+                    ],
                 }
-            }
+            )
 
         schema = {
-            "version": "1.0",
             "vertices": vertices,
             "edges": edges,
         }
@@ -673,16 +735,41 @@ class TupleStore:
         """
         vertices_path.mkdir(parents=True, exist_ok=True)
 
-        for namespace, ids in vertices.items():
-            namespace_dir = vertices_path / namespace
-            namespace_dir.mkdir(exist_ok=True)
+        # Separate subjects and objects
+        subject_namespaces = self.get_subject_namespaces()
+        object_namespaces = self.get_namespaces()
 
-            # Create DataFrame with vertex IDs
-            vertex_df = pd.DataFrame({"id": sorted(ids)})
+        # Collect all subjects
+        subjects_data = []
+        for ns in subject_namespaces:
+            if ns in vertices:
+                for vid in vertices[ns]:
+                    subjects_data.append({"id": vid, "namespace": ns})
 
-            # Save to parquet
-            output_path = namespace_dir / "part0.parquet"
-            vertex_df.to_parquet(output_path, index=False, compression="snappy")
+        # Collect all objects
+        objects_data = []
+        for ns in object_namespaces:
+            if ns in vertices:
+                for vid in vertices[ns]:
+                    objects_data.append({"id": vid, "namespace": ns})
+
+        # Save subjects
+        if subjects_data:
+            subjects_dir = vertices_path / "subjects"
+            subjects_dir.mkdir(exist_ok=True)
+            subjects_df = pd.DataFrame(subjects_data)
+            subjects_df = subjects_df.drop_duplicates()
+            output_path = subjects_dir / "part0.parquet"
+            subjects_df.to_parquet(output_path, index=False, compression="snappy")
+
+        # Save objects
+        if objects_data:
+            objects_dir = vertices_path / "objects"
+            objects_dir.mkdir(exist_ok=True)
+            objects_df = pd.DataFrame(objects_data)
+            objects_df = objects_df.drop_duplicates()
+            output_path = objects_dir / "part0.parquet"
+            objects_df.to_parquet(output_path, index=False, compression="snappy")
 
     def _save_edges(
         self, edges_path: Path, edges_by_relation: dict[str, list[RelationTuple]]
@@ -704,8 +791,8 @@ class TupleStore:
             for t in tuples:
                 edge_data.append(
                     {
-                        "src": t.subject_id,
-                        "dst": t.object_id,
+                        "subject_id": t.subject_id,
+                        "object_id": t.object_id,
                         "subject_namespace": t.subject_namespace,
                         "object_namespace": t.namespace,
                     }
@@ -762,12 +849,16 @@ class TupleStore:
             edge_df = pd.read_parquet(parquet_file)
 
             for _, row in edge_df.iterrows():
+                # Handle both old (src/dst) and new (subject_id/object_id) column names
+                subject_id = row.get("subject_id", row.get("src"))
+                object_id = row.get("object_id", row.get("dst"))
+
                 tuple_obj = RelationTuple(
                     namespace=row["object_namespace"],
-                    object_id=row["dst"],
+                    object_id=object_id,
                     relation=relation,
                     subject_namespace=row["subject_namespace"],
-                    subject_id=row["src"],
+                    subject_id=subject_id,
                 )
                 tuples.append(tuple_obj)
 

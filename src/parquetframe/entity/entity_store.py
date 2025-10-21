@@ -120,7 +120,7 @@ class EntityStore:
                 {
                     "name": col_name,
                     "type": graphar_type,
-                    "nullable": df[col_name].isnull().any(),
+                    "nullable": bool(df[col_name].isnull().any()),
                 }
             )
 
