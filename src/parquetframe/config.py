@@ -40,6 +40,11 @@ class Config:
     parallel_read: bool = True
     max_workers: int | None = None
 
+    # Rust backend
+    use_rust_backend: bool = True  # Enable Rust acceleration by default
+    rust_io_enabled: bool = True  # Use Rust for I/O operations
+    rust_graph_enabled: bool = True  # Use Rust for graph algorithms
+
     _instance: "Config | None" = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
@@ -83,6 +88,26 @@ class Config:
         if os.getenv("PARQUETFRAME_PROGRESS", "").lower() in ("1", "true", "yes"):
             self.progress_bar = True
 
+        # Rust backend settings
+        if os.getenv("PARQUETFRAME_DISABLE_RUST", "").lower() in ("1", "true", "yes"):
+            self.use_rust_backend = False
+            self.rust_io_enabled = False
+            self.rust_graph_enabled = False
+
+        if os.getenv("PARQUETFRAME_DISABLE_RUST_IO", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        ):
+            self.rust_io_enabled = False
+
+        if os.getenv("PARQUETFRAME_DISABLE_RUST_GRAPH", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        ):
+            self.rust_graph_enabled = False
+
     def set(self, **kwargs: Any) -> None:
         """
         Set configuration values.
@@ -124,6 +149,9 @@ class Config:
             "progress_bar": self.progress_bar,
             "parallel_read": self.parallel_read,
             "max_workers": self.max_workers,
+            "use_rust_backend": self.use_rust_backend,
+            "rust_io_enabled": self.rust_io_enabled,
+            "rust_graph_enabled": self.rust_graph_enabled,
         }
 
     @classmethod
@@ -151,6 +179,9 @@ class Config:
             "progress_bar",
             "parallel_read",
             "max_workers",
+            "use_rust_backend",
+            "rust_io_enabled",
+            "rust_graph_enabled",
         }
 
         filtered = {k: v for k, v in config_dict.items() if k in valid_keys}

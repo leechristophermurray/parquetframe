@@ -17,6 +17,12 @@ except ImportError:
     pq = None
     PYARROW_AVAILABLE = False
 
+# Optional Rust fast-path functions
+try:
+    from ..io.io_backend import try_get_row_count_fast as _try_get_row_count_fast
+except Exception:  # noqa: BLE001 - broadened intentionally for optional dep
+    _try_get_row_count_fast = None  # type: ignore[assignment]
+
 from .frame import DataFrameProxy
 from .registry import EngineRegistry
 
@@ -61,20 +67,19 @@ class DataReader:
         data_size = self._estimate_file_size(path)
 
         # Get row count from metadata if possible (more accurate)
-        if PYARROW_AVAILABLE:
-            try:
-                row_count = self._get_parquet_row_count(path)
-                if row_count:
-                    # Adjust size estimate based on row count
-                    # Rough heuristic: 100 bytes per row on average
-                    estimated_memory = row_count * 100
-                    data_size = max(data_size, estimated_memory)
-                    logger.debug(
-                        f"Parquet file has {row_count:,} rows, "
-                        f"estimated memory: {estimated_memory / 1024 / 1024:.2f} MB"
-                    )
-            except Exception as e:
-                logger.debug(f"Could not read Parquet metadata: {e}")
+        try:
+            row_count = self._get_parquet_row_count(path)
+            if row_count:
+                # Adjust size estimate based on row count
+                # Rough heuristic: 100 bytes per row on average
+                estimated_memory = row_count * 100
+                data_size = max(data_size, estimated_memory)
+                logger.debug(
+                    f"Parquet file has {row_count:,} rows, "
+                    f"estimated memory: {estimated_memory / 1024 / 1024:.2f} MB"
+                )
+        except Exception as e:
+            logger.debug(f"Could not read Parquet metadata: {e}")
 
         # Select engine
         if engine and engine != "auto":
@@ -357,12 +362,34 @@ class DataReader:
         """
         Get row count from Parquet metadata without reading data.
 
+        Prefers Rust fast-path when available, with graceful fallback to pyarrow.
+
         Args:
             path: Path to Parquet file or directory
 
         Returns:
             Total row count or None if unavailable
         """
+        # Try Rust fast-path first if available
+        try:
+            if _try_get_row_count_fast is not None:
+                if path.is_file():
+                    rc = _try_get_row_count_fast(path)
+                    if rc is not None:
+                        return int(rc)
+                elif path.is_dir():
+                    total_rows = 0
+                    for file_path in path.rglob("*.parquet"):
+                        if file_path.is_file():
+                            rc = _try_get_row_count_fast(file_path)
+                            if rc is not None:
+                                total_rows += int(rc)
+                    if total_rows > 0:
+                        return total_rows
+        except Exception as e:  # noqa: BLE001 - robustness over strictness
+            logger.debug(f"Rust row count read failed, falling back: {e}")
+
+        # Fallback to pyarrow if available
         if not PYARROW_AVAILABLE:
             return None
 

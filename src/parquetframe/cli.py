@@ -352,23 +352,45 @@ def info(filepath, format):
 
         console.print(f"\n[bold blue]File Information:[/bold blue] {filepath}")
 
+        # Detect format from our core functionality
+        from .core import detect_format
+
+        detected_format = detect_format(filepath, format)
+
+        # Try fast metadata path for Parquet files (no data loading needed)
+        fast_metadata = None
+        if (
+            detected_format.value == "parquet"
+            and file_path.is_file()
+            and file_path.suffix.lower() in (".parquet", ".pqt")
+        ):
+            try:
+                from .io.io_backend import get_parquet_info_fast
+
+                fast_metadata = get_parquet_info_fast(file_path)
+                if fast_metadata:
+                    console.print(
+                        f"[dim]Using fast metadata read ({fast_metadata['backend_used']} backend)[/dim]"
+                    )
+            except Exception as e:
+                console.print(f"[dim]Fast metadata unavailable: {e}[/dim]")
+
         # Try to read the file to get format and schema information
         try:
-            if format:
+            # If we have fast metadata for parquet, we can skip full read for basic info
+            if fast_metadata:
+                # We have metadata, but may still need to read for sample data
+                pf = None
+            elif format:
                 console.print(f"[dim]Using specified format: {format}[/dim]")
                 pf = ParquetFrame.read(
                     filepath, format=format, threshold_mb=1000
                 )  # Force pandas for info
             else:
-                console.print("[dim]Auto-detecting file format...[/dim]")
+                console.print("[dim]Auto-detecting file format and reading...[/dim]")
                 pf = ParquetFrame.read(
                     filepath, threshold_mb=1000, islazy=False
                 )  # Force pandas for info
-
-            # Detect format from our core functionality
-            from .core import detect_format
-
-            detected_format = detect_format(filepath, format)
 
             # Create info table
             info_table = Table(title="File Details")
@@ -381,17 +403,29 @@ def info(filepath, format):
             )
             info_table.add_row("Detected Format", detected_format.value.upper())
 
-            # Determine backend used and recommended
-            backend_used = "Dask (lazy)" if pf.islazy else "pandas (eager)"
-            backend_recommended = (
-                "Dask (lazy)" if file_size_mb >= 100 else "pandas (eager)"
-            )
-            info_table.add_row("Backend Used", backend_used)
-            info_table.add_row("Recommended Backend", backend_recommended)
+            # If we have fast metadata, use it
+            if fast_metadata:
+                info_table.add_row("Rows", f"{fast_metadata['num_rows']:,}")
+                info_table.add_row("Columns", str(fast_metadata["num_columns"]))
+                info_table.add_row(
+                    "Row Groups", str(fast_metadata.get("num_row_groups", "N/A"))
+                )
+                info_table.add_row(
+                    "Metadata Source",
+                    fast_metadata.get("backend_used", "unknown").upper(),
+                )
+            else:
+                # Determine backend used and recommended
+                backend_used = "Dask (lazy)" if pf.islazy else "pandas (eager)"
+                backend_recommended = (
+                    "Dask (lazy)" if file_size_mb >= 100 else "pandas (eager)"
+                )
+                info_table.add_row("Backend Used", backend_used)
+                info_table.add_row("Recommended Backend", backend_recommended)
 
-            # Data shape information
-            info_table.add_row("Rows", f"{len(pf):,}")
-            info_table.add_row("Columns", str(len(pf.columns)))
+                # Data shape information
+                info_table.add_row("Rows", f"{len(pf):,}")
+                info_table.add_row("Columns", str(len(pf.columns)))
 
             console.print(info_table)
 
@@ -402,27 +436,50 @@ def info(filepath, format):
             schema_table.add_column("Type", style="yellow")
             schema_table.add_column("Non-Null Count", style="white")
 
-            # Get DataFrame for analysis
-            df = pf._df if not pf.islazy else pf._df.compute()
+            # Get DataFrame for analysis - or use fast metadata
+            if fast_metadata:
+                # Use metadata for schema
+                for i, col_name in enumerate(fast_metadata["column_names"]):
+                    col_type = (
+                        fast_metadata["column_types"][i]
+                        if i < len(fast_metadata["column_types"])
+                        else "unknown"
+                    )
+                    schema_table.add_row(col_name, col_type, "(metadata only)")
+            else:
+                # Get DataFrame for full analysis
+                df = pf._df if not pf.islazy else pf._df.compute()
 
-            for col in df.columns:
-                dtype = str(df[col].dtype)
-                non_null_count = f"{df[col].count():,}"
-                schema_table.add_row(col, dtype, non_null_count)
+                for col in df.columns:
+                    dtype = str(df[col].dtype)
+                    non_null_count = f"{df[col].count():,}"
+                    schema_table.add_row(col, dtype, non_null_count)
 
             console.print(schema_table)
 
-            # Show sample data
-            console.print("\n[bold green]Sample Data (first 3 rows):[/bold green]")
-            sample_data = df.head(3)
-            _display_dataframe_as_table(sample_data, "Sample")
+            # Show sample data and stats only if we loaded the full file
+            if not fast_metadata and pf is not None:
+                # Show sample data
+                console.print("\n[bold green]Sample Data (first 3 rows):[/bold green]")
+                df = pf._df if not pf.islazy else pf._df.compute()
+                sample_data = df.head(3)
+                _display_dataframe_as_table(sample_data, "Sample")
 
-            # Basic statistics for numeric columns
-            numeric_cols = df.select_dtypes(include=["number"]).columns
-            if len(numeric_cols) > 0:
-                console.print("\n[bold green]Numeric Column Statistics:[/bold green]")
-                stats = df[numeric_cols].describe()
-                _display_dataframe_as_table(stats, "Statistics")
+                # Basic statistics for numeric columns
+                numeric_cols = df.select_dtypes(include=["number"]).columns
+                if len(numeric_cols) > 0:
+                    console.print(
+                        "\n[bold green]Numeric Column Statistics:[/bold green]"
+                    )
+                    stats = df[numeric_cols].describe()
+                    _display_dataframe_as_table(stats, "Statistics")
+            elif fast_metadata:
+                console.print(
+                    "\n[dim]Note: Sample data and statistics not shown (using metadata-only mode for speed).[/dim]"
+                )
+                console.print(
+                    "[dim]Use 'pframe run <file> --head 5' to see sample data.[/dim]"
+                )
 
         except Exception as e:
             console.print(f"[yellow]Could not analyze file content: {e}[/yellow]")
