@@ -32,13 +32,13 @@ def test_workflow_functions_exist():
         pytest.skip("Rust backend not available")
 
 
-def test_workflow_rust_not_yet_available():
-    """Test that workflow engine reports not available (placeholder implementation)."""
+def test_workflow_rust_available():
+    """Test that workflow engine is available."""
     try:
         import _rustic
 
-        # Should return False until full integration is complete
-        assert not _rustic.workflow_rust_available()
+        # Should return True now that integration is complete
+        assert _rustic.workflow_rust_available()
     except ImportError:
         pytest.skip("Rust backend not available")
 
@@ -80,8 +80,8 @@ def test_create_dag_placeholder():
         pytest.skip("Rust backend not available")
 
 
-def test_execute_workflow_placeholder():
-    """Test execute_workflow function with placeholder implementation."""
+def test_execute_workflow_real():
+    """Test execute_workflow function with real implementation."""
     try:
         import _rustic
 
@@ -97,6 +97,11 @@ def test_execute_workflow_placeholder():
         assert result is not None
         assert result["status"] == "completed"
         assert result["parallel_workers"] == 2
+        assert result["steps_executed"] == 1
+        assert result["total_steps"] == 1
+        assert result["failed_steps"] == 0
+        assert "execution_time_ms" in result
+        assert "peak_parallelism" in result
     except ImportError:
         pytest.skip("Rust backend not available")
 

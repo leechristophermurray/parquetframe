@@ -13,6 +13,9 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3.workspace = true
 numpy = "0.26"
+serde_json = "1.0"
+num_cpus = "1.16"
+parking_lot.workspace = true
 pf-graph-core = { path = "../pf-graph-core" }
 pf-io-core = { path = "../pf-io-core" }
 pf-workflow-core = { path = "../pf-workflow-core" }
