@@ -115,9 +115,9 @@ class TestCSRAdjacency:
         for vertex_id in range(csr.num_vertices):
             expected_degree = csr.indptr[vertex_id + 1] - csr.indptr[vertex_id]
             actual_degree = csr.degree(vertex_id)
-            assert actual_degree == expected_degree, (
-                f"Degree mismatch for vertex {vertex_id}"
-            )
+            assert (
+                actual_degree == expected_degree
+            ), f"Degree mismatch for vertex {vertex_id}"
 
     def test_csr_edge_count_preservation(self):
         """Test that CSR preserves total edge count."""

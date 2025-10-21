@@ -123,12 +123,9 @@ pub fn pagerank_rust(
     let mut new_pagerank = vec![0.0; n];
 
     // Power iteration
-    for iteration in 0..max_iter {
+    for _ in 0..max_iter {
         // Compute dangling node contribution (sum of scores from dangling nodes)
-        let dangling_sum: f64 = dangling_nodes
-            .par_iter()
-            .map(|&node| pagerank[node])
-            .sum();
+        let dangling_sum: f64 = dangling_nodes.par_iter().map(|&node| pagerank[node]).sum();
 
         // Parallel update of PageRank scores
         new_pagerank
@@ -141,7 +138,6 @@ pub fn pagerank_rust(
 
                 // Link contribution: sum of scores from incoming neighbors
                 let link_contrib: f64 = (0..n)
-                    .into_iter()
                     .filter_map(|u| {
                         let neighbors = csr.out_edges(u as i32).ok()?;
                         if neighbors.contains(&(v as i32)) {
@@ -230,7 +226,7 @@ mod tests {
         assert!(scores[0] > scores[3]);
 
         // Leaf nodes should have approximately equal scores
-        assert_approx_eq(&scores[1..], &vec![scores[1]; 3], 1e-4);
+        assert_approx_eq(&scores[1..], &[scores[1]; 3], 1e-4);
 
         // Scores should sum to 1.0
         let sum: f64 = scores.iter().sum();
