@@ -386,6 +386,55 @@ impl ParallelScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::step::{ExecutionContext, ResourceHint, Step, StepResult};
+    use crate::metrics::StepMetrics;
+    use serde_json::Value;
+    use std::collections::HashMap;
+
+    // Test step implementation
+    struct TestStep {
+        id: String,
+        dependencies: Vec<String>,
+        resource_hint: ResourceHint,
+    }
+
+    impl TestStep {
+        fn new(id: &str) -> Self {
+            Self {
+                id: id.to_string(),
+                dependencies: Vec::new(),
+                resource_hint: ResourceHint::Default,
+            }
+        }
+
+        fn with_deps(mut self, deps: Vec<String>) -> Self {
+            self.dependencies = deps;
+            self
+        }
+
+        fn with_hint(mut self, hint: ResourceHint) -> Self {
+            self.resource_hint = hint;
+            self
+        }
+    }
+
+    impl Step for TestStep {
+        fn id(&self) -> &str {
+            &self.id
+        }
+
+        fn execute(&self, _ctx: &mut ExecutionContext) -> crate::error::Result<StepResult> {
+            Ok(StepResult::new(Value::Null, StepMetrics::new(self.id.clone())))
+        }
+
+        fn dependencies(&self) -> &[String] {
+            &self.dependencies
+        }
+
+        fn resource_hint(&self) -> ResourceHint {
+            self.resource_hint
+        }
+    }
 
     #[test]
     fn test_scheduler_creation() {
@@ -432,5 +481,281 @@ mod tests {
         assert_eq!(groups[0], vec!["A"]);
         assert_eq!(groups[1], vec!["B"]);
         assert_eq!(groups[2], vec!["C"]);
+    }
+
+    // ===== ParallelScheduler Comprehensive Tests =====
+
+    #[test]
+    fn test_independent_steps_same_wave() {
+        let scheduler = ParallelScheduler::new(4);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Create 3 independent steps
+        for i in 1..=3 {
+            let id = format!("step{}", i);
+            dag.add_node(id.clone());
+            steps.insert(id.clone(), Box::new(TestStep::new(&id)));
+        }
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        // All independent steps should be in same wave
+        assert_eq!(waves.len(), 1, "Independent steps should be in one wave");
+        assert_eq!(waves[0].len(), 3, "Wave should contain all 3 steps");
+    }
+
+    #[test]
+    fn test_dependent_steps_separate_waves() {
+        let scheduler = ParallelScheduler::new(4);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Create chain: step1 -> step2 -> step3
+        dag.add_node("step1".to_string());
+        dag.add_node("step2".to_string());
+        dag.add_node("step3".to_string());
+        dag.add_edge("step2".to_string(), "step1".to_string()).unwrap();
+        dag.add_edge("step3".to_string(), "step2".to_string()).unwrap();
+
+        steps.insert("step1".to_string(), Box::new(TestStep::new("step1")));
+        steps.insert("step2".to_string(), Box::new(TestStep::new("step2").with_deps(vec!["step1".to_string()])));
+        steps.insert("step3".to_string(), Box::new(TestStep::new("step3").with_deps(vec!["step2".to_string()])));
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        assert_eq!(waves.len(), 3, "Dependent steps should be in separate waves");
+        assert_eq!(waves[0], vec!["step1"]);
+        assert_eq!(waves[1], vec!["step2"]);
+        assert_eq!(waves[2], vec!["step3"]);
+    }
+
+    #[test]
+    fn test_diamond_dependency_pattern() {
+        let scheduler = ParallelScheduler::new(4);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Diamond: A -> B,C -> D
+        dag.add_node("A".to_string());
+        dag.add_node("B".to_string());
+        dag.add_node("C".to_string());
+        dag.add_node("D".to_string());
+        dag.add_edge("B".to_string(), "A".to_string()).unwrap();
+        dag.add_edge("C".to_string(), "A".to_string()).unwrap();
+        dag.add_edge("D".to_string(), "B".to_string()).unwrap();
+        dag.add_edge("D".to_string(), "C".to_string()).unwrap();
+
+        steps.insert("A".to_string(), Box::new(TestStep::new("A")));
+        steps.insert("B".to_string(), Box::new(TestStep::new("B").with_deps(vec!["A".to_string()])));
+        steps.insert("C".to_string(), Box::new(TestStep::new("C").with_deps(vec!["A".to_string()])));
+        steps.insert("D".to_string(), Box::new(TestStep::new("D").with_deps(vec!["B".to_string(), "C".to_string()])));
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        assert_eq!(waves.len(), 3, "Diamond pattern should have 3 waves");
+        assert_eq!(waves[0], vec!["A"], "First wave: root");
+        assert_eq!(waves[1].len(), 2, "Second wave: B and C");
+        assert!(waves[1].contains(&"B".to_string()));
+        assert!(waves[1].contains(&"C".to_string()));
+        assert_eq!(waves[2], vec!["D"], "Third wave: D");
+    }
+
+    #[test]
+    fn test_resource_limit_enforcement() {
+        let limits = ResourceLimits {
+            max_cpu_tasks: 2,
+            max_io_tasks: 4,
+            max_memory_bytes: usize::MAX,
+        };
+        let scheduler = ParallelScheduler::with_limits(limits);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Create 5 independent CPU-bound steps
+        for i in 1..=5 {
+            let id = format!("cpu{}", i);
+            dag.add_node(id.clone());
+            steps.insert(id.clone(), Box::new(TestStep::new(&id).with_hint(ResourceHint::HeavyCPU)));
+        }
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        // With max 2 CPU tasks, should create multiple waves
+        assert!(waves.len() >= 3, "Should split into multiple waves due to CPU limit");
+
+        // Each wave should respect the limit
+        for wave in &waves {
+            assert!(wave.len() <= 2, "Each wave should have max 2 CPU tasks");
+        }
+    }
+
+    #[test]
+    fn test_mixed_cpu_io_hints() {
+        let limits = ResourceLimits {
+            max_cpu_tasks: 2,
+            max_io_tasks: 4,
+            max_memory_bytes: usize::MAX,
+        };
+        let scheduler = ParallelScheduler::with_limits(limits);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Create mixed workload: 3 CPU + 3 IO independent steps
+        for i in 1..=3 {
+            let cpu_id = format!("cpu{}", i);
+            let io_id = format!("io{}", i);
+            dag.add_node(cpu_id.clone());
+            dag.add_node(io_id.clone());
+            steps.insert(cpu_id.clone(), Box::new(TestStep::new(&cpu_id).with_hint(ResourceHint::HeavyCPU)));
+            steps.insert(io_id.clone(), Box::new(TestStep::new(&io_id).with_hint(ResourceHint::HeavyIO)));
+        }
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        // Should be able to run more IO tasks concurrently
+        assert!(!waves.is_empty(), "Should schedule steps");
+
+        // First wave might contain more IO than CPU tasks
+        let first_wave_cpu = waves[0].iter().filter(|id| id.starts_with("cpu")).count();
+        let first_wave_io = waves[0].iter().filter(|id| id.starts_with("io")).count();
+
+        assert!(first_wave_cpu <= 2, "Should respect CPU limit");
+        assert!(first_wave_io <= 4, "Should respect IO limit");
+    }
+
+    #[test]
+    fn test_empty_dag() {
+        let scheduler = ParallelScheduler::new(4);
+        let dag = DAG::new();
+        let steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        assert!(waves.is_empty(), "Empty DAG should produce empty waves");
+    }
+
+    #[test]
+    fn test_single_step_dag() {
+        let scheduler = ParallelScheduler::new(4);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        dag.add_node("single".to_string());
+        steps.insert("single".to_string(), Box::new(TestStep::new("single")));
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        assert_eq!(waves.len(), 1, "Single step should be one wave");
+        assert_eq!(waves[0], vec!["single"]);
+    }
+
+    #[test]
+    fn test_large_dag_stress() {
+        let scheduler = ParallelScheduler::new(8);
+        let mut dag = DAG::new();
+        let mut steps: HashMap<String, Box<dyn Step>> = HashMap::new();
+
+        // Create a large DAG with 50 steps in a tree-like structure
+        // Layer 1: 1 root
+        dag.add_node("root".to_string());
+        steps.insert("root".to_string(), Box::new(TestStep::new("root")));
+
+        // Layer 2: 5 steps depending on root
+        for i in 0..5 {
+            let id = format!("l2_{}", i);
+            dag.add_node(id.clone());
+            dag.add_edge(id.clone(), "root".to_string()).unwrap();
+            steps.insert(id.clone(), Box::new(TestStep::new(&id).with_deps(vec!["root".to_string()])));
+        }
+
+        // Layer 3: 15 steps (3 per layer 2 step)
+        for i in 0..5 {
+            let parent = format!("l2_{}", i);
+            for j in 0..3 {
+                let id = format!("l3_{}_{}", i, j);
+                dag.add_node(id.clone());
+                dag.add_edge(id.clone(), parent.clone()).unwrap();
+                steps.insert(id.clone(), Box::new(TestStep::new(&id).with_deps(vec![parent.clone()])));
+            }
+        }
+
+        // Layer 4: 29 more independent steps
+        for i in 0..29 {
+            let id = format!("l4_{}", i);
+            dag.add_node(id.clone());
+            // Randomly depend on some layer 3 steps
+            let dep = format!("l3_{}_{}", i % 5, i % 3);
+            dag.add_edge(id.clone(), dep.clone()).unwrap();
+            steps.insert(id.clone(), Box::new(TestStep::new(&id).with_deps(vec![dep])));
+        }
+
+        let waves = scheduler.schedule_parallel(&dag, &steps);
+
+        assert!(!waves.is_empty(), "Should produce waves");
+        assert!(waves.len() >= 4, "Should have at least 4 layers");
+
+        // Verify all steps are scheduled
+        let total_scheduled: usize = waves.iter().map(|w| w.len()).sum();
+        assert_eq!(total_scheduled, 50, "All 50 steps should be scheduled");
+    }
+
+    #[test]
+    fn test_resource_tracking() {
+        let mut scheduler = ParallelScheduler::new(4);
+
+        // Test CPU tracking
+        scheduler.mark_running("cpu1".to_string(), ResourceHint::HeavyCPU);
+        scheduler.mark_running("cpu2".to_string(), ResourceHint::LightCPU);
+        assert_eq!(scheduler.cpu_tasks_inflight.load(Ordering::Relaxed), 2);
+
+        scheduler.mark_completed("cpu1".to_string(), ResourceHint::HeavyCPU);
+        assert_eq!(scheduler.cpu_tasks_inflight.load(Ordering::Relaxed), 1);
+
+        // Test IO tracking
+        scheduler.mark_running("io1".to_string(), ResourceHint::HeavyIO);
+        assert_eq!(scheduler.io_tasks_inflight.load(Ordering::Relaxed), 1);
+
+        scheduler.mark_completed("io1".to_string(), ResourceHint::HeavyIO);
+        assert_eq!(scheduler.io_tasks_inflight.load(Ordering::Relaxed), 0);
+
+        // Test memory tracking
+        scheduler.mark_running("mem1".to_string(), ResourceHint::Memory(1024));
+        assert_eq!(scheduler.memory_in_use.load(Ordering::Relaxed), 1024);
+
+        scheduler.mark_completed("mem1".to_string(), ResourceHint::Memory(1024));
+        assert_eq!(scheduler.memory_in_use.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn test_can_execute_resource_checks() {
+        let limits = ResourceLimits {
+            max_cpu_tasks: 2,
+            max_io_tasks: 3,
+            max_memory_bytes: 2048,
+        };
+        let mut scheduler = ParallelScheduler::with_limits(limits);
+
+        // Initially should have capacity
+        assert!(scheduler.can_execute(ResourceHint::HeavyCPU));
+        assert!(scheduler.can_execute(ResourceHint::HeavyIO));
+        assert!(scheduler.can_execute(ResourceHint::Memory(1024)));
+
+        // Fill CPU capacity
+        scheduler.mark_running("cpu1".to_string(), ResourceHint::HeavyCPU);
+        scheduler.mark_running("cpu2".to_string(), ResourceHint::HeavyCPU);
+        assert!(!scheduler.can_execute(ResourceHint::HeavyCPU), "Should not have CPU capacity");
+        assert!(scheduler.can_execute(ResourceHint::HeavyIO), "Should still have IO capacity");
+
+        // Fill IO capacity
+        scheduler.mark_running("io1".to_string(), ResourceHint::HeavyIO);
+        scheduler.mark_running("io2".to_string(), ResourceHint::HeavyIO);
+        scheduler.mark_running("io3".to_string(), ResourceHint::HeavyIO);
+        assert!(!scheduler.can_execute(ResourceHint::HeavyIO), "Should not have IO capacity");
+
+        // Test memory limits
+        scheduler.mark_running("mem1".to_string(), ResourceHint::Memory(2000));
+        assert!(!scheduler.can_execute(ResourceHint::Memory(100)), "Should not have memory capacity");
+        assert!(scheduler.can_execute(ResourceHint::Memory(48)), "Should have small amount of memory");
     }
 }
