@@ -347,6 +347,19 @@ def check_dependencies() -> dict[str, bool]:
     except ImportError:
         dependencies["pyarrow"] = False
 
+    # Rust backend (performance acceleration)
+    try:
+        from .io.io_backend import get_backend_info
+
+        backend_info = get_backend_info()
+        dependencies["rust_compiled"] = backend_info["rust_compiled"]
+        dependencies["rust_io_enabled"] = backend_info["rust_io_enabled"]
+        dependencies["rust_io_available"] = backend_info["rust_io_available"]
+    except Exception:
+        dependencies["rust_compiled"] = False
+        dependencies["rust_io_enabled"] = False
+        dependencies["rust_io_available"] = False
+
     # AI dependencies
     try:
         import ollama  # noqa: F401
@@ -417,6 +430,25 @@ def format_dependency_status() -> str:
         ("Query Engines", query_deps),
     ]
 
+    # Rust backend gets special reporting
+    if "rust_compiled" in deps:
+        lines.append("\n⚡ Rust Backend (Performance Acceleration):")
+        if deps["rust_compiled"]:
+            lines.append("  • Rust Backend: ✅ Compiled")
+            if deps["rust_io_available"]:
+                lines.append("  • Rust I/O: ✅ Active")
+            elif deps["rust_io_enabled"]:
+                lines.append("  • Rust I/O: ⚠️ Enabled but unavailable")
+            else:
+                lines.append(
+                    "  • Rust I/O: ⏸️ Disabled (set PARQUETFRAME_DISABLE_RUST_IO=0)"
+                )
+        else:
+            lines.append("  • Rust Backend: ❌ Not compiled")
+            lines.append(
+                "  • Hint: Install with: pip install --upgrade --force-reinstall parquetframe"
+            )
+
     for category, dep_list in categories:
         lines.append(f"\n{category}:")
         for dep in dep_list:
@@ -438,6 +470,7 @@ def suggest_installation_commands() -> dict[str, str]:
         "sqlalchemy": "pip install sqlalchemy",
         "duckdb": "pip install duckdb",
         "polars": "pip install polars",
+        "rust_backend": "pip install --upgrade --force-reinstall parquetframe",
     }
 
 
