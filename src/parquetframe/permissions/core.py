@@ -439,10 +439,14 @@ class TupleStore:
             #     ├── editor/part0.parquet
             #     └── viewer/part0.parquet
         """
+        # Don't create structure for empty stores
+        if self.is_empty():
+            return
+
         base_path = Path(path)
         base_path.mkdir(parents=True, exist_ok=True)
 
-        # Write GraphAr metadata and schema files (even for empty stores)
+        # Write GraphAr metadata and schema files
         self._write_graphar_metadata(base_path, "permissions")
         self._write_graphar_schema(base_path)
 
@@ -450,16 +454,15 @@ class TupleStore:
         edges_path = base_path / "edges"
         edges_path.mkdir(parents=True, exist_ok=True)
 
-        if not self.is_empty():
-            # Group tuples by relation type (owner/editor/viewer)
-            edges_by_relation = self._group_by_relation()
+        # Group tuples by relation type (owner/editor/viewer)
+        edges_by_relation = self._group_by_relation()
 
-            # Extract and save unique vertices
-            vertices = self._extract_vertex_sets()
-            self._save_vertices(base_path / "vertices", vertices)
+        # Extract and save unique vertices
+        vertices = self._extract_vertex_sets()
+        self._save_vertices(base_path / "vertices", vertices)
 
-            # Save edges by relation type
-            self._save_edges(base_path / "edges", edges_by_relation)
+        # Save edges by relation type
+        self._save_edges(base_path / "edges", edges_by_relation)
 
     @classmethod
     def load(cls, path: str) -> TupleStore:
@@ -543,36 +546,52 @@ class TupleStore:
         vertices_info = []
         edges_info = []
 
-        if not self.is_empty():
-            # Add subjects vertex metadata
-            subject_namespaces = self.get_subject_namespaces()
-            if subject_namespaces:
-                vertices_info.append(
-                    {
-                        "label": "subjects",
-                        "prefix": "vertices/subjects/",
-                    }
-                )
+        # Add subjects vertex metadata
+        subject_count = (
+            len(self._data._df[["subject_namespace", "subject_id"]].drop_duplicates())
+            if not self.is_empty()
+            else 0
+        )
+        vertices_info.append(
+            {
+                "label": "subjects",
+                "prefix": "vertices/subjects/",
+                "count": subject_count,
+            }
+        )
 
-            # Add objects vertex metadata
-            object_namespaces = self.get_namespaces()
-            if object_namespaces:
-                vertices_info.append(
-                    {
-                        "label": "objects",
-                        "prefix": "vertices/objects/",
-                    }
-                )
+        # Add objects vertex metadata
+        object_count = (
+            len(self._data._df[["namespace", "object_id"]].drop_duplicates())
+            if not self.is_empty()
+            else 0
+        )
+        vertices_info.append(
+            {
+                "label": "objects",
+                "prefix": "vertices/objects/",
+                "count": object_count,
+            }
+        )
 
-            # Add edge metadata for each relation type
-            relations = self.get_relations()
-            for relation in sorted(relations):
-                edges_info.append(
-                    {
-                        "label": relation,
-                        "prefix": f"edges/{relation}/",
-                    }
-                )
+        # Add edge metadata for each relation type
+        relations = self.get_relations()
+        for relation in sorted(relations):
+            # Count edges for this relation
+            edge_count = (
+                len(self._data._df[self._data._df["relation"] == relation])
+                if not self.is_empty()
+                else 0
+            )
+            edges_info.append(
+                {
+                    "label": relation,
+                    "prefix": f"edges/{relation}/",
+                    "source": "subjects",
+                    "target": "objects",
+                    "count": edge_count,
+                }
+            )
 
         metadata = {
             "name": graph_name,
@@ -818,7 +837,7 @@ class TupleStore:
         for filename in required_files:
             file_path = base_path / filename
             if not file_path.exists():
-                raise ValueError(
+                raise FileNotFoundError(
                     f"Invalid GraphAr structure: missing {filename}. "
                     f"Expected GraphAr-compliant directory with metadata and schema files."
                 )
@@ -826,7 +845,7 @@ class TupleStore:
         # Check for edges directory
         edges_path = base_path / "edges"
         if not edges_path.exists() or not edges_path.is_dir():
-            raise ValueError(
+            raise FileNotFoundError(
                 "Invalid GraphAr structure: missing edges/ directory. "
                 "Permission graph must contain edges with relation types."
             )
