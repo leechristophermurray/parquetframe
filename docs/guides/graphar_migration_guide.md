@@ -17,7 +17,8 @@ This guide helps you migrate from the legacy single-file permissions storage to 
 ### Storage Architecture
 
 **Before (v0.3.x)**:
-```
+
+```text
 kanban_data/
 ├── users/
 ├── boards/
@@ -26,7 +27,8 @@ kanban_data/
 ```
 
 **After (v0.4.0)**:
-```
+
+```text
 kanban_data/
 ├── users/
 │   ├── _metadata.yaml      # NEW: GraphAr metadata
@@ -76,8 +78,8 @@ cp -r ./kanban_data/boards ./kanban_data/boards.backup
 ### Step 2: Update ParquetFrame
 
 ```bash
-# Upgrade to v0.4.0
-pip install --upgrade parquetframe==0.4.0
+# Upgrade to v2.4.0
+pip install --upgrade parquetframe==2.4.0
 
 # Or from source
 pip install git+https://github.com/yourusername/parquetframe.git@v0.4.0
@@ -88,6 +90,7 @@ pip install git+https://github.com/yourusername/parquetframe.git@v0.4.0
 #### Change 1: Update Permission Manager Initialization
 
 **Before**:
+
 ```python
 from parquetframe.permissions import PermissionManager
 
@@ -95,6 +98,7 @@ permissions = PermissionManager("./kanban_data/permissions")
 ```
 
 **After**:
+
 ```python
 from parquetframe.permissions import PermissionManager
 
@@ -104,12 +108,14 @@ permissions = PermissionManager("./kanban_data/permissions_graph")
 #### Change 2: Update TodoKanbanApp Initialization
 
 **Before**:
+
 ```python
 app = TodoKanbanApp(storage_base="./kanban_data")
 # Uses: ./kanban_data/permissions
 ```
 
 **After**:
+
 ```python
 app = TodoKanbanApp(storage_base="./kanban_data")
 # Uses: ./kanban_data/permissions_graph (automatic)
@@ -300,11 +306,13 @@ nx.draw(nx_graph, with_labels=True)
 ### Issue: FileNotFoundError for permissions_graph
 
 **Symptom**:
-```
+
+```text
 FileNotFoundError: [Errno 2] No such file or directory: './kanban_data/permissions_graph'
 ```
 
 **Solution**:
+
 ```python
 # Create new permissions_graph by saving
 permissions = PermissionManager("./kanban_data/permissions_graph")
@@ -317,6 +325,7 @@ permissions.save()
 **Symptom**: Application still tries to use `./kanban_data/permissions`
 
 **Solution**: Update all references:
+
 ```bash
 # Find all occurrences
 grep -r "permissions\"" your_app/
@@ -329,6 +338,7 @@ grep -r "permissions\"" your_app/
 **Symptom**: Entity directories don't have `_metadata.yaml`
 
 **Solution**: Re-save entities:
+
 ```python
 # Load and re-save to generate metadata
 users = User.find_all()
@@ -341,6 +351,7 @@ for user in users:
 **Symptom**: Different number of tuples before/after migration
 
 **Solution**: Verify deduplication:
+
 ```python
 # Old store might have had duplicates
 # GraphAr automatically deduplicates by tuple_key
@@ -418,6 +429,7 @@ A: Yes, legacy save/load to single files still works. Only new features require 
 
 **Q: How do I verify GraphAr compliance?**
 A: Run verification script:
+
 ```bash
 python scripts/verify_rust_graphar.py
 ```
@@ -438,7 +450,7 @@ python scripts/verify_rust_graphar.py
 
 For issues or questions:
 
-1. Check existing issues: https://github.com/yourusername/parquetframe/issues
+1. Check existing issues: <https://github.com/yourusername/parquetframe/issues>
 2. Create new issue with "migration" label
 3. Include error messages and code snippets
 4. Mention version: v0.4.0

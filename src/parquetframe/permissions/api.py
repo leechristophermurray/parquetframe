@@ -131,7 +131,7 @@ def _check_indirect_permission(
                 source=subject_vertex,
                 target=object_vertex,
                 weight_column=None,  # Unweighted for permission checks
-                backend="pandas",
+                backend="auto",
             )
 
             # If we get a result back, a path exists
@@ -312,7 +312,7 @@ def _find_reachable_objects(graph: GraphFrame, source_vertex: str) -> list[str]:
             source=source_vertex,
             target=None,  # All vertices
             weight_column=None,
-            backend="pandas",
+            backend="auto",
         )
 
         # Filter out unreachable vertices (distance = inf)

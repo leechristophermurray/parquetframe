@@ -220,7 +220,7 @@ id: string (primary key)
 ```
 
 **Example** (`vertices/user/part0.parquet`):
-```
+```text
 | id                    |
 |-----------------------|
 | user_alice_12345      |
@@ -233,7 +233,7 @@ id: string (primary key)
 **Location**: `edges/<relation_type>/part0.parquet`
 
 **Schema**:
-```
+```text
 src: string (source vertex ID)
 dst: string (target vertex ID)
 subject_namespace: string
@@ -241,12 +241,10 @@ object_namespace: string
 ```
 
 **Example** (`edges/owner/part0.parquet`):
-```
 | src               | dst             | subject_namespace | object_namespace |
 |-------------------|-----------------|-------------------|------------------|
 | user_alice_12345  | board_9876      | user              | board            |
 | user_bob_67890    | board_5432      | user              | board            |
-```
 
 ---
 
