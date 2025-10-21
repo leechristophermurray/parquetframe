@@ -842,8 +842,16 @@ class TupleStore:
                     f"Expected GraphAr-compliant directory with metadata and schema files."
                 )
 
-        # Check for edges directory
+        # Check for vertices and edges directories
+        vertices_path = base_path / "vertices"
         edges_path = base_path / "edges"
+
+        if not vertices_path.exists() or not vertices_path.is_dir():
+            raise FileNotFoundError(
+                "Invalid GraphAr structure: missing vertices/ directory. "
+                "Permission graph must contain vertex data."
+            )
+
         if not edges_path.exists() or not edges_path.is_dir():
             raise FileNotFoundError(
                 "Invalid GraphAr structure: missing edges/ directory. "
