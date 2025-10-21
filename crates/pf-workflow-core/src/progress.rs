@@ -124,10 +124,7 @@ impl ProgressEvent {
     }
 
     /// Create a new Completed event with a message.
-    pub fn completed_with_message(
-        step_id: impl Into<String>,
-        message: impl Into<String>,
-    ) -> Self {
+    pub fn completed_with_message(step_id: impl Into<String>, message: impl Into<String>) -> Self {
         Self::Completed {
             step_id: step_id.into(),
             timestamp: SystemTime::now(),
@@ -169,10 +166,7 @@ impl ProgressEvent {
     }
 
     /// Create a new Cancelled event with a message.
-    pub fn cancelled_with_message(
-        step_id: impl Into<String>,
-        message: impl Into<String>,
-    ) -> Self {
+    pub fn cancelled_with_message(step_id: impl Into<String>, message: impl Into<String>) -> Self {
         Self::Cancelled {
             step_id: step_id.into(),
             timestamp: SystemTime::now(),
@@ -204,14 +198,18 @@ impl ProgressEvent {
 impl fmt::Display for ProgressEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Started { step_id, message, .. } => {
+            Self::Started {
+                step_id, message, ..
+            } => {
                 if let Some(msg) = message {
                     write!(f, "Started: {} - {}", step_id, msg)
                 } else {
                     write!(f, "Started: {}", step_id)
                 }
             }
-            Self::Completed { step_id, message, .. } => {
+            Self::Completed {
+                step_id, message, ..
+            } => {
                 if let Some(msg) = message {
                     write!(f, "Completed: {} - {}", step_id, msg)
                 } else {
@@ -230,7 +228,9 @@ impl fmt::Display for ProgressEvent {
                     write!(f, "Failed: {} - {}", step_id, error)
                 }
             }
-            Self::Cancelled { step_id, message, .. } => {
+            Self::Cancelled {
+                step_id, message, ..
+            } => {
                 if let Some(msg) = message {
                     write!(f, "Cancelled: {} - {}", step_id, msg)
                 } else {
@@ -743,8 +743,7 @@ mod tests {
         // Clean up any existing file
         let _ = std::fs::remove_file(&log_path);
 
-        let tracker = FileProgressTracker::new(&log_path)
-            .expect("Failed to create file tracker");
+        let tracker = FileProgressTracker::new(&log_path).expect("Failed to create file tracker");
 
         assert_eq!(tracker.path(), log_path.as_path());
 
@@ -766,8 +765,7 @@ mod tests {
 
         // Verify each line is valid JSON
         for line in &lines {
-            let _event: ProgressEvent = serde_json::from_str(line)
-                .expect("Failed to parse JSON");
+            let _event: ProgressEvent = serde_json::from_str(line).expect("Failed to parse JSON");
         }
 
         // Clean up
@@ -781,9 +779,8 @@ mod tests {
 
         let _ = std::fs::remove_file(&log_path);
 
-        let tracker = Arc::new(
-            FileProgressTracker::new(&log_path).expect("Failed to create tracker")
-        );
+        let tracker =
+            Arc::new(FileProgressTracker::new(&log_path).expect("Failed to create tracker"));
 
         let mut handles = vec![];
 

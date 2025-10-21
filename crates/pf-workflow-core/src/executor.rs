@@ -121,7 +121,8 @@ impl WorkflowExecutor {
         let workflow_start = Instant::now();
 
         // Use no-op callback if none provided
-        let callback: Box<dyn ProgressCallback> = progress_callback.unwrap_or_else(|| Box::new(NoOpCallback));
+        let callback: Box<dyn ProgressCallback> =
+            progress_callback.unwrap_or_else(|| Box::new(NoOpCallback));
 
         // Get execution order from DAG
         let order = self.dag.topological_sort()?;
@@ -145,7 +146,9 @@ impl WorkflowExecutor {
                 }
             }
 
-            let step = self.steps.get(&step_id)
+            let step = self
+                .steps
+                .get(&step_id)
                 .ok_or_else(|| ExecutionError::StepFailed {
                     step_id: step_id.clone(),
                     reason: "Step not found".to_string(),
@@ -155,7 +158,11 @@ impl WorkflowExecutor {
             callback.on_progress(ProgressEvent::started(&step_id));
 
             // Execute step with retry logic
-            let result = match self.execute_step_with_retry(step.as_ref(), &mut ctx, cancellation_token.as_ref()) {
+            let result = match self.execute_step_with_retry(
+                step.as_ref(),
+                &mut ctx,
+                cancellation_token.as_ref(),
+            ) {
                 Ok(res) => {
                     // Emit completed event
                     callback.on_progress(ProgressEvent::completed(&step_id));
@@ -163,7 +170,10 @@ impl WorkflowExecutor {
                 }
                 Err(e) => {
                     // Check if it was a cancellation
-                    if matches!(e, crate::error::WorkflowError::Execution(ExecutionError::Cancelled)) {
+                    if matches!(
+                        e,
+                        crate::error::WorkflowError::Execution(ExecutionError::Cancelled)
+                    ) {
                         callback.on_progress(ProgressEvent::cancelled(&step_id));
                         self.cleanup_partial_results(&completed_steps);
                         return Err(e);
@@ -177,15 +187,21 @@ impl WorkflowExecutor {
                     self.cleanup_partial_results(&completed_steps);
 
                     // Preserve certain error types without wrapping
-                    if matches!(e, crate::error::WorkflowError::Execution(ExecutionError::RetryExhausted(_))) ||
-                       matches!(e, crate::error::WorkflowError::Execution(ExecutionError::Timeout(_))) {
+                    if matches!(
+                        e,
+                        crate::error::WorkflowError::Execution(ExecutionError::RetryExhausted(_))
+                    ) || matches!(
+                        e,
+                        crate::error::WorkflowError::Execution(ExecutionError::Timeout(_))
+                    ) {
                         return Err(e);
                     }
 
                     return Err(ExecutionError::StepFailed {
                         step_id: step_id.clone(),
                         reason: error_msg,
-                    }.into());
+                    }
+                    .into());
                 }
             };
 
@@ -325,13 +341,13 @@ impl WorkflowExecutor {
 
         step_metrics.fail(error_msg.clone());
 
-        Err(ExecutionError::RetryExhausted(
-            format!("Step '{}' failed after {} attempts: {}",
-                step.id(),
-                retry_config.max_attempts + 1,
-                error_msg
-            )
-        ).into())
+        Err(ExecutionError::RetryExhausted(format!(
+            "Step '{}' failed after {} attempts: {}",
+            step.id(),
+            retry_config.max_attempts + 1,
+            error_msg
+        ))
+        .into())
     }
 
     /// Execute a step with a timeout.
@@ -351,9 +367,12 @@ impl WorkflowExecutor {
 
         // Check if we exceeded timeout
         if start.elapsed() > timeout {
-            return Err(ExecutionError::Timeout(
-                format!("Step '{}' exceeded timeout of {:?}", step.id(), timeout)
-            ).into());
+            return Err(ExecutionError::Timeout(format!(
+                "Step '{}' exceeded timeout of {:?}",
+                step.id(),
+                timeout
+            ))
+            .into());
         }
 
         Ok(result)
@@ -393,9 +412,8 @@ impl WorkflowExecutor {
         let workflow_start = Instant::now();
 
         // Use no-op callback if none provided
-        let callback: Arc<Box<dyn ProgressCallback>> = Arc::new(
-            progress_callback.unwrap_or_else(|| Box::new(NoOpCallback))
-        );
+        let callback: Arc<Box<dyn ProgressCallback>> =
+            Arc::new(progress_callback.unwrap_or_else(|| Box::new(NoOpCallback)));
 
         // Create scheduler with resource limits from config
         let limits = ResourceLimits {
@@ -444,8 +462,8 @@ impl WorkflowExecutor {
             // Handle wave errors
             if let Err(e) = wave_result {
                 // Cancel remaining waves
-                for remaining_wave_idx in (wave_idx + 1)..waves.len() {
-                    for step_id in &waves[remaining_wave_idx] {
+                for remaining_wave in waves.iter().skip(wave_idx + 1) {
+                    for step_id in remaining_wave {
                         callback.on_progress(ProgressEvent::cancelled(step_id));
                     }
                 }
@@ -496,7 +514,10 @@ impl WorkflowExecutor {
                 let step = match self.steps.get(&step_id) {
                     Some(step) => step.as_ref(),
                     None => {
-                        errors.lock().unwrap().push((step_id.clone(), "Step not found".to_string()));
+                        errors
+                            .lock()
+                            .unwrap()
+                            .push((step_id.clone(), "Step not found".to_string()));
                         continue;
                     }
                 };
@@ -556,7 +577,10 @@ impl WorkflowExecutor {
                                 // Store result
                                 results.lock().unwrap().insert(
                                     step_id.clone(),
-                                    StepResult::new(step_result.output.clone(), step_metrics.clone())
+                                    StepResult::new(
+                                        step_result.output.clone(),
+                                        step_metrics.clone(),
+                                    ),
                                 );
                                 success = true;
                                 break;
@@ -577,7 +601,8 @@ impl WorkflowExecutor {
                         let mut failed_metrics = step_metrics.clone();
                         failed_metrics.fail(error_msg.clone());
 
-                        let full_error = format!("Step '{}' failed after {} attempts: {}",
+                        let full_error = format!(
+                            "Step '{}' failed after {} attempts: {}",
                             step_id,
                             retry_config.max_attempts + 1,
                             error_msg
@@ -594,10 +619,15 @@ impl WorkflowExecutor {
         let result_map = results.lock().unwrap();
         for (step_id, step_result) in result_map.iter() {
             // Store output in context
-            ctx.lock().unwrap().set(step_id.clone(), step_result.output.clone());
+            ctx.lock()
+                .unwrap()
+                .set(step_id.clone(), step_result.output.clone());
 
             // Add metrics
-            workflow_metrics.lock().unwrap().add_step(step_result.metrics.clone());
+            workflow_metrics
+                .lock()
+                .unwrap()
+                .add_step(step_result.metrics.clone());
 
             // Mark completed
             completed_steps.lock().unwrap().insert(step_id.clone());
@@ -606,7 +636,8 @@ impl WorkflowExecutor {
         // Check if any errors occurred
         let error_list = errors.lock().unwrap();
         if !error_list.is_empty() {
-            let error_summary = error_list.iter()
+            let error_summary = error_list
+                .iter()
                 .map(|(id, msg)| format!("{}: {}", id, msg))
                 .collect::<Vec<_>>()
                 .join("; ");
@@ -614,7 +645,8 @@ impl WorkflowExecutor {
             return Err(ExecutionError::StepFailed {
                 step_id: "wave_execution".to_string(),
                 reason: format!("Wave execution failed: {}", error_summary),
-            }.into());
+            }
+            .into());
         }
 
         Ok(())
@@ -658,7 +690,10 @@ impl WorkflowExecutor {
     /// let result = executor.execute_with_cancellation(token);
     /// # Ok::<(), pf_workflow_core::WorkflowError>(())
     /// ```
-    pub fn execute_with_cancellation(&mut self, cancellation_token: CancellationToken) -> Result<WorkflowMetrics> {
+    pub fn execute_with_cancellation(
+        &mut self,
+        cancellation_token: CancellationToken,
+    ) -> Result<WorkflowMetrics> {
         self.execute_with_options(Some(cancellation_token), None)
     }
 
@@ -681,7 +716,10 @@ impl WorkflowExecutor {
     /// let result = executor.execute_with_progress(Box::new(ConsoleProgressCallback::new()));
     /// # Ok::<(), pf_workflow_core::WorkflowError>(())
     /// ```
-    pub fn execute_with_progress(&mut self, progress_callback: Box<dyn ProgressCallback>) -> Result<WorkflowMetrics> {
+    pub fn execute_with_progress(
+        &mut self,
+        progress_callback: Box<dyn ProgressCallback>,
+    ) -> Result<WorkflowMetrics> {
         self.execute_with_options(None, Some(progress_callback))
     }
 
@@ -705,7 +743,10 @@ impl WorkflowExecutor {
     /// let result = executor.execute_parallel_with_cancellation(token);
     /// # Ok::<(), pf_workflow_core::WorkflowError>(())
     /// ```
-    pub fn execute_parallel_with_cancellation(&mut self, cancellation_token: CancellationToken) -> Result<WorkflowMetrics> {
+    pub fn execute_parallel_with_cancellation(
+        &mut self,
+        cancellation_token: CancellationToken,
+    ) -> Result<WorkflowMetrics> {
         self.execute_parallel_with_options(Some(cancellation_token), None)
     }
 
@@ -728,7 +769,10 @@ impl WorkflowExecutor {
     /// let result = executor.execute_parallel_with_progress(Box::new(ConsoleProgressCallback::new()));
     /// # Ok::<(), pf_workflow_core::WorkflowError>(())
     /// ```
-    pub fn execute_parallel_with_progress(&mut self, progress_callback: Box<dyn ProgressCallback>) -> Result<WorkflowMetrics> {
+    pub fn execute_parallel_with_progress(
+        &mut self,
+        progress_callback: Box<dyn ProgressCallback>,
+    ) -> Result<WorkflowMetrics> {
         self.execute_parallel_with_options(None, Some(progress_callback))
     }
 }
@@ -770,7 +814,7 @@ mod tests {
         let step1 = Box::new(SimpleStep::new("step1".to_string(), Value::from(1)));
         let step2 = Box::new(
             SimpleStep::new("step2".to_string(), Value::from(2))
-                .with_dependencies(vec!["step1".to_string()])
+                .with_dependencies(vec!["step1".to_string()]),
         );
 
         executor.add_step(step1);
@@ -790,11 +834,11 @@ mod tests {
         let step_a = Box::new(SimpleStep::new("A".to_string(), Value::from(1)));
         let step_b = Box::new(
             SimpleStep::new("B".to_string(), Value::from(2))
-                .with_dependencies(vec!["A".to_string()])
+                .with_dependencies(vec!["A".to_string()]),
         );
         let step_c = Box::new(
             SimpleStep::new("C".to_string(), Value::from(3))
-                .with_dependencies(vec!["B".to_string()])
+                .with_dependencies(vec!["B".to_string()]),
         );
 
         executor.add_step(step_a);
@@ -821,7 +865,7 @@ mod tests {
         let step2 = Box::new(SimpleStep::new("step2".to_string(), Value::from(20)));
         let step3 = Box::new(
             SimpleStep::new("step3".to_string(), Value::from(30))
-                .with_dependencies(vec!["step1".to_string(), "step2".to_string()])
+                .with_dependencies(vec!["step1".to_string(), "step2".to_string()]),
         );
 
         executor.add_step(step1);
@@ -855,7 +899,10 @@ mod tests {
 
         let step_metric = &result.step_metrics[0];
         assert_eq!(step_metric.step_id, "test_step");
-        assert!(matches!(step_metric.status, crate::metrics::StepStatus::Completed));
+        assert!(matches!(
+            step_metric.status,
+            crate::metrics::StepStatus::Completed
+        ));
         assert!(step_metric.duration.is_some());
     }
 
@@ -875,7 +922,11 @@ mod tests {
         // For sequential execution, parallelism factor should be close to 1.0
         // (allowing variations due to overhead from progress tracking, etc.)
         // The key assertion is that it's not > 1.2 (indicating false parallelism)
-        assert!(result.parallelism_factor <= 1.2, "Parallelism factor {} should not indicate parallel execution", result.parallelism_factor);
+        assert!(
+            result.parallelism_factor <= 1.2,
+            "Parallelism factor {} should not indicate parallel execution",
+            result.parallelism_factor
+        );
     }
 
     // Test helpers for retry/timeout behavior
@@ -896,7 +947,10 @@ mod tests {
                 output,
                 fail_times,
                 attempts: Arc::new(Mutex::new(0)),
-                retry: RetryConfig { max_attempts, backoff: Duration::from_millis(1) },
+                retry: RetryConfig {
+                    max_attempts,
+                    backoff: Duration::from_millis(1),
+                },
             }
         }
 
@@ -908,17 +962,30 @@ mod tests {
     }
 
     impl Step for FlakyStep {
-        fn id(&self) -> &str { &self.id }
+        fn id(&self) -> &str {
+            &self.id
+        }
         fn execute(&self, _ctx: &mut ExecutionContext) -> crate::error::Result<StepResult> {
             let mut guard = self.attempts.lock().unwrap();
             *guard += 1;
             if *guard <= self.fail_times {
-                return Err(ExecutionError::StepFailed { step_id: self.id.clone(), reason: "flaky failure".to_string() }.into());
+                return Err(ExecutionError::StepFailed {
+                    step_id: self.id.clone(),
+                    reason: "flaky failure".to_string(),
+                }
+                .into());
             }
-            Ok(StepResult::new(self.output.clone(), StepMetrics::new(self.id.clone())))
+            Ok(StepResult::new(
+                self.output.clone(),
+                StepMetrics::new(self.id.clone()),
+            ))
         }
-        fn dependencies(&self) -> &[String] { &self.deps }
-        fn retry_config(&self) -> RetryConfig { self.retry.clone() }
+        fn dependencies(&self) -> &[String] {
+            &self.deps
+        }
+        fn retry_config(&self) -> RetryConfig {
+            self.retry.clone()
+        }
     }
 
     struct TimeoutStep {
@@ -930,7 +997,12 @@ mod tests {
 
     impl TimeoutStep {
         fn new(id: &str, sleep: Duration, timeout: Duration) -> Self {
-            Self { id: id.to_string(), deps: vec![], sleep, timeout }
+            Self {
+                id: id.to_string(),
+                deps: vec![],
+                sleep,
+                timeout,
+            }
         }
         #[allow(dead_code)]
         fn with_dependencies(mut self, deps: Vec<String>) -> Self {
@@ -940,13 +1012,22 @@ mod tests {
     }
 
     impl Step for TimeoutStep {
-        fn id(&self) -> &str { &self.id }
+        fn id(&self) -> &str {
+            &self.id
+        }
         fn execute(&self, _ctx: &mut ExecutionContext) -> crate::error::Result<StepResult> {
             thread::sleep(self.sleep);
-            Ok(StepResult::new(Value::from("done"), StepMetrics::new(self.id.clone())))
+            Ok(StepResult::new(
+                Value::from("done"),
+                StepMetrics::new(self.id.clone()),
+            ))
         }
-        fn dependencies(&self) -> &[String] { &self.deps }
-        fn timeout(&self) -> Option<Duration> { Some(self.timeout) }
+        fn dependencies(&self) -> &[String] {
+            &self.deps
+        }
+        fn timeout(&self) -> Option<Duration> {
+            Some(self.timeout)
+        }
     }
 
     #[test]
@@ -963,7 +1044,10 @@ mod tests {
         assert_eq!(metrics.successful_steps, 1);
         assert_eq!(metrics.failed_steps, 0);
         assert_eq!(metrics.step_metrics[0].retry_count, 1);
-        assert!(matches!(metrics.step_metrics[0].status, crate::metrics::StepStatus::Completed));
+        assert!(matches!(
+            metrics.step_metrics[0].status,
+            crate::metrics::StepStatus::Completed
+        ));
     }
 
     #[test]
@@ -979,7 +1063,10 @@ mod tests {
         match err {
             WorkflowError::Execution(ExecutionError::RetryExhausted(msg)) => {
                 assert!(msg.contains("flaky_fail"));
-                assert!(msg.to_lowercase().contains("exceeded") || msg.to_lowercase().contains("failed after"));
+                assert!(
+                    msg.to_lowercase().contains("exceeded")
+                        || msg.to_lowercase().contains("failed after")
+                );
             }
             other => panic!("unexpected error: {:?}", other),
         }
@@ -991,7 +1078,11 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Step sleeps longer than its timeout => should trigger timeout and fail
-        let step = Box::new(TimeoutStep::new("sleepy", Duration::from_millis(30), Duration::from_millis(5)));
+        let step = Box::new(TimeoutStep::new(
+            "sleepy",
+            Duration::from_millis(30),
+            Duration::from_millis(5),
+        ));
         executor.add_step(step);
 
         let err = executor.execute().unwrap_err();
@@ -1019,8 +1110,13 @@ mod tests {
         let token = CancellationToken::new();
         token.cancel();
 
-        let err = executor.execute_with_options(Some(token), None).unwrap_err();
-        assert!(matches!(err, WorkflowError::Execution(ExecutionError::Cancelled)));
+        let err = executor
+            .execute_with_options(Some(token), None)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     #[test]
@@ -1029,9 +1125,21 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Add steps with small delays to ensure cancellation happens between steps
-        executor.add_step(Box::new(TimeoutStep::new("step1", Duration::from_millis(5), Duration::from_secs(1))));
-        executor.add_step(Box::new(TimeoutStep::new("step2", Duration::from_millis(5), Duration::from_secs(1))));
-        executor.add_step(Box::new(TimeoutStep::new("step3", Duration::from_millis(5), Duration::from_secs(1))));
+        executor.add_step(Box::new(TimeoutStep::new(
+            "step1",
+            Duration::from_millis(5),
+            Duration::from_secs(1),
+        )));
+        executor.add_step(Box::new(TimeoutStep::new(
+            "step2",
+            Duration::from_millis(5),
+            Duration::from_secs(1),
+        )));
+        executor.add_step(Box::new(TimeoutStep::new(
+            "step3",
+            Duration::from_millis(5),
+            Duration::from_secs(1),
+        )));
 
         let token = CancellationToken::new();
         let token_clone = token.clone();
@@ -1042,8 +1150,13 @@ mod tests {
             token_clone.cancel();
         });
 
-        let err = executor.execute_with_options(Some(token), None).unwrap_err();
-        assert!(matches!(err, WorkflowError::Execution(ExecutionError::Cancelled)));
+        let err = executor
+            .execute_with_options(Some(token), None)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     #[test]
@@ -1064,8 +1177,13 @@ mod tests {
             token_clone.cancel();
         });
 
-        let err = executor.execute_with_options(Some(token), None).unwrap_err();
-        assert!(matches!(err, WorkflowError::Execution(ExecutionError::Cancelled)));
+        let err = executor
+            .execute_with_options(Some(token), None)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     // ===== Progress Callback Tests =====
@@ -1099,11 +1217,18 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Add three steps in sequence
-        executor.add_step(Box::new(SimpleStep::new("step1".to_string(), Value::from(1))));
-        executor.add_step(Box::new(SimpleStep::new("step2".to_string(), Value::from(2))
-            .with_dependencies(vec!["step1".to_string()])));
-        executor.add_step(Box::new(SimpleStep::new("step3".to_string(), Value::from(3))
-            .with_dependencies(vec!["step2".to_string()])));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step1".to_string(),
+            Value::from(1),
+        )));
+        executor.add_step(Box::new(
+            SimpleStep::new("step2".to_string(), Value::from(2))
+                .with_dependencies(vec!["step1".to_string()]),
+        ));
+        executor.add_step(Box::new(
+            SimpleStep::new("step3".to_string(), Value::from(3))
+                .with_dependencies(vec!["step2".to_string()]),
+        ));
 
         let tracker = TestProgressTracker::new();
         let tracker_clone = tracker.clone();
@@ -1164,8 +1289,14 @@ mod tests {
         let config = ExecutorConfig::default();
         let mut executor = WorkflowExecutor::new(config);
 
-        executor.add_step(Box::new(SimpleStep::new("step1".to_string(), Value::from(1))));
-        executor.add_step(Box::new(SimpleStep::new("step2".to_string(), Value::from(2))));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step1".to_string(),
+            Value::from(1),
+        )));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step2".to_string(),
+            Value::from(2),
+        )));
 
         let tracker = TestProgressTracker::new();
         let tracker_clone = tracker.clone();
@@ -1180,7 +1311,9 @@ mod tests {
         assert!(events.len() >= 1); // At least one Cancelled event
 
         // Find the cancelled event
-        let has_cancelled = events.iter().any(|e| matches!(e, ProgressEvent::Cancelled { .. }));
+        let has_cancelled = events
+            .iter()
+            .any(|e| matches!(e, ProgressEvent::Cancelled { .. }));
         assert!(has_cancelled, "Expected at least one Cancelled event");
     }
 
@@ -1192,12 +1325,17 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Create a dependency chain: step1 -> step2 -> failing_step
-        executor.add_step(Box::new(SimpleStep::new("step1".to_string(), Value::from(1))));
-        executor.add_step(Box::new(SimpleStep::new("step2".to_string(), Value::from(2))
-            .with_dependencies(vec!["step1".to_string()])));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step1".to_string(),
+            Value::from(1),
+        )));
+        executor.add_step(Box::new(
+            SimpleStep::new("step2".to_string(), Value::from(2))
+                .with_dependencies(vec!["step1".to_string()]),
+        ));
         executor.add_step(Box::new(
             FlakyStep::new("failing_step", Value::from(0), 5, 2)
-                .with_dependencies(vec!["step2".to_string()])
+                .with_dependencies(vec!["step2".to_string()]),
         ));
 
         let tracker = TestProgressTracker::new();
@@ -1209,16 +1347,33 @@ mod tests {
         let events = tracker.get_events();
 
         // Find the failed event
-        let failed_event = events.iter()
+        let failed_event = events
+            .iter()
             .find(|e| matches!(e, ProgressEvent::Failed { .. }))
             .expect("Should have a Failed event");
 
         if let ProgressEvent::Failed { error, .. } = failed_event {
             // Check that error includes dependency chain
-            assert!(error.contains("dependency chain:"), "Error should mention dependency chain: {}", error);
-            assert!(error.contains("step1"), "Error should include step1 in chain: {}", error);
-            assert!(error.contains("step2"), "Error should include step2 in chain: {}", error);
-            assert!(error.contains("failing_step"), "Error should include failing_step in chain: {}", error);
+            assert!(
+                error.contains("dependency chain:"),
+                "Error should mention dependency chain: {}",
+                error
+            );
+            assert!(
+                error.contains("step1"),
+                "Error should include step1 in chain: {}",
+                error
+            );
+            assert!(
+                error.contains("step2"),
+                "Error should include step2 in chain: {}",
+                error
+            );
+            assert!(
+                error.contains("failing_step"),
+                "Error should include failing_step in chain: {}",
+                error
+            );
         }
     }
 
@@ -1230,8 +1385,14 @@ mod tests {
         let config = ExecutorConfig::default();
         let mut executor = WorkflowExecutor::new(config);
 
-        executor.add_step(Box::new(SimpleStep::new("step1".to_string(), Value::from(1))));
-        executor.add_step(Box::new(SimpleStep::new("step2".to_string(), Value::from(2))));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step1".to_string(),
+            Value::from(1),
+        )));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step2".to_string(),
+            Value::from(2),
+        )));
 
         let result = executor.execute();
         assert!(result.is_ok());
@@ -1329,18 +1490,27 @@ mod tests {
     }
 
     impl Step for ResourceAwareStep {
-        fn id(&self) -> &str { &self.id }
+        fn id(&self) -> &str {
+            &self.id
+        }
 
         fn execute(&self, _ctx: &mut ExecutionContext) -> crate::error::Result<StepResult> {
             if self.sleep_ms > 0 {
                 thread::sleep(Duration::from_millis(self.sleep_ms));
             }
-            Ok(StepResult::new(self.output.clone(), StepMetrics::new(self.id.clone())))
+            Ok(StepResult::new(
+                self.output.clone(),
+                StepMetrics::new(self.id.clone()),
+            ))
         }
 
-        fn dependencies(&self) -> &[String] { &self.deps }
+        fn dependencies(&self) -> &[String] {
+            &self.deps
+        }
 
-        fn resource_hint(&self) -> ResourceHint { self.hint }
+        fn resource_hint(&self) -> ResourceHint {
+            self.hint
+        }
     }
 
     #[test]
@@ -1350,10 +1520,12 @@ mod tests {
 
         // Linear: A -> B -> C (should execute sequentially even in parallel mode)
         executor.add_step(Box::new(ResourceAwareStep::new("A", Value::from(1))));
-        executor.add_step(Box::new(ResourceAwareStep::new("B", Value::from(2))
-            .with_dependencies(vec!["A".to_string()])));
-        executor.add_step(Box::new(ResourceAwareStep::new("C", Value::from(3))
-            .with_dependencies(vec!["B".to_string()])));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("B", Value::from(2)).with_dependencies(vec!["A".to_string()]),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("C", Value::from(3)).with_dependencies(vec!["B".to_string()]),
+        ));
 
         let result = executor.execute_parallel();
         assert!(result.is_ok());
@@ -1370,12 +1542,16 @@ mod tests {
 
         // Diamond: A -> B,C -> D
         executor.add_step(Box::new(ResourceAwareStep::new("A", Value::from(1))));
-        executor.add_step(Box::new(ResourceAwareStep::new("B", Value::from(2))
-            .with_dependencies(vec!["A".to_string()])));
-        executor.add_step(Box::new(ResourceAwareStep::new("C", Value::from(3))
-            .with_dependencies(vec!["A".to_string()])));
-        executor.add_step(Box::new(ResourceAwareStep::new("D", Value::from(4))
-            .with_dependencies(vec!["B".to_string(), "C".to_string()])));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("B", Value::from(2)).with_dependencies(vec!["A".to_string()]),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("C", Value::from(3)).with_dependencies(vec!["A".to_string()]),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("D", Value::from(4))
+                .with_dependencies(vec!["B".to_string(), "C".to_string()]),
+        ));
 
         let result = executor.execute_parallel();
         assert!(result.is_ok());
@@ -1394,7 +1570,7 @@ mod tests {
         for i in 1..=6 {
             executor.add_step(Box::new(ResourceAwareStep::new(
                 &format!("step{}", i),
-                Value::from(i)
+                Value::from(i),
             )));
         }
 
@@ -1416,8 +1592,9 @@ mod tests {
         for i in 2..=5 {
             let prev = format!("level{}", i - 1);
             let curr = format!("level{}", i);
-            executor.add_step(Box::new(ResourceAwareStep::new(&curr, Value::from(i))
-                .with_dependencies(vec![prev])));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&curr, Value::from(i)).with_dependencies(vec![prev]),
+            ));
         }
 
         let result = executor.execute_parallel();
@@ -1438,13 +1615,17 @@ mod tests {
 
         for i in 1..=3 {
             let branch = format!("branch{}", i);
-            executor.add_step(Box::new(ResourceAwareStep::new(&branch, Value::from(i))
-                .with_dependencies(vec!["root".to_string()])));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&branch, Value::from(i))
+                    .with_dependencies(vec!["root".to_string()]),
+            ));
 
             for j in 1..=2 {
                 let leaf = format!("leaf{}_{}", i, j);
-                executor.add_step(Box::new(ResourceAwareStep::new(&leaf, Value::from(i * 10 + j))
-                    .with_dependencies(vec![branch.clone()])));
+                executor.add_step(Box::new(
+                    ResourceAwareStep::new(&leaf, Value::from(i * 10 + j))
+                        .with_dependencies(vec![branch.clone()]),
+                ));
             }
         }
 
@@ -1465,10 +1646,9 @@ mod tests {
         // Sequential execution
         let mut seq_executor = WorkflowExecutor::new(config.clone());
         for i in 1..=8 {
-            seq_executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("seq{}", i),
-                Value::from(i)
-            ).with_delay(30)));
+            seq_executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("seq{}", i), Value::from(i)).with_delay(30),
+            ));
         }
 
         let seq_start = Instant::now();
@@ -1478,17 +1658,19 @@ mod tests {
         // Parallel execution
         let mut par_executor = WorkflowExecutor::new(config);
         for i in 1..=8 {
-            par_executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("par{}", i),
-                Value::from(i)
-            ).with_delay(30)));
+            par_executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("par{}", i), Value::from(i)).with_delay(30),
+            ));
         }
 
         let par_start = Instant::now();
         let par_result = par_executor.execute_parallel();
         let par_duration = par_start.elapsed();
 
-        println!("Sequential: {:?}, Parallel: {:?}", seq_duration, par_duration);
+        println!(
+            "Sequential: {:?}, Parallel: {:?}",
+            seq_duration, par_duration
+        );
 
         // Just verify both complete successfully - speedup varies too much based on system load
         assert!(seq_result.is_ok());
@@ -1503,10 +1685,10 @@ mod tests {
 
         // Create 4 CPU-heavy steps (should execute in 2 waves)
         for i in 1..=4 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("cpu{}", i),
-                Value::from(i)
-            ).with_hint(ResourceHint::HeavyCPU)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("cpu{}", i), Value::from(i))
+                    .with_hint(ResourceHint::HeavyCPU),
+            ));
         }
 
         let result = executor.execute_parallel();
@@ -1522,14 +1704,18 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Mixed: 2 CPU + 2 IO independent steps
-        executor.add_step(Box::new(ResourceAwareStep::new("cpu1", Value::from(1))
-            .with_hint(ResourceHint::HeavyCPU)));
-        executor.add_step(Box::new(ResourceAwareStep::new("cpu2", Value::from(2))
-            .with_hint(ResourceHint::HeavyCPU)));
-        executor.add_step(Box::new(ResourceAwareStep::new("io1", Value::from(3))
-            .with_hint(ResourceHint::HeavyIO)));
-        executor.add_step(Box::new(ResourceAwareStep::new("io2", Value::from(4))
-            .with_hint(ResourceHint::HeavyIO)));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("cpu1", Value::from(1)).with_hint(ResourceHint::HeavyCPU),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("cpu2", Value::from(2)).with_hint(ResourceHint::HeavyCPU),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("io1", Value::from(3)).with_hint(ResourceHint::HeavyIO),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("io2", Value::from(4)).with_hint(ResourceHint::HeavyIO),
+        ));
 
         let result = executor.execute_parallel();
         assert!(result.is_ok());
@@ -1545,10 +1731,10 @@ mod tests {
 
         // Steps with memory hints
         for i in 1..=3 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("mem{}", i),
-                Value::from(i)
-            ).with_hint(ResourceHint::Memory(1024 * 1024))));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("mem{}", i), Value::from(i))
+                    .with_hint(ResourceHint::Memory(1024 * 1024)),
+            ));
         }
 
         let result = executor.execute_parallel();
@@ -1565,10 +1751,9 @@ mod tests {
 
         // Create 8 independent steps with delays long enough to show parallelism
         for i in 1..=8 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(20)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(20),
+            ));
         }
 
         let result = executor.execute_parallel();
@@ -1590,8 +1775,13 @@ mod tests {
         let token = CancellationToken::new();
         token.cancel();
 
-        let err = executor.execute_parallel_with_options(Some(token), None).unwrap_err();
-        assert!(matches!(err, WorkflowError::Execution(ExecutionError::Cancelled)));
+        let err = executor
+            .execute_parallel_with_options(Some(token), None)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     #[test]
@@ -1601,10 +1791,9 @@ mod tests {
 
         // Create steps with delays to allow cancellation
         for i in 1..=4 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(20)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(20),
+            ));
         }
 
         let token = CancellationToken::new();
@@ -1615,8 +1804,13 @@ mod tests {
             token_clone.cancel();
         });
 
-        let err = executor.execute_parallel_with_options(Some(token), None).unwrap_err();
-        assert!(matches!(err, WorkflowError::Execution(ExecutionError::Cancelled)));
+        let err = executor
+            .execute_parallel_with_options(Some(token), None)
+            .unwrap_err();
+        assert!(matches!(
+            err,
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     #[test]
@@ -1625,16 +1819,24 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Wave 1: 2 steps
-        executor.add_step(Box::new(ResourceAwareStep::new("w1_1", Value::from(1)).with_delay(5)));
-        executor.add_step(Box::new(ResourceAwareStep::new("w1_2", Value::from(2)).with_delay(5)));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("w1_1", Value::from(1)).with_delay(5),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("w1_2", Value::from(2)).with_delay(5),
+        ));
 
         // Wave 2: 2 dependent steps
-        executor.add_step(Box::new(ResourceAwareStep::new("w2_1", Value::from(3))
-            .with_dependencies(vec!["w1_1".to_string()])
-            .with_delay(5)));
-        executor.add_step(Box::new(ResourceAwareStep::new("w2_2", Value::from(4))
-            .with_dependencies(vec!["w1_2".to_string()])
-            .with_delay(5)));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("w2_1", Value::from(3))
+                .with_dependencies(vec!["w1_1".to_string()])
+                .with_delay(5),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("w2_2", Value::from(4))
+                .with_dependencies(vec!["w1_2".to_string()])
+                .with_delay(5),
+        ));
 
         let token = CancellationToken::new();
         let token_clone = token.clone();
@@ -1663,7 +1865,7 @@ mod tests {
                 &format!("flaky{}", i),
                 Value::from(0),
                 15,
-                10
+                10,
             )));
         }
 
@@ -1677,7 +1879,10 @@ mod tests {
 
         let result = executor.execute_parallel_with_options(Some(token), None);
         // Should either be cancelled or fail - both are valid outcomes
-        assert!(result.is_err(), "Should error due to cancellation or failure");
+        assert!(
+            result.is_err(),
+            "Should error due to cancellation or failure"
+        );
     }
 
     #[test]
@@ -1686,10 +1891,9 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         for i in 1..=10 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(50)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(50),
+            ));
         }
 
         let token = CancellationToken::new();
@@ -1712,7 +1916,7 @@ mod tests {
         for i in 1..=4 {
             executor.add_step(Box::new(ResourceAwareStep::new(
                 &format!("step{}", i),
-                Value::from(i)
+                Value::from(i),
             )));
         }
 
@@ -1727,8 +1931,14 @@ mod tests {
         assert_eq!(events.len(), 8);
 
         // Count event types
-        let started = events.iter().filter(|e| matches!(e, ProgressEvent::Started { .. })).count();
-        let completed = events.iter().filter(|e| matches!(e, ProgressEvent::Completed { .. })).count();
+        let started = events
+            .iter()
+            .filter(|e| matches!(e, ProgressEvent::Started { .. }))
+            .count();
+        let completed = events
+            .iter()
+            .filter(|e| matches!(e, ProgressEvent::Completed { .. }))
+            .count();
 
         assert_eq!(started, 4);
         assert_eq!(completed, 4);
@@ -1741,10 +1951,14 @@ mod tests {
 
         // Linear chain to ensure order
         executor.add_step(Box::new(ResourceAwareStep::new("step1", Value::from(1))));
-        executor.add_step(Box::new(ResourceAwareStep::new("step2", Value::from(2))
-            .with_dependencies(vec!["step1".to_string()])));
-        executor.add_step(Box::new(ResourceAwareStep::new("step3", Value::from(3))
-            .with_dependencies(vec!["step2".to_string()])));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("step2", Value::from(2))
+                .with_dependencies(vec!["step1".to_string()]),
+        ));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("step3", Value::from(3))
+                .with_dependencies(vec!["step2".to_string()]),
+        ));
 
         let tracker = TestProgressTracker::new();
         let tracker_clone = tracker.clone();
@@ -1753,14 +1967,19 @@ mod tests {
 
         let events = tracker.get_events();
         // Verify step1 completes before step2 starts
-        let step1_complete_idx = events.iter().position(|e|
-            matches!(e, ProgressEvent::Completed { .. }) && e.step_id() == "step1"
-        ).unwrap();
-        let step2_start_idx = events.iter().position(|e|
-            matches!(e, ProgressEvent::Started { .. }) && e.step_id() == "step2"
-        ).unwrap();
+        let step1_complete_idx = events
+            .iter()
+            .position(|e| matches!(e, ProgressEvent::Completed { .. }) && e.step_id() == "step1")
+            .unwrap();
+        let step2_start_idx = events
+            .iter()
+            .position(|e| matches!(e, ProgressEvent::Started { .. }) && e.step_id() == "step2")
+            .unwrap();
 
-        assert!(step1_complete_idx < step2_start_idx, "Dependencies should be respected");
+        assert!(
+            step1_complete_idx < step2_start_idx,
+            "Dependencies should be respected"
+        );
     }
 
     #[test]
@@ -1770,10 +1989,9 @@ mod tests {
 
         // Independent steps should have concurrent Started events
         for i in 1..=4 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(20)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(20),
+            ));
         }
 
         let tracker = TestProgressTracker::new();
@@ -1786,8 +2004,14 @@ mod tests {
         // Verify all events were emitted (Started + Completed for each step)
         assert_eq!(events.len(), 8, "Should have 8 events total");
 
-        let started = events.iter().filter(|e| matches!(e, ProgressEvent::Started { .. })).count();
-        let completed = events.iter().filter(|e| matches!(e, ProgressEvent::Completed { .. })).count();
+        let started = events
+            .iter()
+            .filter(|e| matches!(e, ProgressEvent::Started { .. }))
+            .count();
+        let completed = events
+            .iter()
+            .filter(|e| matches!(e, ProgressEvent::Completed { .. }))
+            .count();
 
         assert_eq!(started, 4, "Should have 4 Started events");
         assert_eq!(completed, 4, "Should have 4 Completed events");
@@ -1806,8 +2030,10 @@ mod tests {
         executor.add_step(Box::new(FlakyStep::new("bad", Value::from(0), 5, 1)));
 
         // Wave 2: dependent steps (should be cancelled)
-        executor.add_step(Box::new(ResourceAwareStep::new("dependent", Value::from(2))
-            .with_dependencies(vec!["good1".to_string()])));
+        executor.add_step(Box::new(
+            ResourceAwareStep::new("dependent", Value::from(2))
+                .with_dependencies(vec!["good1".to_string()]),
+        ));
 
         let result = executor.execute_parallel();
         assert!(result.is_err(), "Should fail due to bad step");
@@ -1824,22 +2050,26 @@ mod tests {
 
         // Layer 2: 4 branches
         for i in 1..=4 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("l2_{}", i),
-                Value::from(i)
-            ).with_dependencies(vec!["root".to_string()])
-            .with_hint(if i % 2 == 0 { ResourceHint::HeavyCPU } else { ResourceHint::HeavyIO })));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("l2_{}", i), Value::from(i))
+                    .with_dependencies(vec!["root".to_string()])
+                    .with_hint(if i % 2 == 0 {
+                        ResourceHint::HeavyCPU
+                    } else {
+                        ResourceHint::HeavyIO
+                    }),
+            ));
         }
 
         // Layer 3: 20 leaves
         for i in 1..=4 {
             let parent = format!("l2_{}", i);
             for j in 1..=5 {
-                executor.add_step(Box::new(ResourceAwareStep::new(
-                    &format!("l3_{}_{}", i, j),
-                    Value::from(i * 10 + j)
-                ).with_dependencies(vec![parent.clone()])
-                .with_delay(1)));
+                executor.add_step(Box::new(
+                    ResourceAwareStep::new(&format!("l3_{}_{}", i, j), Value::from(i * 10 + j))
+                        .with_dependencies(vec![parent.clone()])
+                        .with_delay(1),
+                ));
             }
         }
 
@@ -1862,10 +2092,9 @@ mod tests {
 
         // Add steps with delays to allow cancellation
         for i in 1..=10 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(50)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(50),
+            ));
         }
 
         let token = CancellationToken::new();
@@ -1879,7 +2108,10 @@ mod tests {
 
         let result = executor.execute_with_cancellation(token);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), WorkflowError::Execution(ExecutionError::Cancelled)));
+        assert!(matches!(
+            result.unwrap_err(),
+            WorkflowError::Execution(ExecutionError::Cancelled)
+        ));
     }
 
     #[test]
@@ -1888,9 +2120,14 @@ mod tests {
         let mut executor = WorkflowExecutor::new(config);
 
         // Add a simple workflow
-        executor.add_step(Box::new(SimpleStep::new("step1".to_string(), Value::from(1))));
-        executor.add_step(Box::new(SimpleStep::new("step2".to_string(), Value::from(2))
-            .with_dependencies(vec!["step1".to_string()])));
+        executor.add_step(Box::new(SimpleStep::new(
+            "step1".to_string(),
+            Value::from(1),
+        )));
+        executor.add_step(Box::new(
+            SimpleStep::new("step2".to_string(), Value::from(2))
+                .with_dependencies(vec!["step1".to_string()]),
+        ));
 
         let tracker = TestProgressTracker::new();
         let tracker_clone = tracker.clone();
@@ -1909,10 +2146,9 @@ mod tests {
 
         // Add steps with delays
         for i in 1..=8 {
-            executor.add_step(Box::new(ResourceAwareStep::new(
-                &format!("step{}", i),
-                Value::from(i)
-            ).with_delay(50)));
+            executor.add_step(Box::new(
+                ResourceAwareStep::new(&format!("step{}", i), Value::from(i)).with_delay(50),
+            ));
         }
 
         let token = CancellationToken::new();
@@ -1937,7 +2173,7 @@ mod tests {
         for i in 1..=4 {
             executor.add_step(Box::new(SimpleStep::new(
                 format!("step{}", i),
-                Value::from(i)
+                Value::from(i),
             )));
         }
 

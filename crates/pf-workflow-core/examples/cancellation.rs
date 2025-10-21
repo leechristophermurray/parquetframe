@@ -53,10 +53,7 @@ fn example_timeout_cancellation() -> Result<()> {
 
     // Add many long-running steps
     for i in 1..=10 {
-        executor.add_step(Box::new(LongRunningStep::new(
-            &format!("step{}", i),
-            200,
-        )));
+        executor.add_step(Box::new(LongRunningStep::new(&format!("step{}", i), 200)));
     }
 
     // Create cancellation token
@@ -76,7 +73,10 @@ fn example_timeout_cancellation() -> Result<()> {
 
     match result {
         Ok(metrics) => {
-            println!("Workflow completed {} steps before timeout", metrics.successful_steps);
+            println!(
+                "Workflow completed {} steps before timeout",
+                metrics.successful_steps
+            );
         }
         Err(e) => {
             println!("✅ Workflow cancelled successfully: {}\n", e);
@@ -114,7 +114,10 @@ fn example_user_cancellation() -> Result<()> {
 
     match result {
         Ok(metrics) => {
-            println!("Completed {} steps before cancellation", metrics.successful_steps);
+            println!(
+                "Completed {} steps before cancellation",
+                metrics.successful_steps
+            );
         }
         Err(e) => {
             println!("✅ Workflow stopped: {}\n", e);
@@ -142,14 +145,12 @@ fn example_conditional_cancellation() -> Result<()> {
 
     // Monitor and conditionally cancel
     let start = std::time::Instant::now();
-    thread::spawn(move || {
-        loop {
-            thread::sleep(Duration::from_millis(100));
-            if start.elapsed() > Duration::from_millis(800) {
-                println!("\n⚠️  Workflow taking too long - cancelling...\n");
-                token_clone.cancel();
-                break;
-            }
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_millis(100));
+        if start.elapsed() > Duration::from_millis(800) {
+            println!("\n⚠️  Workflow taking too long - cancelling...\n");
+            token_clone.cancel();
+            break;
         }
     });
 
@@ -196,7 +197,8 @@ fn example_graceful_shutdown() -> Result<()> {
     });
 
     let callback = ConsoleProgressCallback::new();
-    let result = executor.execute_parallel_with_options(Some((*token).clone()), Some(Box::new(callback)));
+    let result =
+        executor.execute_parallel_with_options(Some((*token).clone()), Some(Box::new(callback)));
 
     shutdown_thread.join().unwrap();
 

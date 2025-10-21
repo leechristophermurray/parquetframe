@@ -46,10 +46,7 @@ pub enum DAGError {
 pub enum ExecutionError {
     /// A step failed during execution.
     #[error("Step failed: {step_id}, reason: {reason}")]
-    StepFailed {
-        step_id: String,
-        reason: String,
-    },
+    StepFailed { step_id: String, reason: String },
 
     /// A step exceeded its timeout.
     #[error("Step timeout: {0}")]

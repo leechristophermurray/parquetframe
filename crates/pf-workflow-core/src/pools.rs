@@ -376,10 +376,7 @@ mod tests {
             handles.push(handle);
         }
 
-        let results: Vec<_> = handles
-            .into_iter()
-            .map(|h| h.join().unwrap())
-            .collect();
+        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
 
         assert_eq!(results.len(), 4);
         for result in results {

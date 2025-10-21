@@ -21,9 +21,7 @@ struct MinimalStep {
 
 impl MinimalStep {
     fn new(id: &str) -> Self {
-        Self {
-            id: id.to_string(),
-        }
+        Self { id: id.to_string() }
     }
 }
 
@@ -222,9 +220,7 @@ fn bench_cancellation_check(c: &mut Criterion) {
             }
 
             let token = CancellationToken::new();
-            executor
-                .execute_with_options(Some(token), None)
-                .unwrap()
+            executor.execute_with_options(Some(token), None).unwrap()
         });
     });
 

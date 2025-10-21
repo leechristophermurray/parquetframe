@@ -121,7 +121,10 @@ fn example_console_progress() -> Result<()> {
     let callback = ConsoleProgressCallback::new();
     let metrics = executor.execute_parallel_with_progress(Box::new(callback))?;
 
-    println!("\nWorkflow completed: {} successful steps\n", metrics.successful_steps);
+    println!(
+        "\nWorkflow completed: {} successful steps\n",
+        metrics.successful_steps
+    );
     Ok(())
 }
 
@@ -151,22 +154,27 @@ fn example_file_logging() -> Result<()> {
     )));
 
     // Execute with file logging
-    let tracker = FileProgressTracker::new(&log_path)
-        .map_err(|e| pf_workflow_core::ExecutionError::StepFailed {
+    let tracker = FileProgressTracker::new(&log_path).map_err(|e| {
+        pf_workflow_core::ExecutionError::StepFailed {
             step_id: "file_tracker".to_string(),
             reason: e.to_string(),
-        })?;
+        }
+    })?;
     let metrics = executor.execute_with_progress(Box::new(tracker))?;
 
     println!("Workflow completed: {} steps", metrics.successful_steps);
 
     // Read and display log
-    let contents = std::fs::read_to_string(&log_path)
-        .map_err(|e| pf_workflow_core::ExecutionError::StepFailed {
+    let contents = std::fs::read_to_string(&log_path).map_err(|e| {
+        pf_workflow_core::ExecutionError::StepFailed {
             step_id: "read_log".to_string(),
             reason: e.to_string(),
-        })?;
-    println!("\nProgress log contents ({} lines):", contents.lines().count());
+        }
+    })?;
+    println!(
+        "\nProgress log contents ({} lines):",
+        contents.lines().count()
+    );
     for (i, line) in contents.lines().enumerate() {
         if let Ok(event) = serde_json::from_str::<ProgressEvent>(line) {
             println!("  {}: {}", i + 1, event);
@@ -237,13 +245,19 @@ fn example_inline_closure() -> Result<()> {
 
     let callback = CallbackProgressTracker::new(move |event: ProgressEvent| {
         if matches!(event, ProgressEvent::Completed { .. }) {
-            names_clone.lock().unwrap().push(event.step_id().to_string());
+            names_clone
+                .lock()
+                .unwrap()
+                .push(event.step_id().to_string());
         }
     });
 
     let _metrics = executor.execute_with_progress(Box::new(callback))?;
 
-    println!("Steps completed in order: {:?}\n", step_names.lock().unwrap());
+    println!(
+        "Steps completed in order: {:?}\n",
+        step_names.lock().unwrap()
+    );
     Ok(())
 }
 

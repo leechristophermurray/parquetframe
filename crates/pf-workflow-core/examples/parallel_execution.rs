@@ -83,7 +83,10 @@ impl Step for AggregateStep {
     }
 
     fn execute(&self, ctx: &mut ExecutionContext) -> Result<StepResult> {
-        println!("Aggregating results from {} partitions...", self.dependencies.len());
+        println!(
+            "Aggregating results from {} partitions...",
+            self.dependencies.len()
+        );
 
         let mut total_rows = 0;
         for dep_id in &self.dependencies {
@@ -142,7 +145,10 @@ fn main() -> Result<()> {
     println!("--- Sequential Execution ---");
     let mut seq_executor = WorkflowExecutor::new(ExecutorConfig::default());
     for i in 0..num_partitions {
-        seq_executor.add_step(Box::new(ProcessPartitionStep::new(i, processing_time_per_partition)));
+        seq_executor.add_step(Box::new(ProcessPartitionStep::new(
+            i,
+            processing_time_per_partition,
+        )));
     }
 
     let seq_start = Instant::now();

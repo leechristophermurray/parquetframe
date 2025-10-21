@@ -46,8 +46,7 @@ impl ExecutorConfig {
 
     /// Get the actual max parallel steps, accounting for auto-detection.
     pub fn get_max_parallel_steps(&self) -> usize {
-        self.max_parallel_steps
-            .unwrap_or_else(|| num_cpus::get())
+        self.max_parallel_steps.unwrap_or_else(num_cpus::get)
     }
 
     /// Validate the configuration.
@@ -160,9 +159,7 @@ mod tests {
         let max = config.get_max_parallel_steps();
         assert!(max > 0);
 
-        let config_explicit = ExecutorConfig::builder()
-            .max_parallel_steps(8)
-            .build();
+        let config_explicit = ExecutorConfig::builder().max_parallel_steps(8).build();
         assert_eq!(config_explicit.get_max_parallel_steps(), 8);
     }
 }

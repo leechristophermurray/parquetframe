@@ -187,7 +187,8 @@ impl WorkflowMetrics {
             return;
         }
 
-        let total_step_time: f64 = self.step_metrics
+        let total_step_time: f64 = self
+            .step_metrics
             .iter()
             .filter_map(|m| m.duration.map(|d| d.as_secs_f64()))
             .sum();

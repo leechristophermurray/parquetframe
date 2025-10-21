@@ -51,7 +51,9 @@ impl DAG {
 
     /// Add a node to the DAG.
     pub fn add_node(&mut self, id: String) {
-        self.nodes.entry(id.clone()).or_insert_with(|| Node::new(id));
+        self.nodes
+            .entry(id.clone())
+            .or_insert_with(|| Node::new(id));
     }
 
     /// Add an edge from one node to another (from depends on to).
@@ -96,10 +98,8 @@ impl DAG {
             return Err(DAGError::EmptyDAG.into());
         }
 
-        let mut in_degree: HashMap<String, usize> = self.nodes
-            .keys()
-            .map(|id| (id.clone(), 0))
-            .collect();
+        let mut in_degree: HashMap<String, usize> =
+            self.nodes.keys().map(|id| (id.clone(), 0)).collect();
 
         // Calculate in-degrees
         for (from, _to) in &self.edges {
@@ -269,7 +269,10 @@ mod tests {
 
         let result = dag.topological_sort();
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), crate::error::WorkflowError::DAG(DAGError::CycleDetected)));
+        assert!(matches!(
+            result.unwrap_err(),
+            crate::error::WorkflowError::DAG(DAGError::CycleDetected)
+        ));
     }
 
     #[test]
