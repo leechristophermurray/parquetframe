@@ -3,13 +3,10 @@
 //! This module exposes the high-performance Rust workflow engine to Python,
 //! providing parallel DAG execution with resource-aware scheduling.
 
-use pf_workflow_core::{ExecutorConfig, WorkflowExecutor, Step, StepResult, ExecutionContext, StepMetrics, WorkflowMetrics};
+use pf_workflow_core::{ExecutorConfig, WorkflowExecutor, Step, StepResult, ExecutionContext, StepMetrics};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::sync::Arc;
-use parking_lot::Mutex;
 
 /// Python step wrapper that implements the Rust Step trait.
 ///
@@ -57,7 +54,7 @@ impl Step for PyStep {
             map
         });
 
-        metrics.end();
+        metrics.complete();
         Ok(StepResult::new(result_data, metrics))
     }
 }
@@ -78,9 +75,9 @@ impl Step for PyStep {
 fn execute_step(
     py: Python,
     step_type: &str,
-    config: &Bound<'_, PyDict>,
-    context: &Bound<'_, PyDict>,
-) -> PyResult<PyObject> {
+    _config: &Bound<'_, PyDict>,
+    _context: &Bound<'_, PyDict>,
+) -> PyResult<Py<PyAny>> {
     // For now, return a simple acknowledgment
     // In full implementation, this will:
     // 1. Parse Python config into Rust types
@@ -105,7 +102,7 @@ fn execute_step(
 /// # Returns
 /// Execution plan with dependency ordering
 #[pyfunction]
-fn create_dag(py: Python, steps: &Bound<'_, PyList>) -> PyResult<PyObject> {
+fn create_dag(py: Python, steps: &Bound<'_, PyList>) -> PyResult<Py<PyAny>> {
     let result = PyDict::new(py);
     result.set_item("dag_created", true)?;
     result.set_item("num_steps", steps.len())?;
@@ -134,7 +131,7 @@ fn execute_workflow(
     py: Python,
     workflow_config: &Bound<'_, PyDict>,
     max_parallel: Option<usize>,
-) -> PyResult<PyObject> {
+) -> PyResult<Py<PyAny>> {
     let parallel_workers = max_parallel.unwrap_or_else(num_cpus::get);
 
     // Parse workflow configuration
@@ -170,15 +167,17 @@ fn execute_workflow(
                     .unwrap_or(Value::Null);
 
                 // Parse dependencies
-                let dependencies = step_dict
-                    .get_item("depends_on")?
-                    .and_then(|v| v.downcast::<PyList>().ok())
-                    .map(|list| {
+                let dependencies = if let Some(deps_item) = step_dict.get_item("depends_on")? {
+                    if let Ok(list) = deps_item.downcast::<PyList>() {
                         list.iter()
                             .filter_map(|item| item.extract::<String>().ok())
                             .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default();
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                };
 
                 let py_step = PyStep::new(step_name, step_type, config_value, dependencies);
                 executor.add_step(Box::new(py_step));
@@ -195,12 +194,12 @@ fn execute_workflow(
     let result = PyDict::new(py);
     result.set_item("status", if workflow_metrics.failed_steps == 0 { "completed" } else { "failed" })?;
     result.set_item("parallel_workers", parallel_workers)?;
-    result.set_item("execution_time_ms", workflow_metrics.total_duration_ms)?;
+    result.set_item("execution_time_ms", workflow_metrics.total_duration.as_millis() as u64)?;
     result.set_item("steps_executed", workflow_metrics.successful_steps)?;
     result.set_item("total_steps", workflow_metrics.total_steps)?;
     result.set_item("failed_steps", workflow_metrics.failed_steps)?;
-    result.set_item("cancelled_steps", workflow_metrics.cancelled_steps)?;
-    result.set_item("peak_parallelism", workflow_metrics.peak_parallelism)?;
+    result.set_item("parallelism_factor", workflow_metrics.parallelism_factor)?;
+    result.set_item("peak_memory", workflow_metrics.peak_memory)?;
 
     Ok(result.into())
 }
@@ -220,7 +219,7 @@ fn workflow_rust_available() -> bool {
 /// # Returns
 /// Dictionary with performance metrics
 #[pyfunction]
-fn workflow_metrics(py: Python) -> PyResult<PyObject> {
+fn workflow_metrics(py: Python) -> PyResult<Py<PyAny>> {
     let metrics = PyDict::new(py);
     metrics.set_item("total_workflows", 0)?;
     metrics.set_item("total_steps", 0)?;
