@@ -228,7 +228,7 @@ def rust_version() -> str | None:
         return None
 
 
-__version__ = "2.0.0a5"
+__version__ = "2.0.0b0"
 __all__ = [
     # Main Phase 2 API
     "DataFrameProxy",
