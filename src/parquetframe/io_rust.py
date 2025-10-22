@@ -65,7 +65,7 @@ class RustIOEngine:
         if not RUST_IO_AVAILABLE:
             return False
         # Check if I/O functions are registered
-        return hasattr(_rustic, "read_parquet_fast") if _rustic else False
+        return hasattr(_rustic, "read_parquet_metadata_rust") if _rustic else False
 
     def read_parquet(
         self,
@@ -155,18 +155,74 @@ class RustIOEngine:
             - num_rows: Total number of rows
             - num_columns: Number of columns
             - num_row_groups: Number of row groups
-            - schema: Column schema information
-            - file_size: File size in bytes
+            - column_names: List of column names
+            - column_types: List of column types
+            - file_size_bytes: File size in bytes
+            - version: Parquet version
 
         Example:
             >>> engine = RustIOEngine()
             >>> meta = engine.get_parquet_metadata("data.parquet")
             >>> print(f"File has {meta['num_rows']} rows")
         """
-        if not hasattr(_rustic, "parquet_metadata"):
-            raise NotImplementedError("Parquet metadata extraction not yet implemented")
+        return _rustic.read_parquet_metadata_rust(str(path))
 
-        return _rustic.parquet_metadata(str(path))
+    def get_parquet_row_count(self, path: str | Path) -> int:
+        """
+        Get row count from Parquet file (very fast).
+
+        Args:
+            path: Path to Parquet file
+
+        Returns:
+            Number of rows in the file
+
+        Example:
+            >>> engine = RustIOEngine()
+            >>> count = engine.get_parquet_row_count("data.parquet")
+            >>> print(f"File has {count:,} rows")
+        """
+        return _rustic.get_parquet_row_count_rust(str(path))
+
+    def get_parquet_column_names(self, path: str | Path) -> list[str]:
+        """
+        Get column names from Parquet file.
+
+        Args:
+            path: Path to Parquet file
+
+        Returns:
+            List of column names
+
+        Example:
+            >>> engine = RustIOEngine()
+            >>> columns = engine.get_parquet_column_names("data.parquet")
+            >>> print(f"Columns: {', '.join(columns)}")
+        """
+        return _rustic.get_parquet_column_names_rust(str(path))
+
+    def get_parquet_column_stats(self, path: str | Path) -> list[dict[str, Any]]:
+        """
+        Get column statistics from Parquet file.
+
+        Args:
+            path: Path to Parquet file
+
+        Returns:
+            List of dictionaries with statistics for each column:
+            - name: Column name
+            - null_count: Number of nulls
+            - distinct_count: Number of distinct values
+            - min_value: Minimum value (as string)
+            - max_value: Maximum value (as string)
+
+        Example:
+            >>> engine = RustIOEngine()
+            >>> stats = engine.get_parquet_column_stats("data.parquet")
+            >>> for stat in stats:
+            ...     print(f"{stat['name']}: {stat['null_count']} nulls")
+        """
+        return _rustic.get_parquet_column_stats_rust(str(path))
 
 
 # Convenience functions

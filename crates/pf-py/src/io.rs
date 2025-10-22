@@ -93,11 +93,87 @@ fn get_parquet_column_stats_rust(py: Python, path: String) -> PyResult<Vec<Py<Py
     Ok(result)
 }
 
+/// Read Parquet file with Rust fast-path (placeholder).
+///
+/// This is a placeholder for Phase 3.6 implementation.
+/// Will provide 2.5-3x speedup over pure Python.
+///
+/// # Arguments
+/// * `path` - Path to Parquet file
+/// * `columns` - Optional list of columns to read
+///
+/// # Returns
+/// Dictionary with Arrow table data (to be converted to DataFrame)
+#[pyfunction]
+#[pyo3(signature = (path, columns=None))]
+fn read_parquet_fast(
+    py: Python,
+    path: String,
+    columns: Option<Vec<String>>,
+) -> PyResult<Py<PyDict>> {
+    // TODO: Implement actual Parquet reading with arrow-rs
+    // For now, return placeholder indicating the function exists
+    let result = PyDict::new(py);
+    result.set_item("status", "not_implemented")?;
+    result.set_item("message", "Parquet fast-path coming in Phase 3.6")?;
+    result.set_item("path", path)?;
+    result.set_item("columns", columns)?;
+    Ok(result.into())
+}
+
+/// Read CSV file with Rust fast-path (placeholder).
+///
+/// This is a placeholder for Phase 3.6 implementation.
+/// Will provide 4-5x speedup over pure Python with parallel parsing.
+///
+/// # Arguments
+/// * `path` - Path to CSV file
+/// * `delimiter` - Field delimiter (default ',')
+/// * `has_header` - Whether file has header row
+///
+/// # Returns
+/// Dictionary with Arrow table data (to be converted to DataFrame)
+#[pyfunction]
+#[pyo3(signature = (path, delimiter=",".to_string(), has_header=true))]
+fn read_csv_fast(
+    py: Python,
+    path: String,
+    delimiter: String,
+    has_header: bool,
+) -> PyResult<Py<PyDict>> {
+    // TODO: Implement actual CSV reading with arrow-rs
+    // For now, return placeholder indicating the function exists
+    let result = PyDict::new(py);
+    result.set_item("status", "not_implemented")?;
+    result.set_item("message", "CSV fast-path coming in Phase 3.6")?;
+    result.set_item("path", path)?;
+    result.set_item("delimiter", delimiter)?;
+    result.set_item("has_header", has_header)?;
+    Ok(result.into())
+}
+
+/// Check if I/O fast-paths are available.
+///
+/// # Returns
+/// true if fast-path implementations are ready
+#[pyfunction]
+fn io_fastpaths_available() -> bool {
+    // Will return true once implementations are complete
+    false  // TODO: Change to true when fast-paths are implemented
+}
+
 /// Register I/O functions with Python module.
 pub fn register_io_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Metadata functions (already implemented)
     m.add_function(wrap_pyfunction!(read_parquet_metadata_rust, m)?)?;
     m.add_function(wrap_pyfunction!(get_parquet_row_count_rust, m)?)?;
     m.add_function(wrap_pyfunction!(get_parquet_column_names_rust, m)?)?;
     m.add_function(wrap_pyfunction!(get_parquet_column_stats_rust, m)?)?;
+
+    // Fast-path functions (placeholders for Phase 3.6)
+    m.add_function(wrap_pyfunction!(read_parquet_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(read_csv_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(io_fastpaths_available, m)?)?;
+
     Ok(())
 }
