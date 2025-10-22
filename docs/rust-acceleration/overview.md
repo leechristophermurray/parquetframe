@@ -26,4 +26,4 @@ print(f"Rust available: {is_rust_available()}")
 - I/O: 2-5x faster
 - Memory: 30-60% lower
 
-See [CONTEXT_RUSTIC.md](../../CONTEXT_RUSTIC.md) and [ADR 0003](../adr/0003-rust-first-integration.md) for details.
+See CONTEXT_RUSTIC.md (removed broken link) and [ADR 0003](../adr/0003-rust-first-integration.md) for details.

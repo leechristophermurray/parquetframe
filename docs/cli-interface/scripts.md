@@ -48,4 +48,4 @@ pframe run data.parquet --filter active --save-script pipeline.py --template pro
 
 - [CLI Overview](index.md)
 - [Batch Processing](batch.md)
-- [CLI Examples](../documentation-examples/examples.md)
+- [CLI Examples](../documentation-examples/examples-gallery.md)

@@ -113,22 +113,22 @@ can_edit = check(store, "user", "alice", "editor", "doc", "doc1")  # True (via g
 
 ## Documentation Sections
 
-### 📖 [Getting Started Guide](getting-started.md)
+### 📖 [Getting Started Guide](index.md)
 Step-by-step tutorial for setting up permissions in your application
 
-### 🏗️ [Permission Models](models.md)
+### 🏗️ [Permission Models](schema-spec.md)
 Overview of standard models and creating custom permission hierarchies
 
-### 🔧 [API Reference](api-reference.md)
+### 🔧 [API Reference](cli-reference.md)
 Complete API documentation for all classes and functions
 
 ### 💻 [CLI Reference](cli-reference.md)
 Detailed guide to command-line permission management tools
 
-### 🚀 [Performance Guide](../analytics-statistics/benchmarking.md)
+### 🚀 [Performance Guide](../analytics-statistics/benchmarks.md)
 Best practices for scaling permissions to large datasets
 
-### 🎯 [Use Cases & Examples](../documentation-examples/examples.md)
+### 🎯 [Use Cases & Examples](../documentation-examples/examples-gallery.md)
 Real-world examples and implementation patterns
 
 ## Architecture
@@ -213,11 +213,11 @@ def get_user_accessible_documents(user_id):
 
 ## Next Steps
 
-1. **[Getting Started](getting-started.md)**: Set up your first permission system
-2. **[Models Guide](models.md)**: Choose or create the right permission model
+1. **[Getting Started](index.md)**: Set up your first permission system
+2. **[Models Guide](schema-spec.md)**: Choose or create the right permission model
 3. **[CLI Tutorial](cli-reference.md)**: Learn the command-line tools
-4. **[API Deep Dive](api-reference.md)**: Master the programmatic interface
+4. **[API Deep Dive](cli-reference.md)**: Master the programmatic interface
 
 ---
 
-**Need Help?** Check out the [examples](../documentation-examples/examples.md) for common patterns or the [performance guide](../analytics-statistics/benchmarking.md) for optimization tips.
+**Need Help?** Check out the [examples](../documentation-examples/examples-gallery.md) for common patterns or the [performance guide](../analytics-statistics/benchmarks.md) for optimization tips.

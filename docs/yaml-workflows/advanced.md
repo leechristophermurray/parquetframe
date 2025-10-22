@@ -19,4 +19,4 @@ Advanced features and patterns for ParquetFrame workflow orchestration.
 
 - [Workflow Overview](index.md)
 - [Step Types](step-types.md)
-- [Examples Gallery](../documentation-examples/examples.md)
+- [Examples Gallery](../documentation-examples/examples-gallery.md)

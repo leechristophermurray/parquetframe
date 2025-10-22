@@ -2,7 +2,7 @@
 
 Get up and running with ParquetFrame Phase 2 in minutes!
 
-> **Note:** This guide covers Phase 2 API with the Entity Framework. For legacy Phase 1 documentation, see [Legacy Basic Usage](legacy/legacy-basic-usage.md).
+> **Note:** This guide covers Phase 2 API with the Entity Framework. For legacy Phase 1 documentation, see [Legacy Basic Usage](legacy-migration/phase1-usage.md).
 
 ## Installation
 
@@ -343,7 +343,7 @@ if can_edit:
 
 **Explore the Todo/Kanban Tutorial:**
 
-- **[Full Todo/Kanban Walkthrough](tutorials/todo-kanban-walkthrough.md)** - Complete application example with all Phase 2 features
+- **[Full Todo/Kanban Walkthrough](documentation-examples/todo-kanban-example.md)** - Complete application example with all Phase 2 features
 
 **Learn More:**
 
@@ -355,13 +355,13 @@ if can_edit:
 
 **API Documentation:**
 
-- **[Core API Reference](api/core.md)** - Complete core API documentation
-- **[Entity API Reference](api/entities.md)** - Entity framework APIs
-- **[Permissions API Reference](api/permissions.md)** - Zanzibar permission APIs
+- **[Core API Reference](documentation-examples/api-core.md)** - Complete core API documentation
+- **[Entity API Reference](documentation-examples/api-entities.md)** - Entity framework APIs
+- **[Permissions API Reference](documentation-examples/api-permissions.md)** - Zanzibar permission APIs
 
 ## Need Help?
 
-- Browse **[examples](../documentation-examples/examples.md)** for common use cases
+- Browse **[examples](../documentation-examples/examples-gallery.md)** for common use cases
 - Check the **[Migration Guide](getting-started/migration.md)** if coming from Phase 1
 - Report issues on **[GitHub](https://github.com/leechristophermurray/parquetframe/issues)**
 

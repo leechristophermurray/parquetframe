@@ -206,4 +206,4 @@ pip uninstall parquetframe pandas dask pyarrow
 
 ---
 
-**Next Steps**: Once installed, check out the [Quick Start Guide](quickstart.md) to start using ParquetFrame!
+**Next Steps**: Once installed, check out the [Quick Start Guide](getting-started/quickstart.md) to start using ParquetFrame!

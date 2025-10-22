@@ -401,4 +401,4 @@ X_test_scaled = scaler.transform(X_test)
 
 ---
 
-**Next**: Learn about [Advanced Features](phase1-advanced.md) for more sophisticated use cases.
+**Next**: Learn about [Advanced Features](legacy-migration/phase1-overview.md) for more sophisticated use cases.

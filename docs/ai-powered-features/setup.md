@@ -496,13 +496,13 @@ prod_agent = LLMAgent(
 
 ## Next Steps
 
-1. **[Natural Language Queries](queries.md)** - Start using AI queries
+1. **[Natural Language Queries](nl-queries.md)** - Start using AI queries
 2. **[Prompt Engineering](prompts.md)** - Improve query quality
-3. **[Interactive CLI](../cli/interactive.md)** - Use AI in terminal
+3. **[Interactive CLI](../cli-interface/interactive.md)** - Use AI in terminal
 
 ## Related Documentation
 
-- [AI Features Overview](../ai-features.md)
-- [Natural Language Queries](queries.md)
+- [AI Features Overview](../ai-powered-features/index.md)
+- [Natural Language Queries](nl-queries.md)
 - [Prompt Engineering](prompts.md)
-- [Interactive CLI Mode](../cli/interactive.md)
+- [Interactive CLI Mode](../cli-interface/interactive.md)

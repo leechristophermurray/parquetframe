@@ -76,7 +76,7 @@ pframe info --help
 
 ## Next Steps
 
-- [CLI Installation](installation.md) - Detailed installation instructions
+- [CLI Installation](getting-started/installation.md) - Detailed installation instructions
 - [Basic Commands](commands.md) - Learn all the available commands
 - [Interactive Mode](interactive.md) - Master the interactive Python environment
-- [CLI Examples](../documentation-examples/examples.md) - See real-world usage examples
+- [CLI Examples](../documentation-examples/examples-gallery.md) - See real-world usage examples

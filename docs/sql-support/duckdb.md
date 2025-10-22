@@ -18,4 +18,4 @@ Detailed guide for using DuckDB as a backend with ParquetFrame.
 
 - [SQL Support Overview](index.md)
 - [Database Connections](databases.md)
-- [Backend Selection](../backends.md)
+- [Backend Selection](../legacy-migration/phase1-backends.md)

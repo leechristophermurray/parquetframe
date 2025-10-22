@@ -51,6 +51,6 @@ result = pf.benchmark.custom(
 
 ## Further Reading
 
-- [Performance Tips](../analytics-statistics/benchmarking.md)
-- [Backend Selection](backends.md)
-- [Advanced Features](phase1-advanced.md)
+- [Performance Tips](../analytics-statistics/benchmarks.md)
+- [Backend Selection](legacy-migration/phase1-backends.md)
+- [Advanced Features](legacy-migration/phase1-overview.md)

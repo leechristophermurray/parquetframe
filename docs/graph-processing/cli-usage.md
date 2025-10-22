@@ -368,5 +368,5 @@ graph:
 
 - [Graph Engine Overview](index.md)
 - [GraphAr Format Guide](graphar-format.md)
-- [Performance Tuning](performance.md)
+- [Performance Tuning](index.md)
 - [Python API Reference](../documentation-examples/api-reference.md)

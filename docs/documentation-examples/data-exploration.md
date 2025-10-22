@@ -58,4 +58,4 @@ high_sales = df[df['sales'] > 1000]
 
 - [Basic Usage](../usage.md)
 - [Advanced Features](../advanced.md)
-- [Performance Optimization](../analytics-statistics/benchmarking.md)
+- [Performance Optimization](../analytics-statistics/benchmarks.md)

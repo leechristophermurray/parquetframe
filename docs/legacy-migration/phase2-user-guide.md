@@ -625,4 +625,4 @@ reset_config()
 
 - See [API Reference](documentation-examples/api-reference.md) for complete API documentation
 - See [Migration Guide](legacy-migration/migration-guide.md) for upgrading from Phase 1
-- See [Examples](../examples/) for more code examples
+- See [Examples](documentation-examples/examples-gallery.md) for more code examples

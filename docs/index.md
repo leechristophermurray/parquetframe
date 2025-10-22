@@ -19,10 +19,10 @@
 
 > 🏆 **Production-Ready**: 146 passing tests for Phase 2, 334 total tests, comprehensive CI/CD pipeline
 
-> 🚀 **Featured Example**: Complete [Todo/Kanban application](tutorials/todo-kanban-walkthrough.md) demonstrating all Phase 2 features
+> 🚀 **Featured Example**: Complete [Todo/Kanban application](documentation-examples/todo-kanban-example.md) demonstrating all Phase 2 features
 
 !!! tip "New to ParquetFrame?"
-    Start with **[Phase 2](legacy-migration/phase2-user-guide.md)** for the latest features. Phase 1 users see the **[Migration Guide](phase2/MIGRATION_GUIDE.md)**.
+    Start with **[Phase 2](legacy-migration/phase2-user-guide.md)** for the latest features. Phase 1 users see the **[Migration Guide](legacy-migration/migration-guide.md)**.
 
 ## ✨ Phase 2 Features
 
@@ -157,7 +157,7 @@ Phase 2 represents a major architectural evolution, transforming ParquetFrame fr
 
 ### Featured Example: Todo/Kanban Application
 
-See the **[Complete Walkthrough](tutorials/todo-kanban-walkthrough.md)** of a production-ready Kanban board system demonstrating:
+See the **[Complete Walkthrough](documentation-examples/todo-kanban-example.md)** of a production-ready Kanban board system demonstrating:
 
 - ✅ Multi-user collaboration with role-based access
 - ✅ Entity Framework with `@entity` and `@rel` decorators
@@ -190,7 +190,7 @@ boards = user.boards()  # Navigate relationships
 
 ### Migration Path
 
-- **Phase 1 users**: See the **[Migration Guide](phase2/MIGRATION_GUIDE.md)** for step-by-step instructions
+- **Phase 1 users**: See the **[Migration Guide](legacy-migration/migration-guide.md)** for step-by-step instructions
 - **New users**: Start directly with **[Phase 2](legacy-migration/phase2-user-guide.md)**
 - **100% backward compatible**: Phase 1 code continues to work
 
@@ -291,22 +291,22 @@ df.save("output.pqt")     # Saves as "output.pqt"
 
 ### Phase 2 (Start Here!)
 - **[Phase 2 Overview](legacy-migration/phase2-user-guide.md)** - Complete Phase 2 feature guide
-- **[Todo/Kanban Walkthrough](tutorials/todo-kanban-walkthrough.md)** - Full application example
-- **[Migration Guide](phase2/MIGRATION_GUIDE.md)** - Migrate from Phase 1
-- **[Quick Start](quickstart.md)** - Get up and running in minutes
-- [Installation Guide](installation.md) - Detailed installation instructions
+- **[Todo/Kanban Walkthrough](documentation-examples/todo-kanban-example.md)** - Full application example
+- **[Migration Guide](legacy-migration/migration-guide.md)** - Migrate from Phase 1
+- **[Quick Start](getting-started/quickstart.md)** - Get up and running in minutes
+- [Installation Guide](getting-started/installation.md) - Detailed installation instructions
 
 ### Features & Guides
-- [CLI Guide](cli/index.md) - Complete command-line interface documentation
-- [Performance Tips](../analytics-statistics/benchmarking.md) - Optimize your workflows
-- [Workflow System](workflows/index.md) - YAML workflow orchestration
-- [Graph Processing](graph/index.md) - Apache GraphAr support
-- [Permissions System](permissions/index.md) - Zanzibar ReBAC
-- [API Reference](api/core.md) - Complete API documentation
+- [CLI Guide](cli-interface/index.md) - Complete command-line interface documentation
+- [Performance Tips](../analytics-statistics/benchmarks.md) - Optimize your workflows
+- [Workflow System](yaml-workflows/index.md) - YAML workflow orchestration
+- [Graph Processing](graph-processing/index.md) - Apache GraphAr support
+- [Permissions System](permissions-system/index.md) - Zanzibar ReBAC
+- [API Reference](documentation-examples/api-core.md) - Complete API documentation
 
 ### Legacy Documentation
-- [Phase 1 Usage Guide](legacy/legacy-basic-usage.md) - Phase 1 API reference
-- [Phase 1 Backend Selection](legacy/legacy-backends.md) - pandas/Dask switching
+- [Phase 1 Usage Guide](legacy-migration/phase1-usage.md) - Phase 1 API reference
+- [Phase 1 Backend Selection](legacy-migration/phase1-backends.md) - pandas/Dask switching
 
 ## 🤝 Contributing
 
@@ -318,4 +318,4 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 ---
 
-**Ready to simplify your dataframe workflows?** Check out the [Quick Start Guide](quickstart.md) to get started!
+**Ready to simplify your dataframe workflows?** Check out the [Quick Start Guide](getting-started/quickstart.md) to get started!

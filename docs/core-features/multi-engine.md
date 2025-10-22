@@ -51,6 +51,6 @@ print(f"Using backend: {df.backend}")
 
 ## Further Reading
 
-- [Performance Tips](../analytics-statistics/benchmarking.md)
-- [Advanced Features](phase1-advanced.md)
-- [Large Dataset Processing](tutorials/large-data.md)
+- [Performance Tips](../analytics-statistics/benchmarks.md)
+- [Advanced Features](legacy-migration/phase1-overview.md)
+- [Large Dataset Processing](documentation-examples/large-datasets.md)
