@@ -50,4 +50,4 @@ pframe batch "data/*.parquet" --parallel 4
 
 - [CLI Overview](index.md)
 - [Script Generation](scripts.md)
-- [CLI Examples](examples.md)
+- [CLI Examples](../documentation-examples/examples.md)

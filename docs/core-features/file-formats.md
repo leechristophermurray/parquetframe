@@ -308,7 +308,7 @@ Choose the right format for your use case, and let ParquetFrame handle the compl
 
 ## Further Reading
 
-- [Performance Benchmarks](performance.md)
+- [Performance Benchmarks](../analytics-statistics/benchmarking.md)
 - [Legacy Basic Usage Guide](legacy/legacy-basic-usage.md)
-- [Advanced Analytics](advanced.md)
+- [Advanced Analytics](phase1-advanced.md)
 - [Legacy Backend Selection](legacy/legacy-backends.md)

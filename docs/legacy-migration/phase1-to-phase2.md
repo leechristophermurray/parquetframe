@@ -435,8 +435,8 @@ if df.engine_name == "dask":
 
 ## Next Steps
 
-- Read the [User Guide](USER_GUIDE.md) for Phase 2 features
-- See [API Reference](API_REFERENCE.md) for complete documentation
+- Read the [User Guide](legacy-migration/phase2-user-guide.md) for Phase 2 features
+- See [API Reference](documentation-examples/api-reference.md) for complete documentation
 - Check [Examples](../examples/) for migration examples
 - Run your tests to verify compatibility
 

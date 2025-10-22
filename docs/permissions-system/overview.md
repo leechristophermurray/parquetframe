@@ -125,10 +125,10 @@ Complete API documentation for all classes and functions
 ### 💻 [CLI Reference](cli-reference.md)
 Detailed guide to command-line permission management tools
 
-### 🚀 [Performance Guide](performance.md)
+### 🚀 [Performance Guide](../analytics-statistics/benchmarking.md)
 Best practices for scaling permissions to large datasets
 
-### 🎯 [Use Cases & Examples](examples.md)
+### 🎯 [Use Cases & Examples](../documentation-examples/examples.md)
 Real-world examples and implementation patterns
 
 ## Architecture
@@ -220,4 +220,4 @@ def get_user_accessible_documents(user_id):
 
 ---
 
-**Need Help?** Check out the [examples](examples.md) for common patterns or the [performance guide](performance.md) for optimization tips.
+**Need Help?** Check out the [examples](../documentation-examples/examples.md) for common patterns or the [performance guide](../analytics-statistics/benchmarking.md) for optimization tips.

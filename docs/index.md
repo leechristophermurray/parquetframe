@@ -22,7 +22,7 @@
 > 🚀 **Featured Example**: Complete [Todo/Kanban application](tutorials/todo-kanban-walkthrough.md) demonstrating all Phase 2 features
 
 !!! tip "New to ParquetFrame?"
-    Start with **[Phase 2](phase2/README.md)** for the latest features. Phase 1 users see the **[Migration Guide](phase2/MIGRATION_GUIDE.md)**.
+    Start with **[Phase 2](legacy-migration/phase2-user-guide.md)** for the latest features. Phase 1 users see the **[Migration Guide](phase2/MIGRATION_GUIDE.md)**.
 
 ## ✨ Phase 2 Features
 
@@ -191,7 +191,7 @@ boards = user.boards()  # Navigate relationships
 ### Migration Path
 
 - **Phase 1 users**: See the **[Migration Guide](phase2/MIGRATION_GUIDE.md)** for step-by-step instructions
-- **New users**: Start directly with **[Phase 2](phase2/README.md)**
+- **New users**: Start directly with **[Phase 2](legacy-migration/phase2-user-guide.md)**
 - **100% backward compatible**: Phase 1 code continues to work
 
 ## 🎯 Why ParquetFrame?
@@ -226,7 +226,7 @@ ParquetFrame provides a unified framework that:
 ## 🛠️ Key Concepts (Phase 1 - Legacy)
 
 !!! info "Phase 1 API Examples"
-    The examples below use the Phase 1 API which is still supported. For Phase 2 features (multi-engine with Polars, Entity Framework, Zanzibar permissions), see the **[Phase 2 Guide](phase2/README.md)**.
+    The examples below use the Phase 1 API which is still supported. For Phase 2 features (multi-engine with Polars, Entity Framework, Zanzibar permissions), see the **[Phase 2 Guide](legacy-migration/phase2-user-guide.md)**.
 
 ### Automatic Backend Selection
 
@@ -290,7 +290,7 @@ df.save("output.pqt")     # Saves as "output.pqt"
 ## 📚 Documentation
 
 ### Phase 2 (Start Here!)
-- **[Phase 2 Overview](phase2/README.md)** - Complete Phase 2 feature guide
+- **[Phase 2 Overview](legacy-migration/phase2-user-guide.md)** - Complete Phase 2 feature guide
 - **[Todo/Kanban Walkthrough](tutorials/todo-kanban-walkthrough.md)** - Full application example
 - **[Migration Guide](phase2/MIGRATION_GUIDE.md)** - Migrate from Phase 1
 - **[Quick Start](quickstart.md)** - Get up and running in minutes
@@ -298,7 +298,7 @@ df.save("output.pqt")     # Saves as "output.pqt"
 
 ### Features & Guides
 - [CLI Guide](cli/index.md) - Complete command-line interface documentation
-- [Performance Tips](performance.md) - Optimize your workflows
+- [Performance Tips](../analytics-statistics/benchmarking.md) - Optimize your workflows
 - [Workflow System](workflows/index.md) - YAML workflow orchestration
 - [Graph Processing](graph/index.md) - Apache GraphAr support
 - [Permissions System](permissions/index.md) - Zanzibar ReBAC

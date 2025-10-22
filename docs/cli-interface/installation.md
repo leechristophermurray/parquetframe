@@ -46,4 +46,4 @@ pframe --version
 
 - [CLI Overview](index.md)
 - [Basic Commands](commands.md)
-- [CLI Examples](examples.md)
+- [CLI Examples](../documentation-examples/examples.md)

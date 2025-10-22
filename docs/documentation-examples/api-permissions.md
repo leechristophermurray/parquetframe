@@ -486,5 +486,5 @@ perm_mgr.load("permissions.parquet")
 ## See Also
 
 - **[Permissions Overview](../permissions/index.md)** - Complete permissions system guide
-- **[Todo/Kanban Walkthrough](../tutorials/todo-kanban-walkthrough.md)** - Real-world permissions example
+- **[Todo/Kanban Walkthrough](../documentation-examples/tutorials.md)** - Real-world permissions example
 - **[CLI Reference](../permissions/cli-reference.md)** - Command-line permission management

@@ -45,6 +45,6 @@ df = pf.read("data.parquet", filters=[("date", ">=", "2023-01-01")])
 
 ## Further Reading
 
-- [Advanced Features](advanced.md)
+- [Advanced Features](phase1-advanced.md)
 - [Legacy Backend Selection](legacy/legacy-backends.md)
 - [Benchmarks](benchmarks.md)

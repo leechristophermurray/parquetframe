@@ -3,7 +3,7 @@
 !!! warning "Deprecated API"
     This documentation describes the **Phase 1 API** backend selection. Phase 2 offers a more advanced multi-engine architecture with automatic selection between **pandas, Polars, and Dask**. See **[Phase 2 Multi-Engine Core](../phase2/README.md)** for details.
 
-    **Migration Guide**: See [Phase 1 → Phase 2 Migration](../getting-started/migration.md)
+    **Migration Guide**: See [Phase 1 → Phase 2 Migration](../legacy-migration/migration-guide.md)
 
 > Choose the right processing backend for your use case.
 
@@ -56,6 +56,6 @@ print(f"Using backend: {df.backend}")
 
 ## Further Reading
 
-- [Performance Tips](performance.md)
-- [Advanced Features](advanced.md)
+- [Performance Tips](../analytics-statistics/benchmarking.md)
+- [Advanced Features](phase1-advanced.md)
 - [Large Dataset Processing](tutorials/large-data.md)

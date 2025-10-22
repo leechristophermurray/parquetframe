@@ -361,7 +361,7 @@ if can_edit:
 
 ## Need Help?
 
-- Browse **[examples](examples.md)** for common use cases
+- Browse **[examples](../documentation-examples/examples.md)** for common use cases
 - Check the **[Migration Guide](getting-started/migration.md)** if coming from Phase 1
 - Report issues on **[GitHub](https://github.com/leechristophermurray/parquetframe/issues)**
 

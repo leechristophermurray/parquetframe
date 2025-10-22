@@ -924,7 +924,7 @@ This Todo/Kanban application demonstrates:
 - **[Relationship Guide](../phase2/relationships.md)** - @rel decorator and patterns
 - **[Permissions System](../user-guide/permissions.md)** - Zanzibar permission details
 - **[Workflow System](../user-guide/workflows.md)** - YAML workflow reference
-- **[Migration Guide](../getting-started/migration.md)** - Migrate from Phase 1
+- **[Migration Guide](../legacy-migration/migration-guide.md)** - Migrate from Phase 1
 
 ---
 
