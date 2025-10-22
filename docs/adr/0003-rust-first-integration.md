@@ -308,7 +308,7 @@ This ADR informs:
 
 ## References
 
-- [CONTEXT_RUSTIC.md](../../CONTEXT_RUSTIC.md) - Detailed Rust integration roadmap
+- CONTEXT_RUSTIC.md (removed broken link) - Detailed Rust integration roadmap
 - [PyO3 Documentation](https://pyo3.rs/) - Python-Rust bindings
 - [Maturin Documentation](https://www.maturin.rs/) - Building Python wheels with Rust
 - [Apache Arrow Rust](https://docs.rs/arrow/) - Arrow implementation in Rust

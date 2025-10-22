@@ -2,7 +2,7 @@
 
 Comprehensive examples showcasing ParquetFrame Phase 2 features through real-world applications.
 
-> **Note:** This page focuses on Phase 2 examples. For legacy Phase 1 examples, see [Legacy Documentation](legacy/legacy-basic-usage.md).
+> **Note:** This page focuses on Phase 2 examples. For legacy Phase 1 examples, see [Legacy Documentation](legacy-migration/phase1-usage.md).
 
 ## Featured Example: Todo/Kanban Application
 
@@ -73,7 +73,7 @@ class User:
 
 ### 📚 Full Tutorial
 
-**[Complete Todo/Kanban Walkthrough →](tutorials/todo-kanban-walkthrough.md)**
+**[Complete Todo/Kanban Walkthrough →](documentation-examples/todo-kanban-example.md)**
 
 The complete 850+ line tutorial covers:
 - Architecture and setup
@@ -472,8 +472,8 @@ print("Analysis complete! Saved to task_analysis.png")
 
 For examples using the legacy Phase 1 API with pandas/Dask backend switching:
 
-- **[Legacy Basic Usage](legacy/legacy-basic-usage.md)** - Phase 1 file operations
-- **[Legacy Backend Switching](legacy/legacy-backends.md)** - pandas/Dask switching examples
+- **[Legacy Basic Usage](legacy-migration/phase1-usage.md)** - Phase 1 file operations
+- **[Legacy Backend Switching](legacy-migration/phase1-backends.md)** - pandas/Dask switching examples
 
 ### Migration Path
 
@@ -486,7 +486,7 @@ If you're using Phase 1 code, see the **[Migration Guide](getting-started/migrat
 
 ## More Examples
 
-- **[📚 Todo/Kanban Tutorial](tutorials/todo-kanban-walkthrough.md)** - Complete 850+ line walkthrough
+- **[📚 Todo/Kanban Tutorial](documentation-examples/todo-kanban-example.md)** - Complete 850+ line walkthrough
 - **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities
 - **[Permissions Guide](user-guide/permissions.md)** - Complete permission examples
 - **[Workflows Guide](user-guide/workflows.md)** - YAML workflow patterns

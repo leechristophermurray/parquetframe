@@ -1,0 +1,182 @@
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /Users/temp/Documents/Projects/parquetframe/site
+INFO    -  The following pages exist in the docs directory, but are not included in the "nav" configuration:
+  - RESTRUCTURE_MAP.md
+  - architecture_diagram.md
+  - ai-powered-features/index.md
+  - bioframe-integration/index.md
+  - cli-interface/index.md
+  - issues/phase2-test-migration.md
+  - permissions-system/overview.md
+  - reports/parquetframe_assessment.md
+  - rust-acceleration/overview.md
+  - sql-support/index.md
+WARNING -  A reference to 'core-features/basic-usage.md' is included in the 'nav' configuration, which is not found in the documentation files.
+WARNING -  A reference to 'core-features/advanced-usage.md' is included in the 'nav' configuration, which is not found in the documentation files.
+WARNING -  A reference to 'rust-acceleration/performance.md' is included in the 'nav' configuration, which is not found in the documentation files.
+WARNING -  A reference to 'rust-acceleration/development.md' is included in the 'nav' configuration, which is not found in the documentation files.
+WARNING -  Doc file 'index.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'phase2/MIGRATION_GUIDE.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'phase2/MIGRATION_GUIDE.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'phase2/MIGRATION_GUIDE.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'quickstart.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'installation.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'cli/index.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link '../analytics-statistics/benchmarking.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'workflows/index.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'graph/index.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'permissions/index.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'api/core.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'legacy/legacy-basic-usage.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'legacy/legacy-backends.md', but the target is not found among documentation files.
+WARNING -  Doc file 'index.md' contains a link 'quickstart.md', but the target is not found among documentation files.
+WARNING -  Doc file 'performance.md' contains a link 'phase1-advanced.md', but the target is not found among documentation files.
+WARNING -  Doc file 'performance.md' contains a link 'legacy/legacy-backends.md', but the target is not found among documentation files.
+WARNING -  Doc file 'performance.md' contains a link 'benchmarks.md', but the target is not found among documentation files.
+WARNING -  Doc file 'adr/0002-make-phase2-default-api.md' contains a link '../phase2/MIGRATION_GUIDE.md', but the target 'phase2/MIGRATION_GUIDE.md' is not found among documentation files.
+WARNING -  Doc file 'adr/0003-rust-first-integration.md' contains a link '../../CONTEXT_RUSTIC.md', but the target '../CONTEXT_RUSTIC.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/nl-queries.md' contains a link '../ai-features.md', but the target 'ai-features.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/nl-queries.md' contains a link '../cli/interactive.md', but the target 'cli/interactive.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/prompts.md' contains a link '../ai-features.md', but the target 'ai-features.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/prompts.md' contains a link 'queries.md', but the target 'ai-powered-features/queries.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/setup.md' contains a link 'queries.md', but the target 'ai-powered-features/queries.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/setup.md' contains a link '../cli/interactive.md', but the target 'cli/interactive.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/setup.md' contains a link '../ai-features.md', but the target 'ai-features.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/setup.md' contains a link 'queries.md', but the target 'ai-powered-features/queries.md' is not found among documentation files.
+WARNING -  Doc file 'ai-powered-features/setup.md' contains a link '../cli/interactive.md', but the target 'cli/interactive.md' is not found among documentation files.
+WARNING -  Doc file 'analytics-statistics/benchmarks.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'analytics-statistics/benchmarks.md' contains a link 'backends.md', but the target 'analytics-statistics/backends.md' is not found among documentation files.
+WARNING -  Doc file 'analytics-statistics/benchmarks.md' contains a link 'phase1-advanced.md', but the target 'analytics-statistics/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'bioframe-integration/overview.md' contains a link '../formats.md', but the target 'formats.md' is not found among documentation files.
+WARNING -  Doc file 'cli-interface/batch.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'cli-interface/installation.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'cli-interface/overview.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'cli-interface/scripts.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/file-formats.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/file-formats.md' contains a link 'legacy/legacy-basic-usage.md', but the target 'core-features/legacy/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/file-formats.md' contains a link 'phase1-advanced.md', but the target 'core-features/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/file-formats.md' contains a link 'legacy/legacy-backends.md', but the target 'core-features/legacy/legacy-backends.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/multi-engine.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/multi-engine.md' contains a link 'phase1-advanced.md', but the target 'core-features/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'core-features/multi-engine.md' contains a link 'tutorials/large-data.md', but the target 'core-features/tutorials/large-data.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-cli.md' contains a link 'core.md', but the target 'documentation-examples/core.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-cli.md' contains a link '../cli/index.md', but the target 'cli/index.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-cli.md' contains a link '../cli/examples.md', but the target 'cli/examples.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-core.md' contains a link '../usage.md', but the target 'usage.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-core.md' contains a link '../advanced.md', but the target 'advanced.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-entities.md' contains a link '../phase2/USER_GUIDE.md#entity-framework', but the target 'phase2/USER_GUIDE.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-entities.md' contains a link '../documentation-examples/tutorials.md', but the target 'documentation-examples/tutorials.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-entities.md' contains a link '../phase2/USER_GUIDE.md#relationships', but the target 'phase2/USER_GUIDE.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-permissions.md' contains a link '../permissions/index.md', but the target 'permissions/index.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-permissions.md' contains a link '../documentation-examples/tutorials.md', but the target 'documentation-examples/tutorials.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/api-permissions.md' contains a link '../permissions/cli-reference.md', but the target 'permissions/cli-reference.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/data-exploration.md' contains a link '../usage.md', but the target 'usage.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/data-exploration.md' contains a link '../advanced.md', but the target 'advanced.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/data-exploration.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'legacy/legacy-basic-usage.md', but the target 'documentation-examples/legacy/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target 'documentation-examples/tutorials/todo-kanban-walkthrough.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'legacy/legacy-basic-usage.md', but the target 'documentation-examples/legacy/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'legacy/legacy-backends.md', but the target 'documentation-examples/legacy/legacy-backends.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'getting-started/migration.md', but the target 'documentation-examples/getting-started/migration.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target 'documentation-examples/tutorials/todo-kanban-walkthrough.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'phase2/entities.md', but the target 'documentation-examples/phase2/entities.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'user-guide/permissions.md', but the target 'documentation-examples/user-guide/permissions.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/examples-gallery.md' contains a link 'user-guide/workflows.md', but the target 'documentation-examples/user-guide/workflows.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/integration-guide.md' contains a link '../advanced.md', but the target 'advanced.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/integration-guide.md' contains a link 'ml-pipeline.md', but the target 'documentation-examples/ml-pipeline.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/ml-pipelines.md' contains a link 'integration.md', but the target 'documentation-examples/integration.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/ml-pipelines.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/ml-pipelines.md' contains a link '../advanced.md', but the target 'advanced.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/performance-optimization.md' contains a link '../backends.md', but the target 'backends.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/performance-optimization.md' contains a link '../advanced.md', but the target 'advanced.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../phase2/README.md', but the target 'phase2/README.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../phase2/README.md', but the target 'phase2/README.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../phase2/entities.md', but the target 'phase2/entities.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../phase2/relationships.md', but the target 'phase2/relationships.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../user-guide/permissions.md', but the target 'user-guide/permissions.md' is not found among documentation files.
+WARNING -  Doc file 'documentation-examples/todo-kanban-example.md' contains a link '../user-guide/workflows.md', but the target 'user-guide/workflows.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/first-steps.md' contains a link 'legacy/legacy-basic-usage.md', but the target 'getting-started/legacy/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/first-steps.md' contains a link 'cli/index.md', but the target 'getting-started/cli/index.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'legacy/legacy-basic-usage.md', but the target 'getting-started/legacy/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'tutorials/todo-kanban-walkthrough.md', but the target 'getting-started/tutorials/todo-kanban-walkthrough.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'phase2/entities.md', but the target 'getting-started/phase2/entities.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'phase2/relationships.md', but the target 'getting-started/phase2/relationships.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'user-guide/permissions.md', but the target 'getting-started/user-guide/permissions.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'user-guide/workflows.md', but the target 'getting-started/user-guide/workflows.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'getting-started/migration.md', but the target 'getting-started/getting-started/migration.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'api/core.md', but the target 'getting-started/api/core.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'api/entities.md', but the target 'getting-started/api/entities.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'api/permissions.md', but the target 'getting-started/api/permissions.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'getting-started/quickstart.md' contains a link 'getting-started/migration.md', but the target 'getting-started/getting-started/migration.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/cli-usage.md' contains a link 'performance.md', but the target 'graph-processing/performance.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/cli-usage.md' contains a link '../documentation-examples/api-reference.md', but the target 'documentation-examples/api-reference.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/graphar-format.md' contains a link 'adjacency.md', but the target 'graph-processing/adjacency.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/graphar-format.md' contains a link 'adjacency.md', but the target 'graph-processing/adjacency.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/graphar-format.md' contains a link 'graphar.md', but the target 'graph-processing/graphar.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/graphar-format.md' contains a link 'performance.md', but the target 'graph-processing/performance.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/graphar-format.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/tutorial.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'graph-processing/tutorial.md' contains a link 'performance.md', but the target 'graph-processing/performance.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/migration-guide.md' contains a link 'legacy-migration/phase2-user-guide.md', but the target 'legacy-migration/legacy-migration/phase2-user-guide.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/migration-guide.md' contains a link 'documentation-examples/api-reference.md', but the target 'legacy-migration/documentation-examples/api-reference.md' is not found among documentation files.
+INFO    -  Doc file 'legacy-migration/migration-guide.md' contains an unrecognized relative link '../examples/', it was left as is.
+WARNING -  Doc file 'legacy-migration/phase1-backends.md' contains a link '../phase2/README.md', but the target 'phase2/README.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-backends.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-backends.md' contains a link 'phase1-advanced.md', but the target 'legacy-migration/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-backends.md' contains a link 'tutorials/large-data.md', but the target 'legacy-migration/tutorials/large-data.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-overview.md' contains a link 'legacy-basic-usage.md', but the target 'legacy-migration/legacy-basic-usage.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-overview.md' contains a link 'legacy-backends.md', but the target 'legacy-migration/legacy-backends.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-overview.md' contains a link '../phase2/README.md', but the target 'phase2/README.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-overview.md' contains a link '../documentation-examples/tutorials.md', but the target 'documentation-examples/tutorials.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-to-phase2.md' contains a link 'legacy-migration/phase2-user-guide.md', but the target 'legacy-migration/legacy-migration/phase2-user-guide.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-to-phase2.md' contains a link 'documentation-examples/api-reference.md', but the target 'legacy-migration/documentation-examples/api-reference.md' is not found among documentation files.
+INFO    -  Doc file 'legacy-migration/phase1-to-phase2.md' contains an unrecognized relative link '../examples/', it was left as is.
+WARNING -  Doc file 'legacy-migration/phase1-usage.md' contains a link '../phase2/README.md', but the target 'phase2/README.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase1-usage.md' contains a link 'phase1-advanced.md', but the target 'legacy-migration/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-overview.md' contains a link 'legacy-migration/phase2-user-guide.md', but the target 'legacy-migration/legacy-migration/phase2-user-guide.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-overview.md' contains a link 'legacy-migration/migration-guide.md', but the target 'legacy-migration/legacy-migration/migration-guide.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-overview.md' contains a link '../../PHASE_2_PROGRESS.md', but the target '../PHASE_2_PROGRESS.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-overview.md' contains a link '../../CONTRIBUTING.md', but the target '../CONTRIBUTING.md' is not found among documentation files.
+INFO    -  Doc file 'legacy-migration/phase2-overview.md' contains an unrecognized relative link '../../LICENSE', it was left as is.
+WARNING -  Doc file 'legacy-migration/phase2-user-guide.md' contains a link '../documentation-examples/tutorials.md', but the target 'documentation-examples/tutorials.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-user-guide.md' contains a link 'documentation-examples/api-reference.md', but the target 'legacy-migration/documentation-examples/api-reference.md' is not found among documentation files.
+WARNING -  Doc file 'legacy-migration/phase2-user-guide.md' contains a link 'legacy-migration/migration-guide.md', but the target 'legacy-migration/legacy-migration/migration-guide.md' is not found among documentation files.
+INFO    -  Doc file 'legacy-migration/phase2-user-guide.md' contains an unrecognized relative link '../examples/', it was left as is.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'getting-started.md', but the target 'permissions-system/getting-started.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'models.md', but the target 'permissions-system/models.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'api-reference.md', but the target 'permissions-system/api-reference.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'getting-started.md', but the target 'permissions-system/getting-started.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'models.md', but the target 'permissions-system/models.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link 'api-reference.md', but the target 'permissions-system/api-reference.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'permissions-system/overview.md' contains a link '../analytics-statistics/benchmarking.md', but the target 'analytics-statistics/benchmarking.md' is not found among documentation files.
+WARNING -  Doc file 'reports/parquetframe_assessment.md' contains a link '../benchmarks.md', but the target 'benchmarks.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/architecture.md' contains a link './performance.md', but the target 'rust-acceleration/performance.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/architecture.md' contains a link './development.md', but the target 'rust-acceleration/development.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/graph-algorithms.md' contains a link './performance.md', but the target 'rust-acceleration/performance.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/io-fastpaths.md' contains a link './performance.md', but the target 'rust-acceleration/performance.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/io-fastpaths.md' contains a link './development.md', but the target 'rust-acceleration/development.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/overview.md' contains a link '../../CONTEXT_RUSTIC.md', but the target '../CONTEXT_RUSTIC.md' is not found among documentation files.
+WARNING -  Doc file 'rust-acceleration/workflow-engine.md' contains a link './performance.md', but the target 'rust-acceleration/performance.md' is not found among documentation files.
+WARNING -  Doc file 'sql-support/databases.md' contains a link '../backends.md', but the target 'backends.md' is not found among documentation files.
+WARNING -  Doc file 'sql-support/duckdb.md' contains a link '../backends.md', but the target 'backends.md' is not found among documentation files.
+WARNING -  Doc file 'sql-support/overview.md' contains a link '../backends.md', but the target 'backends.md' is not found among documentation files.
+WARNING -  Doc file 'sql-support/overview.md' contains a link '../cli/index.md', but the target 'cli/index.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/index.md' contains a link 'phase1-advanced.md', but the target 'yaml-workflows/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/index.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/index.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/advanced.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/examples.md' contains a link 'phase1-advanced.md', but the target 'yaml-workflows/phase1-advanced.md' is not found among documentation files.
+WARNING -  Doc file 'yaml-workflows/yaml-syntax.md' contains a link '../documentation-examples/examples.md', but the target 'documentation-examples/examples.md' is not found among documentation files.
+INFO    -  Doc file 'graph-processing/tutorial.md' contains a link 'index.md#error-handling', but the doc 'graph-processing/index.md' does not contain an anchor '#error-handling'.
+INFO    -  Doc file 'sql-support/cookbook.md' contains a link '#data-quality--validation', but there is no such anchor on this page.
+INFO    -  Doc file 'yaml-workflows/visualization.md' contains a link '#graphviz', but there is no such anchor on this page.
+INFO    -  Doc file 'yaml-workflows/visualization.md' contains a link '#networkx', but there is no such anchor on this page.
+INFO    -  Doc file 'yaml-workflows/visualization.md' contains a link '#mermaid', but there is no such anchor on this page.
+
+Aborted with 158 warnings in strict mode!

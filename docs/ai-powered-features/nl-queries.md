@@ -379,7 +379,7 @@ except Exception as e:
 
 ## Related Documentation
 
-- [AI Features Overview](../ai-features.md)
+- [AI Features Overview](../ai-powered-features/index.md)
 - [Local LLM Setup](setup.md)
 - [Prompt Engineering](prompts.md)
-- [Interactive CLI Mode](../cli/interactive.md)
+- [Interactive CLI Mode](../cli-interface/interactive.md)

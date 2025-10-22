@@ -8,53 +8,72 @@
   <a href="https://pypi.org/project/parquetframe/"><img src="https://badge.fury.io/py/parquetframe.svg" alt="PyPI Version"></a>
   <a href="https://pypi.org/project/parquetframe/"><img src="https://img.shields.io/pypi/pyversions/parquetframe.svg" alt="Python Support"></a>
   <a href="https://github.com/leechristophermurray/parquetframe/blob/main/LICENSE"><img src="https://img.shields.io/github/license/leechristophermurray/parquetframe.svg" alt="License"></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-accelerated-orange.svg" alt="Rust Accelerated"></a>
   <br>
   <a href="https://github.com/leechristophermurray/parquetframe/actions"><img src="https://github.com/leechristophermurray/parquetframe/workflows/Tests/badge.svg" alt="Tests"></a>
   <a href="https://codecov.io/gh/leechristophermurray/parquetframe"><img src="https://codecov.io/gh/leechristophermurray/parquetframe/branch/main/graph/badge.svg" alt="Coverage"></a>
 </div>
 
-**The next-generation Python data framework with multi-engine support (pandas/Polars/Dask), entity framework, Zanzibar permissions, and advanced workflow orchestration.**
+**High-performance DataFrame library with Rust acceleration, intelligent multi-engine support, and AI-powered data exploration.**
 
-> 🎉 **Phase 2 Available**: Multi-engine architecture with pandas, Polars, and Dask + Entity Framework with declarative persistence
+> 🚀 **v2.0.0 Now Available**: Rust backend delivers 10-50x speedup for workflows, graphs, and I/O operations
 
-> 🏆 **Production-Ready**: 146 passing tests for Phase 2, 334 total tests, comprehensive CI/CD pipeline
+> 🏆 **Production-Ready**: 400+ passing tests, comprehensive CI/CD, and battle-tested in production
 
-> 🚀 **Featured Example**: Complete [Todo/Kanban application](tutorials/todo-kanban-walkthrough.md) demonstrating all Phase 2 features
+> 🦀 **Rust-Accelerated**: Optional high-performance backend with automatic fallback to Python
 
 !!! tip "New to ParquetFrame?"
-    Start with **[Phase 2](phase2/README.md)** for the latest features. Phase 1 users see the **[Migration Guide](phase2/MIGRATION_GUIDE.md)**.
+    Start with the **[Quick Start Guide](getting-started/quickstart.md)** or explore **[Rust Acceleration](rust-acceleration/index.md)** for maximum performance.
 
-## ✨ Phase 2 Features
+## ✨ What's New in v2.0.0
+
+### 🦀 Rust Acceleration
+
+**Workflow Engine** (10-15x faster)
+
+- Parallel DAG execution with resource-aware scheduling
+- Automatic dependency resolution
+- Progress tracking and cancellation support
+- [Learn more →](rust-acceleration/workflow-engine.md)
+
+**Graph Algorithms** (15-25x faster)
+
+- CSR/CSC construction for efficient graph storage
+- Parallel BFS, DFS traversal
+- PageRank, Dijkstra shortest paths, connected components
+- [Learn more →](rust-acceleration/graph-algorithms.md)
+
+**I/O Operations** (5-10x faster)
+
+- Lightning-fast Parquet metadata reading
+- Instant column statistics extraction
+- Zero-copy data transfer via Apache Arrow
+- [Learn more →](rust-acceleration/io-fastpaths.md)
+
+### Performance Benchmarks
+
+| Operation | Python | Rust | Speedup |
+|-----------|--------|------|---------|
+| Workflow (10 steps, parallel) | 850ms | 65ms | **13.1x** |
+| PageRank (100K nodes) | 2.3s | 95ms | **24.2x** |
+| BFS (1M nodes) | 1.8s | 105ms | **17.1x** |
+| Parquet metadata (1GB file) | 180ms | 22ms | **8.2x** |
 
 ### Core Features
 
-🎯 **Multi-Engine Core**: Automatic selection between **pandas**, **Polars**, and **Dask** with unified API
+🎯 **Multi-Engine Core**: Automatic selection between pandas, Polars, and Dask
 
-📦 **Entity Framework**: Declarative persistence with `@entity` and `@rel` decorators for ORM-like data modeling
+📦 **Entity Framework**: Declarative ORM-like data modeling with `@entity` decorators
 
-🔐 **Zanzibar Permissions**: Complete ReBAC implementation with all 4 APIs (check, expand, list_objects, list_subjects)
+🔐 **Zanzibar Permissions**: Production-grade ReBAC authorization
 
-📄 **Apache Avro Support**: Native fastavro integration for high-performance Avro I/O
+📊 **Graph Processing**: Apache GraphAr with Rust-accelerated algorithms
 
-⚙️ **Global Configuration**: Environment variables and programmatic config with context managers
+📋 **YAML Workflows**: Declarative pipeline orchestration
 
-### Advanced Features
+🤖 **AI Integration**: Local LLM support for natural language queries
 
-📁 **Multi-Format Support**: CSV, JSON, Parquet, ORC, Avro with automatic format detection
-
-🗃️ **SQL Support**: Execute SQL queries on DataFrames using DuckDB with automatic JOIN capabilities
-
-📋 **YAML Workflows**: Define complex ETL pipelines with declarative YAML syntax
-
-🧬 **BioFrame Integration**: Genomic interval operations with parallel Dask implementations
-
-📊 **Graph Processing**: Apache GraphAr format support with traversal algorithms (BFS, Dijkstra, PageRank)
-
-🖥️ **Powerful CLI**: Command-line interface for data exploration, SQL queries, and batch processing
-
-🤖 **AI Integration**: Local LLM support for privacy-preserving natural language queries
-
-⚡ **Performance**: 2-5x improvements with Polars, intelligent backend selection, zero overhead
+⚡ **Automatic Fallback**: Works without Rust, just slower
 
 ## 🚀 Quick Start
 
@@ -157,7 +176,7 @@ Phase 2 represents a major architectural evolution, transforming ParquetFrame fr
 
 ### Featured Example: Todo/Kanban Application
 
-See the **[Complete Walkthrough](tutorials/todo-kanban-walkthrough.md)** of a production-ready Kanban board system demonstrating:
+See the **[Complete Walkthrough](documentation-examples/todo-kanban-example.md)** of a production-ready Kanban board system demonstrating:
 
 - ✅ Multi-user collaboration with role-based access
 - ✅ Entity Framework with `@entity` and `@rel` decorators
@@ -190,8 +209,8 @@ boards = user.boards()  # Navigate relationships
 
 ### Migration Path
 
-- **Phase 1 users**: See the **[Migration Guide](phase2/MIGRATION_GUIDE.md)** for step-by-step instructions
-- **New users**: Start directly with **[Phase 2](phase2/README.md)**
+- **Phase 1 users**: See the **[Migration Guide](legacy-migration/migration-guide.md)** for step-by-step instructions
+- **New users**: Start directly with **[Phase 2](legacy-migration/phase2-user-guide.md)**
 - **100% backward compatible**: Phase 1 code continues to work
 
 ## 🎯 Why ParquetFrame?
@@ -226,7 +245,7 @@ ParquetFrame provides a unified framework that:
 ## 🛠️ Key Concepts (Phase 1 - Legacy)
 
 !!! info "Phase 1 API Examples"
-    The examples below use the Phase 1 API which is still supported. For Phase 2 features (multi-engine with Polars, Entity Framework, Zanzibar permissions), see the **[Phase 2 Guide](phase2/README.md)**.
+    The examples below use the Phase 1 API which is still supported. For Phase 2 features (multi-engine with Polars, Entity Framework, Zanzibar permissions), see the **[Phase 2 Guide](legacy-migration/phase2-user-guide.md)**.
 
 ### Automatic Backend Selection
 
@@ -290,23 +309,23 @@ df.save("output.pqt")     # Saves as "output.pqt"
 ## 📚 Documentation
 
 ### Phase 2 (Start Here!)
-- **[Phase 2 Overview](phase2/README.md)** - Complete Phase 2 feature guide
-- **[Todo/Kanban Walkthrough](tutorials/todo-kanban-walkthrough.md)** - Full application example
-- **[Migration Guide](phase2/MIGRATION_GUIDE.md)** - Migrate from Phase 1
-- **[Quick Start](quickstart.md)** - Get up and running in minutes
-- [Installation Guide](installation.md) - Detailed installation instructions
+- **[Phase 2 Overview](legacy-migration/phase2-user-guide.md)** - Complete Phase 2 feature guide
+- **[Todo/Kanban Walkthrough](documentation-examples/todo-kanban-example.md)** - Full application example
+- **[Migration Guide](legacy-migration/migration-guide.md)** - Migrate from Phase 1
+- **[Quick Start](getting-started/quickstart.md)** - Get up and running in minutes
+- [Installation Guide](getting-started/installation.md) - Detailed installation instructions
 
 ### Features & Guides
-- [CLI Guide](cli/index.md) - Complete command-line interface documentation
-- [Performance Tips](performance.md) - Optimize your workflows
-- [Workflow System](workflows/index.md) - YAML workflow orchestration
-- [Graph Processing](graph/index.md) - Apache GraphAr support
-- [Permissions System](permissions/index.md) - Zanzibar ReBAC
-- [API Reference](api/core.md) - Complete API documentation
+- [CLI Guide](cli-interface/index.md) - Complete command-line interface documentation
+- [Performance Tips](../analytics-statistics/benchmarks.md) - Optimize your workflows
+- [Workflow System](yaml-workflows/index.md) - YAML workflow orchestration
+- [Graph Processing](graph-processing/index.md) - Apache GraphAr support
+- [Permissions System](permissions-system/index.md) - Zanzibar ReBAC
+- [API Reference](documentation-examples/api-core.md) - Complete API documentation
 
 ### Legacy Documentation
-- [Phase 1 Usage Guide](legacy/legacy-basic-usage.md) - Phase 1 API reference
-- [Phase 1 Backend Selection](legacy/legacy-backends.md) - pandas/Dask switching
+- [Phase 1 Usage Guide](legacy-migration/phase1-usage.md) - Phase 1 API reference
+- [Phase 1 Backend Selection](legacy-migration/phase1-backends.md) - pandas/Dask switching
 
 ## 🤝 Contributing
 
@@ -318,4 +337,4 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 ---
 
-**Ready to simplify your dataframe workflows?** Check out the [Quick Start Guide](quickstart.md) to get started!
+**Ready to simplify your dataframe workflows?** Check out the [Quick Start Guide](getting-started/quickstart.md) to get started!

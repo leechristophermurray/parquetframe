@@ -680,6 +680,6 @@ result = df.sql("""
 
 - [DuckDB Integration](duckdb.md) - Advanced DuckDB features and optimization
 - [Database Connections](databases.md) - Connect to external databases
-- [Backend Selection](../backends.md) - Choose between pandas and Dask
-- [CLI Guide](../cli/index.md) - Command-line SQL operations
+- [Backend Selection](../legacy-migration/phase1-backends.md) - Choose between pandas and Dask
+- [CLI Guide](../cli-interface/index.md) - Command-line SQL operations
 - [Performance Optimization](../performance.md) - General performance tips

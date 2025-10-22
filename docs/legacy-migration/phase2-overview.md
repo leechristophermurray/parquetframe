@@ -4,9 +4,9 @@ Welcome to ParquetFrame Phase 2 documentation!
 
 ## Quick Links
 
-- **[User Guide](USER_GUIDE.md)** - Complete guide to Phase 2 features
-- **[Migration Guide](MIGRATION_GUIDE.md)** - Migrate from Phase 1 to Phase 2
-- **[Progress Report](../../PHASE_2_PROGRESS.md)** - Development progress and stats
+- **[User Guide](legacy-migration/phase2-user-guide.md)** - Complete guide to Phase 2 features
+- **[Migration Guide](legacy-migration/migration-guide.md)** - Migrate from Phase 1 to Phase 2
+- **Progress Report (removed broken link)** - Development progress and stats
 
 ## What is Phase 2?
 
@@ -316,7 +316,7 @@ with config_context(default_engine="dask"):
 
 ## Contributing
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](contributing.md) for contribution guidelines.
 
 ## Testing
 
@@ -333,7 +333,7 @@ pytest tests/benchmarks/ --benchmark-only
 
 ## License
 
-See [LICENSE](../../LICENSE) for license information.
+See [LICENSE](https://github.com/leechristophermurray/parquetframe/blob/main/LICENSE) for license information.
 
 ## Support
 

@@ -35,5 +35,5 @@ Collection of practical workflow examples and templates.
 ## Related Documentation
 
 - [Workflow Overview](index.md)
-- [Advanced Features](advanced.md)
+- [Advanced Features](legacy-migration/phase1-overview.md)
 - [Step Types](step-types.md)

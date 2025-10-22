@@ -72,5 +72,5 @@ with pf.profiler():
 ## Further Reading
 
 - [Performance Tips](../performance.md)
-- [Backend Selection](../backends.md)
+- [Backend Selection](../legacy-migration/phase1-backends.md)
 - [Advanced Features](../advanced.md)

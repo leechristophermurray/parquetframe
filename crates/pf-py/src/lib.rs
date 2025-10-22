@@ -5,9 +5,11 @@
 //!
 //! Phase 1: Graph Core - CSR/CSC, BFS, DFS implementations
 //! Phase 2: I/O Fast-Paths - Parquet metadata and statistics
+//! Phase 3.5: Workflow Engine - Parallel DAG execution
 
 mod graph;
 mod io;
+mod workflow;
 
 use pyo3::prelude::*;
 
@@ -52,6 +54,12 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     match io::register_io_functions(m) {
         Ok(_) => {}
         Err(e) => eprintln!("Error registering I/O functions: {:?}", e),
+    }
+
+    // Workflow engine functions
+    match workflow::register_workflow_functions(m) {
+        Ok(_) => {}
+        Err(e) => eprintln!("Error registering workflow functions: {:?}", e),
     }
 
     Ok(())

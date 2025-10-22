@@ -491,7 +491,7 @@ for lst in board_lists:
 - ✅ **Auto-Timestamps**: Created and updated timestamps
 - ✅ **Optional Fields**: `assigned_to` can be None
 
-👉 **[See Full Tutorial](../tutorials/todo-kanban-walkthrough.md)** for complete application including permissions and workflows.
+👉 **[See Full Tutorial](../documentation-examples/tutorials.md)** for complete application including permissions and workflows.
 
 ### Complex Entity Models
 
@@ -623,6 +623,6 @@ reset_config()
 
 ## Next Steps
 
-- See [API Reference](API_REFERENCE.md) for complete API documentation
-- See [Migration Guide](MIGRATION_GUIDE.md) for upgrading from Phase 1
-- See [Examples](../examples/) for more code examples
+- See [API Reference](documentation-examples/api-reference.md) for complete API documentation
+- See [Migration Guide](legacy-migration/migration-guide.md) for upgrading from Phase 1
+- See [Examples](documentation-examples/examples-gallery.md) for more code examples

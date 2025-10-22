@@ -65,7 +65,7 @@ all_users = User.find_all()
 
 ## Migration Guide
 
-For a comprehensive guide on migrating from Phase 1 to Phase 2, see the **[Phase 2 Migration Guide](../getting-started/migration.md)**.
+For a comprehensive guide on migrating from Phase 1 to Phase 2, see the **[Phase 2 Migration Guide](../legacy-migration/migration-guide.md)**.
 
 ### Migration Strategies
 
@@ -81,8 +81,8 @@ For a comprehensive guide on migrating from Phase 1 to Phase 2, see the **[Phase
 ## Getting Help
 
 - **Phase 2 Documentation**: [Overview](../phase2/README.md)
-- **Migration Guide**: [Phase 1 → Phase 2](../getting-started/migration.md)
-- **Examples**: [Todo/Kanban Walkthrough](../tutorials/todo-kanban-walkthrough.md)
+- **Migration Guide**: [Phase 1 → Phase 2](../legacy-migration/migration-guide.md)
+- **Examples**: [Todo/Kanban Walkthrough](../documentation-examples/tutorials.md)
 - **GitHub Issues**: [Report Issues](https://github.com/leechristophermurray/parquetframe/issues)
 
 ---

@@ -3,7 +3,7 @@
 !!! warning "Deprecated API"
     This documentation describes the **Phase 1 API**, which is now in legacy maintenance mode. For new projects, please use **[Phase 2](../phase2/README.md)** which offers multi-engine support (pandas/Polars/Dask), entity framework, and Zanzibar permissions.
 
-    **Migration Guide**: See [Phase 1 → Phase 2 Migration](../getting-started/migration.md)
+    **Migration Guide**: See [Phase 1 → Phase 2 Migration](../legacy-migration/migration-guide.md)
 
 This guide covers the core functionality of ParquetFrame Phase 1 with detailed examples and explanations.
 
@@ -401,4 +401,4 @@ X_test_scaled = scaler.transform(X_test)
 
 ---
 
-**Next**: Learn about [Advanced Features](advanced.md) for more sophisticated use cases.
+**Next**: Learn about [Advanced Features](legacy-migration/phase1-overview.md) for more sophisticated use cases.

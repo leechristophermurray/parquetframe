@@ -68,6 +68,6 @@ df.save("output.parquet")
 
 ## Further Reading
 
-- [CLI API Reference](cli.md)
+- [CLI API Reference](../cli-interface/commands.md)
 - [Basic Usage](../usage.md)
 - [Advanced Features](../advanced.md)

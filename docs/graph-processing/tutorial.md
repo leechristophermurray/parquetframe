@@ -378,10 +378,10 @@ gc.collect()
 
 ## Next Steps
 
-- Explore the [Graph API Reference](graphframe.md) for detailed documentation
+- Explore the [Graph API Reference](index.md) for detailed documentation
 - Learn about [GraphAr format](graphar-format.md) specifications
-- Check out [Advanced Examples](examples.md) for real-world use cases
-- Read about [Performance Optimization](optimization.md) techniques
+- Check out [Advanced Examples](../documentation-examples/examples-gallery.md) for real-world use cases
+- Read about [Performance Optimization](index.md) techniques
 
 ## Troubleshooting
 

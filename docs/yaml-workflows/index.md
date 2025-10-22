@@ -108,8 +108,8 @@ graph TD
 | **[CLI Commands](cli-commands.md)** | Command-line interface reference for workflow management |
 | **[History & Analytics](history-analytics.md)** | Execution tracking, metrics, and performance analysis |
 | **[DAG Visualization](visualization.md)** | Generate and customize workflow visualizations |
-| **[Advanced Features](advanced.md)** | Variables, conditionals, and complex dependency patterns |
-| **[Examples](examples.md)** | Real-world workflow examples and use cases |
+| **[Advanced Features](legacy-migration/phase1-overview.md)** | Variables, conditionals, and complex dependency patterns |
+| **[Examples](../documentation-examples/examples-gallery.md)** | Real-world workflow examples and use cases |
 
 ## 🎯 Common Use Cases
 
@@ -129,4 +129,4 @@ Create repeatable data validation and quality assessment workflows.
 
 Ready to build your first workflow? Start with our [Step Types Reference](step-types.md) to understand available operations, then explore [YAML Syntax](yaml-syntax.md) for workflow definitions.
 
-For hands-on examples, check out our [Examples Gallery](examples.md) featuring real-world use cases and patterns.
+For hands-on examples, check out our [Examples Gallery](../documentation-examples/examples-gallery.md) featuring real-world use cases and patterns.

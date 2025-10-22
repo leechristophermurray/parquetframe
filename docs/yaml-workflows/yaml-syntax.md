@@ -40,4 +40,4 @@ steps:
 
 - [Workflow Overview](index.md)
 - [Step Types](step-types.md)
-- [Examples Gallery](examples.md)
+- [Examples Gallery](../documentation-examples/examples-gallery.md)

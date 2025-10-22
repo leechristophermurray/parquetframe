@@ -290,15 +290,15 @@ print(f"Top domains: {page_counts.nlargest(5)}")
 
 ## API Reference
 
-- [GraphFrame API](graphframe.md) - Main graph interface
-- [VertexSet/EdgeSet API](collections.md) - Typed graph collections
-- [Adjacency API](adjacency.md) - CSR/CSC adjacency structures
-- [GraphAr Reader API](graphar.md) - Apache GraphAr format support
-- [CLI Reference](cli.md) - Command-line tools
+- [GraphFrame API](index.md) - Main graph interface
+- [VertexSet/EdgeSet API](graphar-format.md) - Typed graph collections
+- [Adjacency API](graphar-format.md) - CSR/CSC adjacency structures
+- [GraphAr Reader API](graphar-format.md) - Apache GraphAr format support
+- [CLI Reference](../cli-interface/commands.md) - Command-line tools
 
 ## See Also
 
 - [Getting Started Tutorial](tutorial.md)
 - [GraphAr Format Guide](graphar-format.md)
-- [Performance Optimization](optimization.md)
-- [Advanced Examples](examples.md)
+- [Performance Optimization](index.md)
+- [Advanced Examples](../documentation-examples/examples-gallery.md)

@@ -1,14 +1,12 @@
-# [Category Name]
+# analytics statistics
+
+[Documentation to be expanded]
 
 ## Overview
-[To be written]
 
-## Features
-- Feature 1
-- Feature 2
-
-## Pages in This Section
-[Links to be added]
+This section covers analytics statistics features and capabilities.
 
 ## Related Categories
-[Links to be added]
+
+- **[Core Features](../core-features/index.md)**
+- **[Getting Started](../getting-started/index.md)**

@@ -401,5 +401,5 @@ def __post_init__(self):
 ## See Also
 
 - **[Entity Framework Guide](../phase2/USER_GUIDE.md#entity-framework)** - Complete entity framework tutorial
-- **[Todo/Kanban Walkthrough](../tutorials/todo-kanban-walkthrough.md)** - Real-world entity framework example
+- **[Todo/Kanban Walkthrough](../documentation-examples/tutorials.md)** - Real-world entity framework example
 - **[Relationships Guide](../phase2/USER_GUIDE.md#relationships)** - Deep dive into entity relationships
