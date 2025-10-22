@@ -23,18 +23,21 @@ Phase 2 is feature-complete, well-tested (146 passing tests), and provides signi
 ## Decision Drivers
 
 ### User Experience Goals
+
 - **Simplicity**: Single, clear import path (`import parquetframe`)
 - **Discoverability**: New users get best-in-class experience by default
 - **Performance**: Automatic multi-engine selection provides optimal performance
 - **Progressive Enhancement**: Clear migration path for existing users
 
 ### Technical Requirements
+
 - **Backward Compatibility**: Phase 1 API must remain accessible during deprecation period
 - **Smooth Migration**: Existing code should continue working with deprecation warnings
 - **Documentation Quality**: Clear breaking changes documentation and migration guides
 - **Test Coverage**: Maintain >85% coverage throughout transition
 
 ### Project Standards
+
 - **Semantic Versioning**: Breaking changes require major version bump
 - **Conventional Commits**: All commits follow conventional commit format
 - **Git Best Practices**: Feature branch workflow with descriptive commits
@@ -46,6 +49,7 @@ We will make **Phase 2 multi-engine API the default** for all ParquetFrame impor
 ### Implementation Strategy
 
 **1. Module Restructuring**
+
 - Move `src/parquetframe/core_v2/` to `src/parquetframe/core/` (consolidation complete)
 - Update `src/parquetframe/__init__.py` to import Phase 2 API by default
 - Maintain Phase 1 API in `src/parquetframe/core_legacy.py` for backward compatibility
@@ -86,6 +90,7 @@ from parquetframe.core import DataFrameProxy, read
 **4. Version Bump**
 
 This is a **breaking change** requiring a major version bump:
+
 - Current: `0.5.3`
 - After this change: `1.0.0`
 
@@ -98,11 +103,13 @@ Justification: Making Phase 2 the default changes the return types and API surfa
 **Approach**: Maintain `parquetframe` (Phase 1) and `parquetframe.core` (Phase 2) indefinitely.
 
 **Pros**:
+
 - No breaking changes
 - Maximum backward compatibility
 - Users choose when to migrate
 
 **Cons**:
+
 - Perpetual maintenance burden for two parallel APIs
 - Confusing for new users
 - Documentation complexity
@@ -116,11 +123,13 @@ Justification: Making Phase 2 the default changes the return types and API surfa
 **Approach**: Add environment variable `PARQUETFRAME_DEFAULT_API=v1|v2` to control default behavior.
 
 **Pros**:
+
 - Users control migration timing
 - No immediate breaking changes
 - Gradual transition period
 
 **Cons**:
+
 - Adds configuration complexity
 - Behavior differs based on environment
 - Prolongs dual maintenance period
@@ -132,17 +141,20 @@ Justification: Making Phase 2 the default changes the return types and API surfa
 ### Alternative C: Import-Based Selection (Rejected)
 
 **Approach**: Different import paths determine API version:
+
 ```python
 import parquetframe as pf        # Phase 1
 import parquetframe.v2 as pf     # Phase 2
 ```
 
 **Pros**:
+
 - Clear version selection
 - No breaking changes to existing code
 - Explicit opt-in to new API
 
 **Cons**:
+
 - "v2" naming persists (doesn't solve core problem)
 - New users may not discover v2
 - Dual maintenance continues
@@ -155,6 +167,7 @@ import parquetframe.v2 as pf     # Phase 2
 **Approach**: Make Phase 2 the default import while providing backward compatibility via `legacy` submodule.
 
 **Pros**:
+
 - Clear, single import path for new users
 - Best experience by default
 - Legacy support during transition
@@ -163,6 +176,7 @@ import parquetframe.v2 as pf     # Phase 2
 - Follows semantic versioning conventions
 
 **Cons**:
+
 - Breaking change requires major version bump
 - Existing code needs updates (with clear migration path)
 - Short-term documentation/support burden
@@ -244,6 +258,7 @@ else:
 ```
 
 **After (Phase 2):**
+
 ```python
 
 import parquetframe as pf
@@ -256,6 +271,7 @@ else:
 ```
 
 **Or Using Legacy (Transition):**
+
 ```python
 from parquetframe.legacy import ParquetFrame as pf
 # Phase 1 code continues working (with deprecation warning)
@@ -278,6 +294,7 @@ from parquetframe.legacy import ParquetFrame as pf
 ## Related Decisions
 
 This ADR builds on:
+
 - **ADR-0001**: Next-Generation Architecture for Phase 2
 - Relates to future ADRs about Phase 1 API removal (v2.0.0)
 

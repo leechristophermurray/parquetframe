@@ -6,11 +6,11 @@ ParquetFrame's Rust I/O fast-paths provide **5-10x performance improvements** ov
 
 ## Key Features
 
-*   **Footer-Only Parquet Reads**: Extract metadata (schema, row count, column statistics) instantly without loading any data, leading to 10-20x faster operations.
-*   **Parallel CSV Parsing**: Multi-threaded chunking and parsing of large CSV files, achieving 4-7x speedups.
-*   **Zero-Copy Arrow Integration**: Minimizes data movement between Rust and Python by leveraging Apache Arrow's in-memory columnar format.
-*   **Memory-Mapped I/O**: Efficiently handles very large files by mapping them directly into memory, reducing memory footprint.
-*   **Automatic Format Detection**: Intelligently detects file formats and routes to the appropriate fast-path for optimal performance.
+* **Footer-Only Parquet Reads**: Extract metadata (schema, row count, column statistics) instantly without loading any data, leading to 10-20x faster operations.
+* **Parallel CSV Parsing**: Multi-threaded chunking and parsing of large CSV files, achieving 4-7x speedups.
+* **Zero-Copy Arrow Integration**: Minimizes data movement between Rust and Python by leveraging Apache Arrow's in-memory columnar format.
+* **Memory-Mapped I/O**: Efficiently handles very large files by mapping them directly into memory, reducing memory footprint.
+* **Automatic Format Detection**: Intelligently detects file formats and routes to the appropriate fast-path for optimal performance.
 
 ## Parquet Fast-Path
 
@@ -557,13 +557,13 @@ graph TD
 
 ## Related Pages
 
-*   [Architecture](./architecture.md) - Overview of the Rust backend architecture.
-*   [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
-*   [Development Guide](./development.md) - Contributing to the Rust I/O codebase.
+* [Architecture](./architecture.md) - Overview of the Rust backend architecture.
+* [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
+* [Development Guide](./development.md) - Contributing to the Rust I/O codebase.
 
 ## References
 
-*   [Apache Parquet Format](https://parquet.apache.org/docs/file-format/)
-*   [Apache Arrow Rust](https://arrow.apache.org/rust/)
-*   [Rust CSV Crate](https://docs.rs/csv/)
-*   [Apache Avro Specification](https://avro.apache.org/docs/current/spec.html)
+* [Apache Parquet Format](https://parquet.apache.org/docs/file-format/)
+* [Apache Arrow Rust](https://arrow.apache.org/rust/)
+* [Rust CSV Crate](https://docs.rs/csv/)
+* [Apache Avro Specification](https://avro.apache.org/docs/current/spec.html)

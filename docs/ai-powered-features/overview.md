@@ -6,9 +6,9 @@
 
 ParquetFrame has evolved into a comprehensive data exploration platform that seamlessly integrates AI capabilities to simplify data analysis. This feature allows users to interact with their data using natural language, transforming complex questions into executable queries. The AI integration is built around:
 
-*   **DataContext**: A unified abstraction for various data sources (Parquet data lakes, SQL databases).
-*   **LLM Agent**: An intelligent agent that converts natural language questions into SQL queries.
-*   **Interactive CLI**: A rich REPL interface that provides an intuitive environment for AI-driven data exploration.
+* **DataContext**: A unified abstraction for various data sources (Parquet data lakes, SQL databases).
+* **LLM Agent**: An intelligent agent that converts natural language questions into SQL queries.
+* **Interactive CLI**: A rich REPL interface that provides an intuitive environment for AI-driven data exploration.
 
 ## Prerequisites
 
@@ -203,6 +203,7 @@ pframe interactive --db-uri "mysql+pymysql://user:password@localhost/orders"
 ```
 
 Example database session:
+
 ```
 pframe:database🤖> \list
 📋 Available Tables
@@ -437,21 +438,21 @@ agent = LLMAgent(max_retries=5)
 
 ### 1. Model Selection
 
-*   **`codellama`**: Generally recommended for optimal SQL generation and handling complex queries.
-*   **`llama3.2`**: A good general-purpose model suitable for a wide range of questions.
-*   **`llama2`**: A viable fallback option for systems with limited resources or specific compatibility needs.
+* **`codellama`**: Generally recommended for optimal SQL generation and handling complex queries.
+* **`llama3.2`**: A good general-purpose model suitable for a wide range of questions.
+* **`llama2`**: A viable fallback option for systems with limited resources or specific compatibility needs.
 
 ### 2. Query Optimization
 
-*   **Be Specific**: Use precise column names and table references in your questions (e.g., "show customer names and emails" instead of "show customer data").
-*   **Include Constraints**: Specify time ranges (e.g., "sales last month" vs. "recent sales") and filtering criteria.
-*   **Clarify Aggregations/Sorting**: Clearly state desired aggregations (e.g., "total sales") and sorting preferences (e.g., "top 10 by revenue").
+* **Be Specific**: Use precise column names and table references in your questions (e.g., "show customer names and emails" instead of "show customer data").
+* **Include Constraints**: Specify time ranges (e.g., "sales last month" vs. "recent sales") and filtering criteria.
+* **Clarify Aggregations/Sorting**: Clearly state desired aggregations (e.g., "total sales") and sorting preferences (e.g., "top 10 by revenue").
 
 ### 3. Schema Design
 
-*   **Descriptive Naming**: Use clear and descriptive names for tables and columns.
-*   **Comments**: Include comments in your `CREATE TABLE` statements (if applicable) to provide additional context for the LLM.
-*   **Normalization**: A well-normalized schema generally leads to better query generation.
+* **Descriptive Naming**: Use clear and descriptive names for tables and columns.
+* **Comments**: Include comments in your `CREATE TABLE` statements (if applicable) to provide additional context for the LLM.
+* **Normalization**: A well-normalized schema generally leads to better query generation.
 
 ### 4. Error Handling
 
@@ -472,17 +473,17 @@ if result.failed:
 
 ### Common Issues
 
-1.  **"AI functionality not available"**
-    *   **Solution**: Ensure Ollama is installed, running (`ollama serve`), and you have pulled at least one model (`ollama pull llama3.2`). Also, verify ParquetFrame was installed with `[ai]` extra (`pip install parquetframe[ai,cli]`).
+1. **"AI functionality not available"**
+    * **Solution**: Ensure Ollama is installed, running (`ollama serve`), and you have pulled at least one model (`ollama pull llama3.2`). Also, verify ParquetFrame was installed with `[ai]` extra (`pip install parquetframe[ai,cli]`).
 
-2.  **"No tables found"**
-    *   **Solution**: Check file permissions for your data directory. Verify that Parquet files are valid. In the CLI, use `\list` to see discovered tables.
+2. **"No tables found"**
+    * **Solution**: Check file permissions for your data directory. Verify that Parquet files are valid. In the CLI, use `\list` to see discovered tables.
 
-3.  **"Database connection failed"**
-    *   **Solution**: Verify your database connection string format. Check credentials and network access. Test the connection with a simple client (e.g., `psql`, `sqlite3`) first.
+3. **"Database connection failed"**
+    * **Solution**: Verify your database connection string format. Check credentials and network access. Test the connection with a simple client (e.g., `psql`, `sqlite3`) first.
 
-4.  **"Query execution failed"**
-    *   **Solution**: Use `\describe table_name` in the CLI to verify the schema. Examine the generated SQL for syntax errors. Enable debug logging for more detailed error messages.
+4. **"Query execution failed"**
+    * **Solution**: Use `\describe table_name` in the CLI to verify the schema. Examine the generated SQL for syntax errors. Enable debug logging for more detailed error messages.
 
 ### Debug Mode
 

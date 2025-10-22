@@ -6,12 +6,12 @@ ParquetFrame's Rust-powered workflow engine provides **10-15x performance improv
 
 ## Key Features
 
-*   **Parallel DAG Execution**: Independent workflow steps are executed concurrently, maximizing throughput and minimizing overall execution time.
-*   **Resource-Aware Scheduling**: Utilizes separate CPU and I/O thread pools to efficiently manage different types of tasks, preventing bottlenecks.
-*   **Retry Logic**: Configurable retry policies with exponential backoff ensure resilience against transient failures.
-*   **Cancellation Support**: Provides mechanisms for graceful shutdown and cleanup of ongoing workflows.
-*   **Progress Tracking**: Real-time callbacks allow for monitoring workflow execution status and progress.
-*   **Zero Overhead**: Designed for minimal scheduling overhead (typically 10-50μs per step), ensuring that the benefits of parallelism are not negated by scheduling costs.
+* **Parallel DAG Execution**: Independent workflow steps are executed concurrently, maximizing throughput and minimizing overall execution time.
+* **Resource-Aware Scheduling**: Utilizes separate CPU and I/O thread pools to efficiently manage different types of tasks, preventing bottlenecks.
+* **Retry Logic**: Configurable retry policies with exponential backoff ensure resilience against transient failures.
+* **Cancellation Support**: Provides mechanisms for graceful shutdown and cleanup of ongoing workflows.
+* **Progress Tracking**: Real-time callbacks allow for monitoring workflow execution status and progress.
+* **Zero Overhead**: Designed for minimal scheduling overhead (typically 10-50μs per step), ensuring that the benefits of parallelism are not negated by scheduling costs.
 
 ## Architecture
 
@@ -211,23 +211,24 @@ pf.set_config(
 ## Implementation Status
 
 ✅ **Complete and Integrated:** The Rust workflow engine is fully implemented and integrated into ParquetFrame's v2.0.0 release. It includes:
-*   Sequential and parallel DAG execution.
-*   Robust retry logic with exponential backoff.
-*   Comprehensive cancellation support with graceful shutdown.
-*   Detailed progress tracking with event callbacks.
-*   Resource hints (CPU/IO/Memory/Network) for optimized scheduling.
-*   Efficient thread pool management (CPU/IO pools).
-*   Extensive test coverage: 167 tests passing (126 unit + 11 integration + 30 doc).
-*   30 Criterion benchmarks validating performance.
+
+* Sequential and parallel DAG execution.
+* Robust retry logic with exponential backoff.
+* Comprehensive cancellation support with graceful shutdown.
+* Detailed progress tracking with event callbacks.
+* Resource hints (CPU/IO/Memory/Network) for optimized scheduling.
+* Efficient thread pool management (CPU/IO pools).
+* Extensive test coverage: 167 tests passing (126 unit + 11 integration + 30 doc).
+* 30 Criterion benchmarks validating performance.
 
 ## Related Pages
 
-*   [Architecture](./architecture.md) - Overview of the Rust backend architecture.
-*   [I/O Fast-Paths](./io-fastpaths.md) - Details on I/O acceleration, often used within workflows.
-*   [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
-*   [YAML Workflows](../yaml-workflows/index.md) - Comprehensive documentation on defining and managing workflows.
+* [Architecture](./architecture.md) - Overview of the Rust backend architecture.
+* [I/O Fast-Paths](./io-fastpaths.md) - Details on I/O acceleration, often used within workflows.
+* [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
+* [YAML Workflows](../yaml-workflows/index.md) - Comprehensive documentation on defining and managing workflows.
 
 ## References
 
-*   Rust implementation source: `crates/pf-workflow-core/`
-*   Test suite: 167 tests passing.
+* Rust implementation source: `crates/pf-workflow-core/`
+* Test suite: 167 tests passing.

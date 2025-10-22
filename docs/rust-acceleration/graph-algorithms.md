@@ -9,24 +9,28 @@ ParquetFrame's Rust-powered graph algorithms provide **5-25x speedups** for fund
 ParquetFrame's `pf-graph-core` Rust crate currently implements the following high-performance graph algorithms:
 
 ### 1. Breadth-First Search (BFS) & Depth-First Search (DFS)
-*   **Speedup**: Up to **17.8x** (for 1M nodes) compared to pure Python implementations.
-*   **Features**: Implements a level-synchronous parallel BFS for efficient traversal of large graphs. Utilizes atomic operations for visited node tracking.
-*   **Rust Implementation**: Located in `crates/pf-graph-core/src/traversal.rs`.
+
+* **Speedup**: Up to **17.8x** (for 1M nodes) compared to pure Python implementations.
+* **Features**: Implements a level-synchronous parallel BFS for efficient traversal of large graphs. Utilizes atomic operations for visited node tracking.
+* **Rust Implementation**: Located in `crates/pf-graph-core/src/traversal.rs`.
 
 ### 2. PageRank
-*   **Speedup**: Up to **25.0x** (for 1M nodes) for calculating node importance.
-*   **Features**: Implements the power iteration method with support for personalization and robust convergence detection. Optimized for sparse graph structures.
-*   **Rust Implementation**: Located in `crates/pf-graph-core/src/pagerank.rs`.
+
+* **Speedup**: Up to **25.0x** (for 1M nodes) for calculating node importance.
+* **Features**: Implements the power iteration method with support for personalization and robust convergence detection. Optimized for sparse graph structures.
+* **Rust Implementation**: Located in `crates/pf-graph-core/src/pagerank.rs`.
 
 ### 3. Dijkstra's Shortest Path
-*   **Speedup**: Up to **20.0x** (for 1M nodes) for finding the shortest paths in weighted graphs.
-*   **Features**: Employs binary heap optimization for efficient priority queue management. Supports single-source and multi-source shortest path calculations.
-*   **Rust Implementation**: Located in `crates/pf-graph-core/src/dijkstra.rs`.
+
+* **Speedup**: Up to **20.0x** (for 1M nodes) for finding the shortest paths in weighted graphs.
+* **Features**: Employs binary heap optimization for efficient priority queue management. Supports single-source and multi-source shortest path calculations.
+* **Rust Implementation**: Located in `crates/pf-graph-core/src/dijkstra.rs`.
 
 ### 4. Connected Components
-*   **Speedup**: Up to **18.1x** (for 1M nodes) for identifying connected subgraphs.
-*   **Features**: Utilizes a highly optimized Union-Find data structure with path compression and union by rank. Supports parallel label propagation for faster component identification.
-*   **Rust Implementation**: Located in `crates/pf-graph-core/src/components.rs`.
+
+* **Speedup**: Up to **18.1x** (for 1M nodes) for identifying connected subgraphs.
+* **Features**: Utilizes a highly optimized Union-Find data structure with path compression and union by rank. Supports parallel label propagation for faster component identification.
+* **Rust Implementation**: Located in `crates/pf-graph-core/src/components.rs`.
 
 ## Graph Representation (CSR/CSC)
 
@@ -102,20 +106,20 @@ The following benchmarks demonstrate the significant performance gains achieved 
 
 ## Implementation Status
 
-*   **All 4 algorithms** (BFS, PageRank, Dijkstra, Connected Components) are fully implemented in Rust.
-*   **PyO3 bindings** are complete, providing a seamless interface to Python.
-*   **Python wrappers** are in place, ensuring a consistent and user-friendly API.
-*   **Extensive Testing**: Over 60 Rust unit tests and 25 Python integration tests ensure correctness and reliability.
-*   **Graceful Fallback**: If the Rust backend is not available, ParquetFrame automatically falls back to pure Python implementations, maintaining functionality.
+* **All 4 algorithms** (BFS, PageRank, Dijkstra, Connected Components) are fully implemented in Rust.
+* **PyO3 bindings** are complete, providing a seamless interface to Python.
+* **Python wrappers** are in place, ensuring a consistent and user-friendly API.
+* **Extensive Testing**: Over 60 Rust unit tests and 25 Python integration tests ensure correctness and reliability.
+* **Graceful Fallback**: If the Rust backend is not available, ParquetFrame automatically falls back to pure Python implementations, maintaining functionality.
 
 ## Related Pages
 
-*   [Architecture](./architecture.md) - Deep dive into the overall Rust backend design.
-*   [Graph Processing](../graph-processing/index.md) - Comprehensive documentation on ParquetFrame's graph system.
-*   [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
-*   [Benchmark Results](./benchmark_results.md) - Detailed performance comparisons and methodology.
+* [Architecture](./architecture.md) - Deep dive into the overall Rust backend design.
+* [Graph Processing](../graph-processing/index.md) - Comprehensive documentation on ParquetFrame's graph system.
+* [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
+* [Benchmark Results](./benchmark_results.md) - Detailed performance comparisons and methodology.
 
 ## References
 
-*   Rust implementation source: `crates/pf-graph-core/src/`
-*   Total Rust code for graph algorithms: ~1,200 lines, ~85 tests.
+* Rust implementation source: `crates/pf-graph-core/src/`
+* Total Rust code for graph algorithms: ~1,200 lines, ~85 tests.
