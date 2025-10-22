@@ -15,7 +15,7 @@ Features:
 import numpy as np
 
 try:
-    import _rustic
+    from parquetframe import _rustic
 
     RUST_GRAPH_AVAILABLE = _rustic.rust_available()
 except ImportError:

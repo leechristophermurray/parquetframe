@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import _rustic
+    from parquetframe import _rustic
 
     RUST_IO_AVAILABLE = _rustic.rust_available()
 except ImportError:

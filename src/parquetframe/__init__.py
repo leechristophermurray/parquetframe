@@ -187,7 +187,48 @@ def read(
     return _read_v2(file, engine=engine, **kwargs)
 
 
-__version__ = "1.0.1"
+# Rust backend availability
+def rust_available() -> bool:
+    """Check if Rust backend is available.
+
+    Returns:
+        True if the Rust backend (_rustic module) is successfully loaded.
+
+    Example:
+        >>> import parquetframe as pf
+        >>> if pf.rust_available():
+        ...     print("Rust acceleration enabled")
+        ... else:
+        ...     print("Using Python fallback")
+    """
+    try:
+        from parquetframe import _rustic
+
+        return _rustic.rust_available()
+    except ImportError:
+        return False
+
+
+def rust_version() -> str | None:
+    """Get the version of the Rust backend.
+
+    Returns:
+        Version string if Rust backend is available, None otherwise.
+
+    Example:
+        >>> import parquetframe as pf
+        >>> if pf.rust_available():
+        ...     print(f"Rust backend version: {pf.rust_version()}")
+    """
+    try:
+        from parquetframe import _rustic
+
+        return _rustic.rust_version()
+    except ImportError:
+        return None
+
+
+__version__ = "2.0.0a5"
 __all__ = [
     # Main Phase 2 API
     "DataFrameProxy",
@@ -207,6 +248,9 @@ __all__ = [
     "set_config",
     "reset_config",
     "config_context",
+    # Rust backend
+    "rust_available",
+    "rust_version",
     # Submodules
     "graph",
     "permissions",

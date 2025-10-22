@@ -11,7 +11,7 @@ Full implementation connects to pf-workflow-core Rust crate.
 from typing import Any
 
 try:
-    import _rustic
+    from parquetframe import _rustic
 
     RUST_WORKFLOW_AVAILABLE = _rustic.rust_available()
 except ImportError:
