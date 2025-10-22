@@ -74,8 +74,6 @@ nav:
 
   - Core Features:
       - Overview: core-features/index.md
-      - Basic Usage: core-features/basic-usage.md
-      - Advanced Usage: core-features/advanced-usage.md
       - Multi-Engine DataFrame: core-features/multi-engine.md
       - File Format Support: core-features/file-formats.md
 
@@ -85,8 +83,6 @@ nav:
       - I/O Fast-Paths: rust-acceleration/io-fastpaths.md
       - Graph Algorithms: rust-acceleration/graph-algorithms.md
       - Workflow Engine: rust-acceleration/workflow-engine.md
-      - Performance Guide: rust-acceleration/performance.md
-      - Development Guide: rust-acceleration/development.md
 
   - Graph Processing:
       - Overview: graph-processing/index.md
@@ -115,25 +111,25 @@ nav:
       - Examples: yaml-workflows/examples.md
 
   - SQL Support:
-      - Overview: sql-support/overview.md
-      - Cookbook: sql-support/cookbook.md
+      - Overview: sql-support/index.md
       - DuckDB Integration: sql-support/duckdb.md
       - Database Connections: sql-support/databases.md
+      - Cookbook: sql-support/cookbook.md
 
   - BioFrame Integration:
-      - Overview: bioframe-integration/overview.md
+      - Overview: bioframe-integration/index.md
       - Genomic Operations: bioframe-integration/operations.md
       - Parallel Processing: bioframe-integration/parallel.md
 
   - AI-Powered Features:
-      - Overview: ai-powered-features/overview.md
+      - Overview: ai-powered-features/index.md
       - Usage Guide: ai-powered-features/usage-guide.md
       - Natural Language Queries: ai-powered-features/nl-queries.md
       - Setup: ai-powered-features/setup.md
       - Prompts: ai-powered-features/prompts.md
 
   - CLI Interface:
-      - Overview: cli-interface/overview.md
+      - Overview: cli-interface/index.md
       - Installation: cli-interface/installation.md
       - Commands: cli-interface/commands.md
       - Interactive Mode: cli-interface/interactive.md
