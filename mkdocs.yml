@@ -1,5 +1,5 @@
 site_name: ParquetFrame
-site_description: The ultimate Python data processing framework with AI-powered exploration, intelligent backend switching, and advanced workflow orchestration
+site_description: High-performance DataFrame library with Rust acceleration for data science and analytics
 site_author: ParquetFrame Contributors
 site_url: https://leechristophermurray.github.io/parquetframe/
 repo_url: https://github.com/leechristophermurray/parquetframe
@@ -44,6 +44,7 @@ theme:
     - content.tabs.link
     - content.code.copy
     - content.code.annotate
+    - toc.integrate
   icon:
     repo: fontawesome/brands/github
 
@@ -65,89 +66,124 @@ plugins:
 
 nav:
   - Home: index.md
+
   - Getting Started:
-    - Installation: installation.md
-    - Quick Start (Phase 2): quickstart.md
-    - First Steps: first-steps.md
-  - Phase 2 Guide:
-    - Overview: phase2/README.md
-    - Migration from Phase 1: phase2/MIGRATION_GUIDE.md
-    - User Guide: phase2/USER_GUIDE.md
-  - Examples & Tutorials:
-    - Todo/Kanban Walkthrough: tutorials/todo-kanban-walkthrough.md
-    - Data Exploration: tutorials/exploration.md
-    - Large Dataset Processing: tutorials/large-data.md
-    - Integration Guide: tutorials/integration.md
-    - Performance Optimization: tutorials/performance.md
-    - ML Pipeline Integration: tutorials/ml-pipeline.md
-    - Examples Gallery: examples.md
-  - Advanced Features:
-    - Performance Tips: performance.md
-    - File Formats: formats.md
-    - Analytics & Statistics: analytics.md
-    - Time Series Analysis: timeseries.md
-    - AI Features:
-      - AI Overview: ai-features.md
-      - AI Usage Guide: AI_USAGE.md
-      - Natural Language Queries: ai/queries.md
-      - Local LLM Setup: ai/setup.md
-      - Prompt Engineering: ai/prompts.md
-    - SQL & Database:
-      - SQL Support: sql/index.md
-      - SQL Cookbook: sql/cookbook.md
-      - DuckDB Integration: sql/duckdb.md
-      - Database Connections: sql/databases.md
-    - Graph Processing:
-      - Graph Overview: graph/index.md
-      - Graph CLI: graph/cli.md
-      - Graph Tutorial: graph/tutorial.md
-    - Genomics & BioFrame:
-      - BioFrame Integration: bio/index.md
-      - Genomic Operations: bio/operations.md
-      - Parallel Processing: bio/parallel.md
-    - Permissions System:
-      - Permissions Overview: permissions/index.md
-      - CLI Reference: permissions/cli-reference.md
-  - CLI Guide:
-    - CLI Overview: cli/index.md
-    - CLI Installation: cli/installation.md
-    - Basic Commands: cli/commands.md
-    - Interactive Mode: cli/interactive.md
-    - Batch Processing: cli/batch.md
-    - Script Generation: cli/scripts.md
-    - CLI Examples: cli/examples.md
-  - Workflow System:
-    - Workflow Overview: workflows/index.md
-    - Step Types: workflows/step-types.md
-    - YAML Syntax: workflows/yaml-syntax.md
-    - CLI Commands: workflows/cli-commands.md
-    - History & Analytics: workflows/history-analytics.md
-    - DAG Visualization: workflows/visualization.md
-    - Advanced Workflows: workflows/advanced.md
-    - Workflow Examples: workflows/examples.md
-  - API Reference:
-    - Core API: api/core.md
-    - Entity Framework API: api/entities.md
-    - Permissions API: api/permissions.md
-    - CLI API: api/cli.md
-  - Legacy Documentation:
-    - Phase 1 Overview: legacy/README.md
-    - Basic Usage (Phase 1): legacy/legacy-basic-usage.md
-    - Backend Selection (Phase 1): legacy/legacy-backends.md
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - First Steps: getting-started/first-steps.md
+
+  - Core Features:
+      - Overview: core-features/index.md
+      - Basic Usage: core-features/basic-usage.md
+      - Advanced Usage: core-features/advanced-usage.md
+      - Multi-Engine DataFrame: core-features/multi-engine.md
+      - File Format Support: core-features/file-formats.md
+
+  - Rust Acceleration:
+      - Overview: rust-acceleration/index.md
+      - Architecture: rust-acceleration/architecture.md
+      - I/O Fast-Paths: rust-acceleration/io-fastpaths.md
+      - Graph Algorithms: rust-acceleration/graph-algorithms.md
+      - Workflow Engine: rust-acceleration/workflow-engine.md
+      - Performance Guide: rust-acceleration/performance.md
+      - Development Guide: rust-acceleration/development.md
+
+  - Graph Processing:
+      - Overview: graph-processing/index.md
+      - GraphAr Format: graph-processing/graphar-format.md
+      - CLI Usage: graph-processing/cli-usage.md
+      - Tutorial: graph-processing/tutorial.md
+      - GraphAr Migration: graph-processing/graphar-migration.md
+
+  - Permissions System:
+      - Overview: permissions-system/index.md
+      - CLI Reference: permissions-system/cli-reference.md
+      - GraphAr Schema: permissions-system/graphar-schema.md
+      - Schema Specification: permissions-system/schema-spec.md
+
+  - Entity Framework:
+      - Overview: entity-framework/index.md
+
+  - YAML Workflows:
+      - Overview: yaml-workflows/index.md
+      - Step Types: yaml-workflows/step-types.md
+      - YAML Syntax: yaml-workflows/yaml-syntax.md
+      - CLI Commands: yaml-workflows/cli-commands.md
+      - History & Analytics: yaml-workflows/history-analytics.md
+      - Visualization: yaml-workflows/visualization.md
+      - Advanced Workflows: yaml-workflows/advanced.md
+      - Examples: yaml-workflows/examples.md
+
+  - SQL Support:
+      - Overview: sql-support/overview.md
+      - Cookbook: sql-support/cookbook.md
+      - DuckDB Integration: sql-support/duckdb.md
+      - Database Connections: sql-support/databases.md
+
+  - BioFrame Integration:
+      - Overview: bioframe-integration/overview.md
+      - Genomic Operations: bioframe-integration/operations.md
+      - Parallel Processing: bioframe-integration/parallel.md
+
+  - AI-Powered Features:
+      - Overview: ai-powered-features/overview.md
+      - Usage Guide: ai-powered-features/usage-guide.md
+      - Natural Language Queries: ai-powered-features/nl-queries.md
+      - Setup: ai-powered-features/setup.md
+      - Prompts: ai-powered-features/prompts.md
+
+  - CLI Interface:
+      - Overview: cli-interface/overview.md
+      - Installation: cli-interface/installation.md
+      - Commands: cli-interface/commands.md
+      - Interactive Mode: cli-interface/interactive.md
+      - Batch Processing: cli-interface/batch.md
+      - Scripts: cli-interface/scripts.md
+      - Examples: cli-interface/examples.md
+
+  - Analytics & Statistics:
+      - Overview: analytics-statistics/index.md
+      - Statistics: analytics-statistics/statistics.md
+      - Time Series: analytics-statistics/timeseries.md
+      - Benchmarks: analytics-statistics/benchmarks.md
+
+  - Documentation & Examples:
+      - Overview: documentation-examples/index.md
+      - Data Exploration: documentation-examples/data-exploration.md
+      - Integration Guide: documentation-examples/integration-guide.md
+      - Large Datasets: documentation-examples/large-datasets.md
+      - ML Pipelines: documentation-examples/ml-pipelines.md
+      - Performance Optimization: documentation-examples/performance-optimization.md
+      - Todo/Kanban Example: documentation-examples/todo-kanban-example.md
+      - Examples Gallery: documentation-examples/examples-gallery.md
+      - API - Core: documentation-examples/api-core.md
+      - API - Entities: documentation-examples/api-entities.md
+      - API - Permissions: documentation-examples/api-permissions.md
+      - API - CLI: documentation-examples/api-cli.md
+
+  - Testing & Quality:
+      - Overview: testing-quality/index.md
+
+  - Legacy & Migration:
+      - Overview: legacy-migration/index.md
+      - Phase 1 Overview: legacy-migration/phase1-overview.md
+      - Phase 1 Usage: legacy-migration/phase1-usage.md
+      - Phase 1 Backends: legacy-migration/phase1-backends.md
+      - Phase 1 to Phase 2: legacy-migration/phase1-to-phase2.md
+      - Phase 2 Overview: legacy-migration/phase2-overview.md
+      - Phase 2 User Guide: legacy-migration/phase2-user-guide.md
+      - Migration Guide: legacy-migration/migration-guide.md
+      - Changelog: legacy-migration/changelog.md
+
   - Development:
-    - Contributing: contributing.md
-    - Release Notes: changelog.md
-    - Benchmarks: benchmarks.md
-    - Architecture: architecture.md
-    - Architecture Decisions:
-      - Phase 2 Architecture: adr/0001-next-generation-architecture.md
-      - Default API Change: adr/0002-make-phase2-default-api.md
-    - Issues:
-      - Phase 2 Test Migration: issues/phase2-test-migration.md
-  - Project Assessment:
-    - Comprehensive Report: reports/parquetframe_assessment.md
-    - Feature Matrix: feature_implementation_matrix.md
-    - Architecture Diagram: architecture_diagram.md
+      - Contributing: contributing.md
+      - Performance: performance.md
+      - Architecture: architecture.md
+      - Feature Matrix: feature_implementation_matrix.md
+      - ADRs:
+        - Next Gen Architecture: adr/0001-next-generation-architecture.md
+        - Default API Change: adr/0002-make-phase2-default-api.md
+        - Rust First Integration: adr/0003-rust-first-integration.md
 
 markdown_extensions:
   - abbr
