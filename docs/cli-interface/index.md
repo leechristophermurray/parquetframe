@@ -1,14 +1,12 @@
-# [Category Name]
+# cli interface
+
+[Documentation to be expanded]
 
 ## Overview
-[To be written]
 
-## Features
-- Feature 1
-- Feature 2
-
-## Pages in This Section
-[Links to be added]
+This section covers cli interface features and capabilities.
 
 ## Related Categories
-[Links to be added]
+
+- **[Core Features](../core-features/index.md)**
+- **[Getting Started](../getting-started/index.md)**
