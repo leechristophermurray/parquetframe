@@ -8,31 +8,31 @@ ParquetFrame's AI query system uses local Large Language Models (via Ollama) to 
 
 ## Key Features
 
-- **Local LLM Inference**: Privacy-preserving query generation using Ollama
-- **Self-Correction**: Automatic error detection and query refinement
-- **Multi-Step Reasoning**: Handles complex schemas with intelligent table selection
-- **Context Awareness**: Understands your data schema for accurate queries
-- **Interactive Integration**: Seamless CLI and programmatic usage
+*   **Local LLM Inference**: Privacy-preserving query generation using Ollama, ensuring your data remains on your machine.
+*   **Self-Correction**: Automatic error detection and query refinement, where the LLM attempts to fix failed queries based on execution feedback.
+*   **Multi-Step Reasoning**: Handles complex schemas by intelligently selecting relevant tables before generating the final query, improving accuracy and reducing context size.
+*   **Context Awareness**: Understands your data schema (table and column names, data types) to generate accurate and relevant queries.
+*   **Interactive Integration**: Seamlessly integrated into both the CLI and programmatic Python API for flexible usage.
 
 ## Quick Start
 
 ### Prerequisites
 
-1. Install Ollama and pull a model:
-   ```bash
-   # Install Ollama
-   curl -fsSL https://ollama.ai/install.sh | sh
+1.  **Install Ollama and pull a model**:
+    ```bash
+    # Install Ollama (follow instructions for your OS)
+    curl -fsSL https://ollama.ai/install.sh | sh
 
-   # Pull a model
-   ollama pull llama3.2  # or codellama for better SQL
-   ```
+    # Pull a model (e.g., llama3.2 for general use, or codellama for better SQL generation)
+    ollama pull llama3.2
+    ```
 
-2. Install ParquetFrame with AI support:
-   ```bash
-   pip install parquetframe[ai]
-   ```
+2.  **Install ParquetFrame with AI support**:
+    ```bash
+    pip install parquetframe[ai]
+    ```
 
-### Basic Usage
+### Basic Usage (Python API)
 
 ```python
 import asyncio
@@ -40,26 +40,29 @@ import parquetframe as pf
 from parquetframe.ai import LLMAgent
 
 async def analyze_sales_data():
-    # Load your data
-    sales = pf.read("sales_data.parquet")
+    # Load your data (ParquetFrame automatically detects format and backend)
+    sales_df = pf.read("sales_data.parquet")
 
-    # Create AI agent
+    # Create an AI agent instance
     agent = LLMAgent(model_name="llama3.2")
 
     # Ask questions in natural language
+    question = "What are the top 5 customers by total sales amount?"
+    print(f"Question: {question}")
+
     result = await agent.generate_query(
-        "What are the top 5 customers by total sales amount?",
-        sales
+        question,
+        sales_df # Pass the DataFrame as context
     )
 
     if result.success:
         print(f"Generated SQL: {result.query}")
-        print(f"Results:\n{result.result}")
+        print(f"Results:\n{result.result.head()}") # Display top rows of the result
         print(f"Execution time: {result.execution_time_ms:.2f}ms")
     else:
         print(f"Query failed: {result.error}")
 
-# Run the analysis
+# Run the asynchronous analysis
 asyncio.run(analyze_sales_data())
 ```
 
@@ -104,7 +107,7 @@ result = await agent.generate_query(
 
 # Advanced filtering
 result = await agent.generate_query(
-    "Find customers who haven't ordered in the last 6 months but had orders before that",
+    "Find customers who haven\'t ordered in the last 6 months but had orders before that",
     customer_orders_df
 )
 ```
@@ -135,40 +138,37 @@ result = await agent.generate_query(
 
 ### Multi-Step Reasoning
 
-For complex databases with many tables, enable multi-step reasoning:
+For complex databases with many tables or intricate schemas, enabling multi-step reasoning can significantly improve the LLM\'s ability to generate accurate queries.
 
 ```python
-# Better for complex schemas
 agent = LLMAgent(
     model_name="llama3.2",
-    use_multi_step=True,  # Enables table selection first
-    max_retries=3
+    use_multi_step=True,  # Enables multi-step reasoning
+    max_retries=3         # Allows for self-correction in multiple steps
 )
 
-# The agent will:
-# 1. First identify relevant tables for the question
-# 2. Generate focused SQL using only those tables
+# When `use_multi_step` is enabled, the agent will:
+# 1. First, identify the most relevant tables for the natural language question.
+# 2. Then, generate the SQL query using only the context of those selected tables.
+# This approach reduces the cognitive load on the LLM and improves accuracy.
 result = await agent.generate_query(
     "Show me customer lifetime value by acquisition channel",
-    data_context
+    data_context # Pass a DataContext object for multi-table queries
 )
 ```
 
 ### Self-Correction
 
-The AI agent automatically fixes failed queries:
+ParquetFrame\'s LLM agent is designed to be resilient. If a generated query fails upon execution, the error message is fed back to the LLM, which then attempts to generate a corrected query.
 
 ```python
 agent = LLMAgent(
-    model_name="codellama",  # Better for SQL generation
-    max_retries=3,          # Try up to 3 corrections
-    temperature=0.1         # More deterministic
+    model_name="codellama",  # Often better for SQL generation and self-correction
+    max_retries=3,          # The agent will try up to 3 corrections
+    temperature=0.1         # Lower temperature for more deterministic corrections
 )
 
-# If initial query fails:
-# 1. Error message is analyzed
-# 2. Corrected query is generated
-# 3. Process repeats up to max_retries
+# If the initial query fails, the agent will attempt to self-correct.
 result = await agent.generate_query(
     "Find the correlation between customer age and purchase frequency",
     customer_data
@@ -179,12 +179,12 @@ print(f"Query succeeded after {result.attempts} attempts")
 
 ### Custom Examples
 
-Improve performance with domain-specific examples:
+Improve the LLM agent\'s performance and accuracy for domain-specific queries by providing custom examples (question-SQL pairs). This acts as a form of few-shot learning.
 
 ```python
 agent = LLMAgent()
 
-# Add examples for better performance
+# Add custom examples for better performance on specific query patterns
 agent.add_custom_example(
     question="show me high value customers",
     sql="SELECT customer_id, total_spent FROM customers WHERE total_spent > 10000 ORDER BY total_spent DESC"
@@ -198,13 +198,13 @@ agent.add_custom_example(
 
 ## Interactive CLI Usage
 
-Use natural language queries directly in the interactive CLI:
+Use natural language queries directly in the interactive CLI (`pframe interactive`) for a seamless data exploration experience.
 
 ```bash
-# Start interactive mode with AI
+# Start interactive mode with AI enabled, pointing to your data
 pframe interactive sales_data.parquet --ai
 
-# In the interactive session:
+# In the interactive session, use the \ai command:
 pframe:parquet🤖> \ai what were the best selling products last quarter?
 
 🤖 Processing: what were the best selling products last quarter?
@@ -219,69 +219,76 @@ LIMIT 10
 
 🚀 Execute this query? [Y/n]: y
 
-# Results displayed automatically
+# Results will be displayed automatically in a formatted table.
 ```
 
 ## Model Selection
 
 ### Recommended Models
 
-- **codellama**: Best for SQL generation and complex queries
-- **llama3.2**: Good general-purpose model with strong reasoning
-- **llama2**: Reliable fallback for older systems
+*   **`codellama`**: Generally recommended for optimal SQL generation and handling complex queries due to its code-focused training.
+*   **`llama3.2`**: A good general-purpose model suitable for a wide range of questions, offering strong reasoning capabilities.
+*   **`llama2`**: A reliable fallback option for systems with limited resources or specific compatibility needs.
 
 ```python
-# Model-specific configurations
-sql_agent = LLMAgent(model_name="codellama")    # Best for SQL
-general_agent = LLMAgent(model_name="llama3.2") # General purpose
+# You can specify the model when initializing the agent
+sql_agent = LLMAgent(model_name="codellama")
+general_agent = LLMAgent(model_name="llama3.2")
 
-# Check available models
+# Check available models from your Ollama instance
 available_models = agent.get_available_models()
 print("Available models:", available_models)
 ```
 
 ### Performance Tuning
 
+Adjust LLM parameters to balance performance, creativity, and accuracy:
+
 ```python
-# Faster, more deterministic (recommended for production)
+# For faster, more deterministic (less creative) SQL generation, recommended for production
 agent = LLMAgent(
-    temperature=0.0,        # Deterministic output
-    use_multi_step=False,   # Skip for simple schemas
-    max_retries=1          # Faster execution
+    temperature=0.0,        # Lower temperature for more predictable output
+    use_multi_step=False,   # Disable for simpler schemas to reduce latency
+    max_retries=1           # Fewer retries for faster execution
 )
 
-# More creative, potentially better results (for exploration)
+# For more creative, potentially better results (for exploration or complex, ambiguous questions)
 agent = LLMAgent(
-    temperature=0.3,        # More creative
-    max_retries=5,         # More correction attempts
-    use_multi_step=True    # Better for complex queries
+    temperature=0.3,        # Higher temperature for more diverse output
+    max_retries=5,          # More correction attempts for resilience
+    use_multi_step=True     # Enable for complex queries involving multiple tables
 )
 ```
 
 ## Integration with DataContext
 
-For advanced data source management:
+For advanced data source management, the `LLMAgent` integrates seamlessly with ParquetFrame\'s `DataContext` system. This allows the agent to understand the full schema context of various data sources (Parquet files, databases) and generate more accurate queries.
 
 ```python
+import asyncio
 from parquetframe.datacontext import DataContextFactory
+from parquetframe.ai import LLMAgent
 
 async def advanced_ai_analysis():
-    # Connect to data source (parquet files or database)
+    # Connect to a data source (e.g., a directory of Parquet files or a database URI)
     context = DataContextFactory.create_from_path("./sales_data/")
     await context.initialize()
 
-    # Use with AI agent
+    # Initialize AI agent
     agent = LLMAgent(model_name="llama3.2")
 
-    # Agent understands the full schema context
+    # The agent now understands the full schema context provided by the DataContext
+    question = "What\'s the correlation between customer demographics and purchase behavior?"
     result = await agent.generate_query(
-        "What's the correlation between customer demographics and purchase behavior?",
-        context
+        question,
+        context # Pass the DataContext object
     )
 
     if result.success:
         print(f"Found insights in {result.execution_time_ms:.2f}ms")
-        display(result.result)
+        # display(result.result) # Uncomment to display results
+    else:
+        print(f"Query failed: {result.error}")
 
     context.close()
 
@@ -292,33 +299,36 @@ asyncio.run(advanced_ai_analysis())
 
 ### 1. Be Specific in Questions
 
-✅ **Good**: "Show me customers who spent more than $1000 last month"
-❌ **Vague**: "Show me good customers"
+*   ✅ **Good**: "Show me customers who spent more than $1000 last month"
+*   ❌ **Vague**: "Show me good customers"
 
 ### 2. Include Time Contexts
 
-✅ **Good**: "What were the top products by revenue in Q3 2024?"
-❌ **Unclear**: "What are the top products?"
+*   ✅ **Good**: "What were the top products by revenue in Q3 2024?"
+*   ❌ **Unclear**: "What are the top products?"
 
 ### 3. Specify Metrics Clearly
 
-✅ **Good**: "Calculate average order value by customer segment"
-❌ **Ambiguous**: "Show me customer performance"
+*   ✅ **Good**: "Calculate average order value by customer segment"
+*   ❌ **Ambiguous**: "Show me customer performance"
 
 ### 4. Use Domain Terms Consistently
 
+If your data uses specific terminology, use those terms in your natural language queries. The LLM agent will learn from the provided schema and examples.
+
 ```python
-# If your data uses specific terms, use them in queries
+# Example: If your CRM data uses 'marketing_channel'
 result = await agent.generate_query(
-    "Show me the conversion rate from leads to customers by marketing channel",
-    crm_data  # Agent learns your schema and terminology
+    "Show me the conversion rate from leads to customers by marketing_channel",
+    crm_data
 )
 ```
 
 ### 5. Validate Results
 
+Always review the generated SQL and the resulting DataFrame, especially for complex queries, to ensure they align with your intent.
+
 ```python
-# Always check the generated SQL for complex queries
 result = await agent.generate_query(question, data)
 if result.success:
     print(f"Generated SQL: {result.query}")
@@ -327,6 +337,8 @@ if result.success:
 ```
 
 ## Error Handling
+
+Implement robust error handling in your programmatic usage to manage query generation and execution failures gracefully.
 
 ```python
 try:
@@ -340,46 +352,34 @@ try:
         print(f"Query failed after {result.attempts} attempts")
         print(f"Error: {result.error}")
 
-        # Optionally try a simpler version
+        # Optionally, try a simpler version of the question
         simplified_result = await agent.generate_query(
             "simplified version of question", data
         )
 
 except Exception as e:
-    print(f"Unexpected error: {e}")
+    print(f"An unexpected error occurred during AI query: {e}")
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"No suitable model found"**
-   ```bash
-   # Pull the required model
-   ollama pull llama3.2
-   ```
+1.  **"No suitable model found"**
+    *   **Solution**: Ensure you have pulled the required model using `ollama pull <model_name>`.
 
-2. **"Query generation failed"**
-   ```python
-   # Try a different model or simpler question
-   agent = LLMAgent(model_name="codellama")  # Better for SQL
-   ```
+2.  **"Query generation failed"**
+    *   **Solution**: Try a different model (e.g., `codellama` for SQL). Simplify your question. Increase `max_retries` for self-correction.
 
-3. **"Schema context too large"**
-   ```python
-   # Enable multi-step reasoning for complex schemas
-   agent = LLMAgent(use_multi_step=True)
-   ```
+3.  **"Schema context too large"**
+    *   **Solution**: Enable multi-step reasoning (`use_multi_step=True`) for complex schemas to reduce the context size sent to the LLM.
 
-4. **Slow query generation**
-   ```python
-   # Reduce temperature and retries for faster execution
-   agent = LLMAgent(temperature=0.0, max_retries=1)
-   ```
+4.  **Slow query generation**
+    *   **Solution**: Reduce `temperature` and `max_retries` for faster, more deterministic execution. Consider using a smaller, faster LLM if available.
 
 ## Related Documentation
 
-- [AI Features Overview](../ai-powered-features/index.md)
-- [Local LLM Setup](setup.md)
-- [Prompt Engineering](prompts.md)
-- [Interactive CLI Mode](../cli-interface/interactive.md)
+*   [AI Features Overview](./overview.md) - General introduction to ParquetFrame\'s AI capabilities.
+*   [Local LLM Setup](./setup.md) - Detailed guide on setting up Ollama and LLMs.
+*   [Prompt Engineering](./prompts.md) - Understanding how prompts are constructed for the LLM.
+*   [Interactive CLI Mode](../cli-interface/interactive.md) - More details on the interactive command-line interface.

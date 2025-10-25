@@ -19,16 +19,16 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: blue
+      primary: blue
+      accent: yellow
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: blue
+      primary: blue
+      accent: yellow
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
@@ -83,6 +83,7 @@ nav:
       - I/O Fast-Paths: rust-acceleration/io-fastpaths.md
       - Graph Algorithms: rust-acceleration/graph-algorithms.md
       - Workflow Engine: rust-acceleration/workflow-engine.md
+      - Benchmark Results: rust-acceleration/benchmark_results.md
 
   - Graph Processing:
       - Overview: graph-processing/index.md
@@ -122,11 +123,11 @@ nav:
       - Parallel Processing: bioframe-integration/parallel.md
 
   - AI-Powered Features:
-      - Overview: ai-powered-features/index.md
-      - Usage Guide: ai-powered-features/usage-guide.md
+      - Overview: ai-powered-features/overview.md
       - Natural Language Queries: ai-powered-features/nl-queries.md
-      - Setup: ai-powered-features/setup.md
-      - Prompts: ai-powered-features/prompts.md
+      - Prompt Engineering: ai-powered-features/prompts.md
+      - Local LLM Setup: ai-powered-features/setup.md
+      - Usage Guide: ai-powered-features/usage-guide.md
 
   - CLI Interface:
       - Overview: cli-interface/index.md
@@ -187,6 +188,8 @@ markdown_extensions:
   - attr_list
   - def_list
   - footnotes
+  - pymdownx.arithmatex:
+      generic: true
   - md_in_html
   - toc:
       permalink: true
@@ -231,6 +234,10 @@ extra:
 
 extra_css:
   - stylesheets/extra.css
+  - https://unpkg.com/katex@0/dist/katex.min.css
 
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js

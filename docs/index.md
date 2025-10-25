@@ -63,7 +63,7 @@
 
 🎯 **Multi-Engine Core**: Automatic selection between pandas, Polars, and Dask
 
-📦 **Entity Framework**: Declarative ORM-like data modeling with `@entity` decorators
+📦 **Entity Framework**: Declarative ORM-like data modeling with `@entity`  and `@rel` decorators
 
 🔐 **Zanzibar Permissions**: Production-grade ReBAC authorization
 

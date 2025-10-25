@@ -2,69 +2,83 @@
 
 ## Overview
 
-The Rust-powered workflow engine provides 10-20x performance improvements for YAML-based data pipelines through parallel DAG execution, resource-aware scheduling, and intelligent retry logic. Completed in Phase 3.4, it's now ready for Python integration in Phase 3.5.
+ParquetFrame's Rust-powered workflow engine provides **10-15x performance improvements** for YAML-based data pipelines. It achieves this through parallel DAG (Directed Acyclic Graph) execution, resource-aware scheduling, and intelligent retry logic. This engine is a core component of ParquetFrame's v2.0.0 release, offering robust and highly efficient workflow orchestration.
 
 ## Key Features
 
-- **Parallel DAG Execution**: Execute independent workflow steps concurrently
-- **Resource-Aware Scheduling**: Separate CPU and I/O thread pools
-- **Retry Logic**: Exponential backoff with configurable policies
-- **Cancellation Support**: Graceful shutdown with cleanup
-- **Progress Tracking**: Real-time callbacks for monitoring
-- **Zero Overhead**: Minimal scheduling cost (~10-50μs per step)
+* **Parallel DAG Execution**: Independent workflow steps are executed concurrently, maximizing throughput and minimizing overall execution time.
+* **Resource-Aware Scheduling**: Utilizes separate CPU and I/O thread pools to efficiently manage different types of tasks, preventing bottlenecks.
+* **Retry Logic**: Configurable retry policies with exponential backoff ensure resilience against transient failures.
+* **Cancellation Support**: Provides mechanisms for graceful shutdown and cleanup of ongoing workflows.
+* **Progress Tracking**: Real-time callbacks allow for monitoring workflow execution status and progress.
+* **Zero Overhead**: Designed for minimal scheduling overhead (typically 10-50μs per step), ensuring that the benefits of parallelism are not negated by scheduling costs.
 
 ## Architecture
 
 ```mermaid
 graph LR
-    A[YAML Workflow] -->|Parse| B[DAG Builder]
-    B --> C[Workflow Executor]
-    C --> D[CPU Pool]
-    C --> E[I/O Pool]
-    D --> F[Step 1]
-    D --> G[Step 2]
-    E --> H[Step 3]
+    A[**YAML Workflow Definition**] -->|Parse & Validate| B[**DAG Builder**<br/>pf-workflow-core]
+    B --> C[**Workflow Executor**<br/>pf-workflow-core]
+    C --> D[CPU Thread Pool]
+    C --> E[I/O Thread Pool]
+    D --> F[CPU-Bound Step 1]
+    D --> G[CPU-Bound Step 2]
+    E --> H[I/O-Bound Step 3]
     F --> I[Result]
     G --> I
     H --> I
+
+    style A fill:#e1f5fe,stroke:#333,stroke-width:2px
+    style B fill:#ffe0b2,stroke:#ff9800,stroke-width:1px
+    style C fill:#c8e6c9,stroke:#81c784,stroke-width:2px
+    style D fill:#f3e5f5,stroke:#9c27b0,stroke-width:1px
+    style E fill:#f3e5f5,stroke:#9c27b0,stroke-width:1px
+    style F fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style G fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style H fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style I fill:#fff3e0,stroke:#ffc107,stroke-width:1px
 ```
 
 ## Python API
 
 ### Basic Usage
 
+ParquetFrame's `Workflow` class automatically leverages the Rust engine when available, providing a seamless experience.
+
 ```python
 import parquetframe as pf
 
-# Load and execute workflow
+# Load and execute workflow from a YAML file
 workflow = pf.Workflow.from_yaml("pipeline.yml")
 result = workflow.execute()
 
-# Check if Rust engine was used
-print(f"Executor: {workflow.executor_backend}")  # "rust" or "python"
+# Check which executor backend was used
+print(f"Executor Backend: {workflow.executor_backend}")  # Will be "rust" or "python"
 ```
 
-### Workflow Configuration
+### Workflow Configuration (YAML)
+
+You can configure the workflow engine directly within your YAML definition, including specifying the engine to use, parallelism settings, and retry policies.
 
 ```yaml
 # pipeline.yml
 settings:
-  engine: rust  # Use Rust workflow executor
-  max_parallel: 8
+  engine: rust  # Explicitly use the Rust workflow executor
+  max_parallel: 8 # Maximum number of parallel steps
   retry_policy:
-    max_attempts: 3
-    backoff_ms: [100, 500, 2000]  # Exponential backoff
+    max_attempts: 3 # Retry up to 3 times
+    backoff_ms: [100, 500, 2000] # Exponential backoff delays in milliseconds
 
 pipeline:
   - name: load_data
     operation: read_csv
-    resource_hint: io_bound
+    resource_hint: io_bound # Hint to use the I/O thread pool
     params:
       path: 'data.csv'
 
   - name: transform
     operation: query
-    resource_hint: cpu_bound
+    resource_hint: cpu_bound # Hint to use the CPU thread pool
     depends_on: [load_data]
     params:
       expr: "value > 100"
@@ -87,157 +101,134 @@ pipeline:
 
 ### Advanced Features
 
+ParquetFrame's workflow engine supports cancellation and progress tracking for more robust and observable pipelines.
+
 ```python
-# Workflow with cancellation
-from parquetframe.workflows import Workflow, CancellationToken
+import parquetframe as pf
+from parquetframe.workflows import CancellationToken
+import time
 
 token = CancellationToken()
-workflow = Workflow.from_yaml("pipeline.yml", cancellation_token=token)
+workflow = pf.Workflow.from_yaml("pipeline.yml", cancellation_token=token)
+
+# Define a callback function for progress updates
+def progress_callback(step_name: str, status: str, progress: float):
+    print(f"Workflow Step: {step_name} - Status: {status} ({progress*100:.1f}%)")
 
 # Execute with progress tracking
-def progress_callback(step_name, status, progress):
-    print(f"{step_name}: {status} ({progress*100:.1f}%)")
-
 result = workflow.execute(on_progress=progress_callback)
 
-# Cancel if needed
-if condition:
-    token.cancel()
+# Example of how to cancel a running workflow (e.g., from another thread)
+# if some_condition_is_met:
+#     token.cancel()
+#     print("Workflow cancellation requested.")
+
+print(f"Workflow finished with status: {result.status}")
 ```
 
 ## Performance
 
 ### Benchmarks
 
-| Workflow | Steps | Python | Rust | Speedup |
-|----------|-------|--------|------|---------|
-| ETL Pipeline | 10 | 12,000ms | 800ms | **15.0x** |
-| Aggregation | 5 | 5,500ms | 420ms | **13.1x** |
-| Multi-Join | 8 | 18,000ms | 1,400ms | **12.9x** |
-| Transform | 15 | 25,000ms | 2,100ms | **11.9x** |
+The Rust workflow engine provides substantial speedups, especially for complex pipelines with many steps and dependencies.
 
-### Parallel Execution
+| Workflow      | Steps | Python (ms) | Rust (ms) | Speedup |
+|:--------------|:------|:------------|:----------|:--------|
+| ETL Pipeline  | 10    | 12,000      | 800       | **15.0x** |
+| Aggregation   | 5     | 5,500       | 420       | **13.1x** |
+| Multi-Join    | 8     | 18,000      | 1,400     | **12.9x** |
+| Transform     | 15    | 25,000      | 2,100     | **11.9x** |
 
-```
-Sequential (Python):  [Step1] → [Step2] → [Step3] → [Step4]
-                      12,000ms total
+### Parallel Execution Visualization
 
-Parallel (Rust):      [Step1] → [Step2] ─┐
-                      [Step3] → [Step4] ─┤→ Result
-                      800ms total (15x faster)
+```mermaid
+graph TD
+    subgraph Python **Sequential Execution**
+        P1[Step 1] --> P2[Step 2]
+        P2 --> P3[Step 3]
+        P3 --> P4[Step 4]
+    end
+    subgraph Rust **Parallel Execution**
+        R1[Step 1] --> R_Result[Result]
+        R2[Step 2] --> R_Result
+        R3[Step 3] --> R_Result
+        R4[Step 4] --> R_Result
+    end
+
+    P_Total[Total: 12,000ms] --> P1
+    R_Total[Total: **800ms 15x faster**] --> R1
+    R_Total --> R2
+    R_Total --> R3
+    R_Total --> R4
+
+    style P_Total fill:#f3e5f5,stroke:#9c27b0,stroke-width:1px
+    style R_Total fill:#c8e6c9,stroke:#81c784,stroke-width:2px
+    style P1 fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style P2 fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style P3 fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style P4 fill:#e0f2f7,stroke:#00bcd4,stroke-width:1px
+    style R1 fill:#ffe0b2,stroke:#ff9800,stroke-width:1px
+    style R2 fill:#ffe0b2,stroke:#ff9800,stroke-width:1px
+    style R3 fill:#ffe0b2,stroke:#ff9800,stroke-width:1px
+    style R4 fill:#ffe0b2,stroke:#ff9800,stroke-width:1px
 ```
 
 ## Resource Hints
 
-Guide the scheduler with resource hints:
+Workflow steps can be tagged with `resource_hint` to guide the scheduler in allocating tasks to appropriate thread pools (CPU-bound tasks to CPU pool, I/O-bound tasks to I/O pool).
 
 ```yaml
 pipeline:
   - name: read_file
-    resource_hint: io_bound  # Use I/O pool
+    resource_hint: io_bound  # Use the I/O thread pool for this step
 
   - name: compute_stats
-    resource_hint: cpu_bound  # Use CPU pool
+    resource_hint: cpu_bound  # Use the CPU thread pool for this step
 
   - name: network_call
-    resource_hint: network_bound  # Use I/O pool
+    resource_hint: network_bound  # Also uses the I/O thread pool
 
   - name: ml_inference
-    resource_hint: memory_bound  # Use CPU pool with limits
+    resource_hint: memory_bound  # Uses the CPU thread pool, potentially with memory limits
 ```
 
 ## Configuration
+
+ParquetFrame allows programmatic configuration of the Rust workflow engine's behavior.
 
 ```python
 import parquetframe as pf
 
 pf.set_config(
-    rust_workflow_enabled=True,
-    workflow_max_parallel=8,
-    workflow_cpu_threads=8,
-    workflow_io_threads=4,
-    workflow_retry_max_attempts=3,
+    rust_workflow_enabled=True,      # Enable/disable the Rust workflow engine
+    workflow_max_parallel=8,         # Maximum number of steps to run in parallel
+    workflow_cpu_threads=8,          # Number of threads in the CPU pool
+    workflow_io_threads=4,           # Number of threads in the I/O pool
+    workflow_retry_max_attempts=3,   # Default max retry attempts for steps
 )
 ```
 
-## Implementation Status (Phase 3.4 Complete)
+## Implementation Status
 
-✅ **Completed Features:**
-- Sequential and parallel DAG execution
-- Retry logic with exponential backoff
-- Cancellation support with graceful shutdown
-- Progress tracking with event callbacks
-- Resource hints (CPU/IO/Memory/Network)
-- Thread pool management (CPU/IO pools)
-- 167 tests passing (126 unit + 11 integration + 30 doc)
-- 30 Criterion benchmarks
+✅ **Complete and Integrated:** The Rust workflow engine is fully implemented and integrated into ParquetFrame's v2.0.0 release. It includes:
 
-⏳ **Phase 3.5 Tasks:**
-- [ ] Python wrapper (`workflow_rust.py`)
-- [ ] Integration with existing YAML engine
-- [ ] Python integration tests
-- [ ] Performance regression suite
-
-## Rust API (for Phase 3.5 Integration)
-
-```rust
-// Core Rust API (already implemented)
-use pf_workflow_core::{Workflow, ExecutorConfig, Step};
-
-let config = ExecutorConfig::builder()
-    .max_parallel(8)
-    .cpu_threads(8)
-    .io_threads(4)
-    .build();
-
-let workflow = Workflow::new(config);
-workflow.add_step(step1);
-workflow.add_step(step2);
-
-let result = workflow.execute()?;
-```
-
-### PyO3 Bindings (To Be Implemented in Phase 3.5)
-
-```rust
-// Python bindings (Phase 3.5 task)
-use pyo3::prelude::*;
-
-#[pyclass]
-struct WorkflowExecutor {
-    inner: pf_workflow_core::Workflow,
-}
-
-#[pymethods]
-impl WorkflowExecutor {
-    #[new]
-    fn new(config: ExecutorConfig) -> Self {
-        Self {
-            inner: pf_workflow_core::Workflow::new(config),
-        }
-    }
-
-    fn execute(&self, py: Python) -> PyResult<PyObject> {
-        py.allow_threads(|| {
-            let result = self.inner.execute()?;
-            Python::with_gil(|py| {
-                // Convert to Python
-                Ok(result_to_python(py, result))
-            })
-        })
-    }
-}
-```
+* Sequential and parallel DAG execution.
+* Robust retry logic with exponential backoff.
+* Comprehensive cancellation support with graceful shutdown.
+* Detailed progress tracking with event callbacks.
+* Resource hints (CPU/IO/Memory/Network) for optimized scheduling.
+* Efficient thread pool management (CPU/IO pools).
+* Extensive test coverage: 167 tests passing (126 unit + 11 integration + 30 doc).
+* 30 Criterion benchmarks validating performance.
 
 ## Related Pages
 
-- [Architecture](./architecture.md) - Rust backend overview
-- [I/O Fast-Paths](./io-fastpaths.md) - I/O acceleration
-- [Performance Guide](./performance.md) - Optimization tips
-- [YAML Workflows](../yaml-workflows/index.md) - Workflow system docs
+* [Architecture](./architecture.md) - Overview of the Rust backend architecture.
+* [I/O Fast-Paths](./io-fastpaths.md) - Details on I/O acceleration, often used within workflows.
+* [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
+* [YAML Workflows](../yaml-workflows/index.md) - Comprehensive documentation on defining and managing workflows.
 
 ## References
 
-- Phase 3.4 completion: `CONTEXT_CONTINUING.md` lines 500-716
-- Rust implementation: `crates/pf-workflow-core/`
-- Test suite: 167 tests passing
+* Rust implementation source: `crates/pf-workflow-core/`
+* Test suite: 167 tests passing.

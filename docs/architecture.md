@@ -2,209 +2,174 @@
 
 ## Overview
 
-ParquetFrame is evolving from a simple parquet file utility into a comprehensive, AI-powered data exploration and analysis platform. The architecture is designed around three core components:
+ParquetFrame is a high-performance, AI-powered data exploration and analysis platform designed to unlock the full potential of dataframes. Its architecture is built around a flexible Python core, enhanced by a powerful Rust acceleration layer, and an intelligent multi-engine execution strategy. This design ensures optimal performance, scalability, and ease of use across various data workloads.
 
-1. **DataContext** - Unified abstraction for data sources
-2. **LLM Agent** - Natural language to SQL conversion
-3. **Interactive CLI** - Rich REPL interface
+## Core Architectural Principles
 
-## DataContext Architecture
+*   **Intelligent Backend Selection**: Dynamically chooses the best execution engine (Pandas, Dask, Polars) based on data size, workload characteristics, and available resources.
+*   **Rust Acceleration**: Offloads performance-critical operations (I/O, graph algorithms, workflow execution) to a highly optimized Rust backend for significant speedups.
+*   **Zero-Copy Interoperability**: Leverages Apache Arrow for efficient, zero-copy data transfer between Python and Rust components, minimizing overhead.
+*   **AI-Powered Data Exploration**: Integrates local Large Language Models (LLMs) for natural language to query conversion, enhancing accessibility and user experience.
+*   **Unified API**: Provides a consistent and intuitive Python API regardless of the underlying execution engine or acceleration layer.
 
-### Core Abstraction
+## Architecture Diagram
 
-The `DataContext` abstract base class provides a unified interface for working with different data sources:
+```mermaid
+graph TD
+    subgraph User Interface Layer
+        CLI[CLI Interface<br/>`pframe` commands] --> Core
+        Interactive[Interactive Mode<br/>REPL with AI] --> Core
+        Workflows[YAML Workflows<br/>Declarative Pipelines] --> Core
+    end
 
-```python
-from parquetframe.datacontext import DataContextFactory
+    subgraph Python Core Layer
+        Core[ParquetFrame Core<br/>`parquetframe` package]
+        BackendSelector{Intelligent Backend<br/>Selection}
+        SQL[SQL Module<br/>`pf.sql`]
+        Bio[BioFrame Integration<br/>`pf.bio`]
+        Graph[Graph Processing<br/>`pf.graph`]
+        AI[AI Agent<br/>`pf.ai`]
+        IO[I/O Operations<br/>`pf.read`, `pf.save`]
+    end
 
-# Parquet data lake
-context = DataContextFactory.create_from_path("./data_lake/")
+    subgraph Execution Engines
+        Pandas[Pandas Backend<br/>In-memory]
+        Dask[Dask Backend<br/>Out-of-core, Distributed]
+        Polars[Polars Backend<br/>High-performance, Rust-native]
+    end
 
-# Database connection
-context = DataContextFactory.create_from_db_uri("postgresql://user:pass@host/db")
+    subgraph Rust Acceleration Layer
+        direction LR
+        RustBackend[Rust Backend<br/>`crates/pf-py`]
+        RustIO[I/O Fast-Paths<br/>`pf-io-core`]
+        RustGraph[Graph Algorithms<br/>`pf-graph-core`]
+        RustWorkflow[Workflow Engine<br/>`pf-workflow-core`]
+    end
 
-await context.initialize()
-schema = context.get_schema_as_text()  # For LLM consumption
-result = await context.execute("SELECT * FROM table")
+    subgraph External Dependencies
+        DuckDB[(DuckDB)]
+        Ollama[(Ollama LLM)]
+        BioFrameLib[(BioFrame)]
+        PyArrow[(Apache Arrow)]
+    end
+
+    %% Connections
+    Core --> BackendSelector
+    BackendSelector --> Pandas
+    BackendSelector --> Dask
+    BackendSelector --> Polars
+
+    Core --> SQL
+    Core --> Bio
+    Core --> Graph
+    Core --> AI
+    Core --> IO
+
+    SQL --> DuckDB
+    Bio --> BioFrameLib
+    AI --> Ollama
+
+    %% Data Flow & Interop
+    Pandas -- Data via --> PyArrow
+    Dask -- Data via --> PyArrow
+    Polars -- Data via --> PyArrow
+    Core -- Zero-Copy Data Transfer --> PyArrow
+    PyArrow -- Data Exchange --> RustBackend
+
+    %% Rust Backend Interactions
+    RustBackend --> RustIO
+    RustBackend --> RustGraph
+    RustBackend --> RustWorkflow
+
+    IO -- Accelerated by --> RustIO
+    Graph -- Accelerated by --> RustGraph
+    Workflows -- Accelerated by --> RustWorkflow
+
+    %% Styling
+    style Core fill:#e1f5fe,stroke:#333,stroke-width:2px
+    style RustBackend fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style CLI fill:#f3e5f5
+    style Interactive fill:#f3e5f5
+    style Workflows fill:#f3e5f5
+    style AI fill:#fff3e0
+    style BackendSelector fill:#e8f5e9
+    style Pandas fill:#e0f2f7
+    style Dask fill:#e0f2f7
+    style Polars fill:#e0f2f7
 ```
 
-### Implementation Classes
+## Component Breakdown
 
-#### ParquetDataContext
-- **File Discovery**: Uses `pathlib.Path.rglob()` for recursive parquet file discovery
-- **Schema Unification**: Automatically resolves schema differences across files
-- **Query Engine**: DuckDB (preferred) or Polars for high-performance querying
-- **Virtualization**: Presents multiple files as a single queryable table
+### 1. User Interface Layer
 
-#### DatabaseDataContext
-- **Connection**: SQLAlchemy-based multi-database support
-- **Introspection**: Lightweight schema discovery using Inspector pattern
-- **Query Execution**: Direct SQL execution with pandas result formatting
-- **Security**: Password masking and proper connection cleanup
+This layer provides various entry points for users to interact with ParquetFrame.
 
-### Factory Pattern
+*   **CLI Interface (`pframe`)**: A robust command-line interface offering commands for data inspection (`info`), batch processing (`run`), SQL queries (`sql`), AI-powered natural language queries (`query`), and workflow execution (`workflow`).
+*   **Interactive Mode**: A rich REPL (Read-Eval-Print Loop) environment for exploratory data analysis. It supports direct Python code execution, meta-commands, and seamless integration with the AI Agent for natural language queries.
+*   **YAML Workflows**: Enables users to define complex, multi-step data processing pipelines using a declarative YAML syntax. These workflows can leverage the full power of ParquetFrame, including Rust acceleration.
 
-The `DataContextFactory` uses dependency injection to create appropriate contexts:
+### 2. Python Core Layer
 
-```python
-# Automatically chooses implementation based on parameters
-context = DataContextFactory.create_context(
-    path="./data/",          # -> ParquetDataContext
-    # db_uri="sqlite:///db"  # -> DatabaseDataContext
-)
-```
+The heart of ParquetFrame, written in Python, orchestrates operations and provides the unified API.
 
-## LLM Integration
+*   **ParquetFrame Core (`parquetframe` package)**: The central DataFrame wrapper that abstracts away the complexities of different backends and acceleration layers. It provides a consistent API for data manipulation, transformation, and analysis.
+*   **Intelligent Backend Selection**: This crucial component dynamically assesses the workload, data size, and system resources to choose the most appropriate execution engine:
+    *   **Pandas**: Optimized for smaller, in-memory datasets.
+    *   **Dask**: Ideal for large, out-of-core datasets and distributed computing, enabling parallel processing.
+    *   **Polars**: A high-performance, Rust-native DataFrame library that offers significant speedups for many operations, especially on single-node, multi-core systems.
+*   **SQL Module (`pf.sql`)**: Integrates with `DuckDB` to allow users to execute SQL queries directly on DataFrames, supporting complex joins and aggregations.
+*   **BioFrame Integration (`pf.bio`)**: Provides specialized functionalities for genomic interval operations, often leveraging Dask for parallel processing of large biological datasets.
+*   **Graph Processing (`pf.graph`)**: Offers tools for working with graph data structures, with performance-critical algorithms offloaded to the Rust acceleration layer.
+*   **AI Agent (`pf.ai`)**: Facilitates natural language interaction by translating user questions into executable queries (e.g., SQL, DataFrame operations) using local LLMs (e.g., Ollama).
+*   **I/O Operations (`pf.read`, `pf.save`)**: Handles reading and writing data in various formats (Parquet, CSV, JSON, ORC, etc.), with performance-critical paths accelerated by the Rust backend.
 
-### Agent Architecture
+### 3. Rust Acceleration Layer
 
-The `LLMAgent` provides sophisticated natural language to SQL conversion:
+This layer is implemented in Rust and provides significant performance enhancements for computationally intensive tasks. It communicates with the Python core via Apache Arrow for efficient data exchange.
 
-```python
-from parquetframe.ai import LLMAgent
+*   **Rust Backend (`crates/pf-py`)**: The primary interface between the Python core and the Rust-implemented functionalities, using `PyO3` for seamless binding.
+*   **I/O Fast-Paths (`pf-io-core`)**: Accelerates operations like Parquet metadata reading, row counting, and column statistics extraction, often achieving 5-10x speedups.
+*   **Graph Algorithms (`pf-graph-core`)**: Provides highly optimized implementations of graph algorithms such as PageRank, Breadth-First Search (BFS), and shortest path calculations, offering 15-25x speedups.
+*   **Workflow Engine (`pf-workflow-core`)**: Enhances the execution of YAML-defined data pipelines with parallel processing and resource-aware scheduling, leading to 10-15x speedups.
 
-agent = LLMAgent(model_name="llama3.2", max_retries=2)
-result = await agent.generate_query("how many users are there?", data_context)
-```
+### 4. External Dependencies
 
-### Key Features
+ParquetFrame integrates with several powerful external libraries to deliver its features.
 
-1. **Prompt Engineering**: Structured templates with schema injection
-2. **Multi-Step Reasoning**: Table selection for complex queries
-3. **Self-Correction**: Automatic retry with error feedback
-4. **Few-Shot Learning**: Customizable examples for domain-specific queries
+*   **DuckDB**: An in-process SQL OLAP database used for high-performance SQL query execution on DataFrames.
+*   **Ollama LLM**: A local Large Language Model provider used by the AI Agent for privacy-preserving natural language processing.
+*   **BioFrame**: A Python library for genomic interval operations, integrated for specialized biological data analysis.
+*   **Apache Arrow**: A language-agnostic columnar memory format that enables zero-copy data sharing between Python (Pandas, Dask, Polars) and Rust, which is fundamental to ParquetFrame's performance.
 
-### Prompt System
+## Data Flow and Interoperability
 
-The prompt system consists of several builders:
-
-- `QueryPromptBuilder` - Main SQL generation prompts
-- `MultiStepQueryPromptBuilder` - Table selection + focused generation
-- `SelfCorrectionPromptBuilder` - Error correction prompts
-
-Example prompt structure:
-```
-System: You are an expert SQL analyst...
-
-Schema Context:
-CREATE TABLE users (
-  id INTEGER NOT NULL,
-  name VARCHAR,
-  email VARCHAR
-);
-
-Examples:
-Question: "how many rows are there"
-SQL: SELECT COUNT(*) FROM users;
-
-Instructions: Provide ONLY the SQL query...
-
-Question: "show me active users"
-```
-
-## Interactive CLI
-
-### Session Management
-
-The interactive CLI provides a rich REPL experience:
-
-- **Context-Aware Prompts**: Shows data source type and AI status
-- **Meta-Commands**: `\help`, `\list`, `\describe`, `\ai`, etc.
-- **Session Persistence**: Save/load functionality with pickle
-- **Query History**: Full logging of all interactions
-
-### Command Structure
-
-```
-pframe:parquet🤖> \help         # Show all commands
-pframe:database> \list          # List tables
-pframe:parquet> \ai count users # Natural language query
-pframe:parquet> SELECT * FROM data LIMIT 10;  # Direct SQL
-```
-
-### AI Integration
-
-The CLI seamlessly integrates LLM capabilities:
-
-1. User types `\ai <natural language question>`
-2. LLM generates SQL query
-3. Query is displayed for user approval
-4. Upon approval, query is executed and results displayed
-5. All interactions are logged for reproducibility
-
-## Error Handling & UX
-
-### Graceful Fallbacks
-
-- **Missing Dependencies**: Clear installation instructions
-- **Connection Failures**: Actionable error messages
-- **Query Errors**: Automatic self-correction attempts
-- **Schema Issues**: Warnings with promoted type information
-
-### Rich UI Components
-
-- **Progress Spinners**: For long-running operations
-- **Formatted Tables**: Rich table display for query results
-- **Color Coding**: Status indicators and syntax highlighting
-- **Panels**: Organized information display
-
-## Testing Strategy
-
-### Coverage Areas
-
-1. **Unit Tests**: Individual component testing
-2. **Integration Tests**: End-to-end workflows
-3. **Mock Testing**: LLM interactions with deterministic responses
-4. **Error Scenarios**: Connection failures, invalid queries, etc.
-
-### Test Infrastructure
-
-- **Fixtures**: Temporary parquet directories and databases
-- **Async Support**: Full async/await testing with pytest-asyncio
-- **Dependency Injection**: Easy mocking of external dependencies
+Apache Arrow plays a pivotal role in ParquetFrame's architecture by providing a universal, high-performance data interchange format. Data from various sources is loaded into Arrow-compatible structures, allowing for efficient, zero-copy transfers between Python execution engines (Pandas, Dask, Polars) and the Rust acceleration layer. This design minimizes serialization/deserialization overhead, which is a common bottleneck in polyglot systems, and ensures maximum performance.
 
 ## Performance Considerations
 
-### Query Optimization
+ParquetFrame is engineered for performance from the ground up:
 
-- **Lazy Evaluation**: Dask integration for large datasets
-- **Predicate Pushdown**: Filter pushdown to file level
-- **Schema Caching**: Avoid repeated metadata reads
-- **Connection Pooling**: Efficient database connection reuse
-
-### Memory Management
-
-- **Streaming Results**: Limited result display (20 rows default)
-- **Resource Cleanup**: Proper connection and file handle management
-- **Context Managers**: Automatic resource cleanup
+*   **Lazy Evaluation**: Dask and Polars backends support lazy evaluation, deferring computations until results are needed, which is crucial for large datasets.
+*   **Predicate Pushdown**: Filters are applied as early as possible, often at the file reading stage, to reduce the amount of data processed.
+*   **Column Pruning**: Only necessary columns are read from storage, minimizing I/O.
+*   **Rust-Accelerated Operations**: Critical I/O, graph, and workflow tasks are offloaded to highly optimized Rust code.
+*   **Zero-Copy Data Transfer**: Apache Arrow ensures efficient data movement between components without costly memory copies.
+*   **Intelligent Backend Switching**: The system automatically adapts to the data size and workload, choosing the most efficient backend for the task.
 
 ## Future Extensions
 
-### Planned Features
+ParquetFrame is continuously evolving, with planned features including:
 
-1. **Cloud Storage**: S3/GCS/Azure integration
-2. **Workflow Orchestration**: Multi-step data pipelines
-3. **Real-time Monitoring**: Live query execution tracking
-4. **Advanced Visualizations**: Integrated plotting capabilities
-
-### Extension Points
-
-- **Custom DataContexts**: Plugin system for new data sources
-- **Model Providers**: Support for OpenAI, Anthropic, etc.
-- **Output Formats**: JSON, CSV, Excel export options
-- **Authentication**: OAuth, SSO integration
+*   **Cloud Storage Integration**: Seamless support for S3, GCS, Azure Blob Storage.
+*   **Advanced Workflow Orchestration**: More sophisticated tools for managing complex data pipelines.
+*   **Real-time Monitoring**: Live dashboards for tracking query execution and resource utilization.
+*   **Integrated Visualizations**: Built-in plotting capabilities for quick data insights.
 
 ## Security & Privacy
 
-### Data Protection
+ParquetFrame prioritizes data security and privacy:
 
-- **Local LLM**: Ollama ensures data stays on-premises
-- **Connection Security**: Encrypted database connections
-- **Credential Management**: Secure storage of connection strings
-- **Audit Logging**: Full query and access logging
-
-### Privacy Considerations
-
-- **No Data Transmission**: Schema-only information sent to LLM
-- **Local Processing**: All AI inference happens locally
-- **User Control**: Explicit approval required for query execution
+*   **Local LLM Integration**: By using local LLMs like Ollama, sensitive data remains on the user's machine, ensuring privacy.
+*   **Secure Connections**: Support for encrypted database connections and secure credential management.
+*   **Audit Logging**: Comprehensive logging of queries and access for compliance and debugging.
+*   **Schema-Only AI Interaction**: Only schema information (not actual data) is typically sent to the LLM for query generation, further protecting data privacy.
