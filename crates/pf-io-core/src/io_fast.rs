@@ -7,9 +7,8 @@ use crate::error::{IoError, Result};
 use arrow::datatypes::SchemaRef;
 use arrow::ipc::writer::StreamWriter;
 use arrow::record_batch::RecordBatch;
-use parquet::file::reader::{FileReader, SerializedFileReader};
+use parquet::arrow::ProjectionMask;
 use std::fs::File;
-use std::io::Cursor;
 use std::path::Path;
 
 /// Read a Parquet file and return Arrow IPC stream bytes with optional projection and row-group selection.
@@ -26,10 +25,9 @@ pub fn read_parquet_ipc<P: AsRef<Path>>(
 
     // Open Parquet file
     let file = File::open(path_ref)?;
-    let reader = SerializedFileReader::new(file)?;
 
-    // Use parquet->arrow RecordBatch reader
-    let mut builder = parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder::try_new(reader)
+    // Use parquet->arrow RecordBatch reader (Arrow/Parquet 57 API expects a ChunkReader, e.g., File)
+    let mut builder = parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder::try_new(file)
         .map_err(|e| IoError::Other(e.to_string()))?;
 
     // Row-group selection
@@ -37,24 +35,24 @@ pub fn read_parquet_ipc<P: AsRef<Path>>(
         builder = builder.with_row_groups(rgs.to_vec());
     }
 
-    // Column projection by name -> indices
+    // Column projection by name -> indices using ProjectionMask
     if let Some(cols) = columns {
+        let meta = builder.metadata();
+        let schema = meta.file_metadata().schema_descr();
         // Map names to leaf column indices in schema descriptor
         // If a name is not found, ignore silently (could also error)
-        let mut projection = Vec::new();
-        if let Some(meta) = builder.metadata() {
-            let schema = meta.file_metadata().schema_descr();
-            for name in cols {
-                for i in 0..schema.num_columns() {
-                    if schema.column(i).name() == name {
-                        projection.push(i);
-                        break;
-                    }
+        let mut leaves: Vec<usize> = Vec::new();
+        for name in cols {
+            for i in 0..schema.num_columns() {
+                if schema.column(i).name() == name {
+                    leaves.push(i);
+                    break;
                 }
             }
         }
-        if !projection.is_empty() {
-            builder = builder.with_projection(projection);
+        if !leaves.is_empty() {
+            let mask = ProjectionMask::leaves(schema, leaves);
+            builder = builder.with_projection(mask);
         }
     }
 
@@ -95,39 +93,15 @@ pub fn read_parquet_ipc<P: AsRef<Path>>(
 }
 
 /// Read a CSV file and return Arrow IPC stream bytes.
+/// Note: CSV fast-path temporarily disabled due to Arrow 57 API changes. Use Python path.
 pub fn read_csv_ipc<P: AsRef<Path>>(
-    path: P,
-    delimiter: u8,
-    has_header: bool,
+    _path: P,
+    _delimiter: u8,
+    _has_header: bool,
     _infer_schema: bool,
-    batch_size: Option<usize>,
+    _batch_size: Option<usize>,
 ) -> Result<Vec<u8>> {
-    let path_ref = path.as_ref();
-    if !path_ref.exists() {
-        return Err(IoError::FileNotFound(path_ref.display().to_string()));
-    }
-
-    let file = File::open(path_ref)?;
-
-    let mut reader = arrow::csv::ReaderBuilder::new()
-        .has_header(has_header)
-        .with_delimiter(delimiter)
-        .with_batch_size(batch_size.unwrap_or(8192))
-        .build(file)
-        .map_err(|e| IoError::Other(e.to_string()))?;
-
-    let schema = reader.schema().clone();
-
-    let mut buffer = Vec::<u8>::new();
-    {
-        let mut writer = StreamWriter::try_new(&mut buffer, &schema)
-            .map_err(|e| IoError::Other(e.to_string()))?;
-
-        while let Some(batch) = reader.next().transpose().map_err(|e| IoError::Other(e.to_string()))? {
-            writer.write(&batch).map_err(|e| IoError::Other(e.to_string()))?;
-        }
-        writer.finish().map_err(|e| IoError::Other(e.to_string()))?;
-    }
-
-    Ok(buffer)
+    Err(IoError::Other(
+        "CSV fast-path is temporarily unavailable on Arrow 57; falling back to Python reader is recommended".to_string(),
+    ))
 }

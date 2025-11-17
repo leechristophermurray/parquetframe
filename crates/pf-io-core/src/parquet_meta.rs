@@ -191,16 +191,26 @@ pub fn get_column_statistics<P: AsRef<Path>>(path: P) -> Result<Vec<ColumnStatis
             let col_chunk = rg_metadata.column(i);
 
             if let Some(stats) = col_chunk.statistics() {
-                // Accumulate null count - parquet 48 returns u64 directly
-                let nc = stats.null_count();
-                if let Some(ref mut total) = total_null_count {
-                    *total += nc as i64;
+                // Accumulate null count if available
+                match stats.null_count_opt() {
+                    Some(nc) => {
+                        if let Some(ref mut total) = total_null_count {
+                            *total += nc as i64;
+                        }
+                    }
+                    None => {
+                        total_null_count = None;
+                    }
                 }
 
-                // Track min/max (simplified - just use first row group's values)
-                if rg_idx == 0 && stats.has_min_max_set() {
-                    min_value = Some(format!("{:?}", stats.min_bytes()));
-                    max_value = Some(format!("{:?}", stats.max_bytes()));
+                // Track min/max (simplified - just use first row group's values if present)
+                if rg_idx == 0 {
+                    if let Some(minb) = stats.min_bytes_opt() {
+                        min_value = Some(format!("{:?}", minb));
+                    }
+                    if let Some(maxb) = stats.max_bytes_opt() {
+                        max_value = Some(format!("{:?}", maxb));
+                    }
                 }
             } else {
                 total_null_count = None;
