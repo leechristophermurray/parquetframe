@@ -76,30 +76,39 @@ class RustIOEngine:
         """
         Read a Parquet file using Rust fast-path.
 
-        Provides 2.5-3x speedup over pure Python implementation.
+        Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
 
         Args:
             path: Path to Parquet file
-            columns: Optional list of columns to read
-            row_groups: Optional list of row groups to read
+            columns: Optional list of columns to project (currently best-effort)
+            row_groups: Unused for now
 
         Returns:
-            DataFrame (format depends on backend)
+            pyarrow.Table
 
         Example:
             >>> engine = RustIOEngine()
-            >>> df = engine.read_parquet("large_file.parquet")
+            >>> tbl = engine.read_parquet("large_file.parquet")
             >>> # Read specific columns only
-            >>> df = engine.read_parquet("data.parquet", columns=["id", "value"])
+            >>> tbl = engine.read_parquet("data.parquet", columns=["id", "value"])
         """
         if not hasattr(_rustic, "read_parquet_fast"):
-            raise NotImplementedError(
-                "Parquet fast-path not yet implemented. Coming in Phase 3.6"
-            )
+            raise NotImplementedError("Parquet fast-path not yet implemented.")
 
-        return _rustic.read_parquet_fast(
+        ipc_bytes = _rustic.read_parquet_fast(
             str(path), columns=columns, row_groups=row_groups
         )
+        # Reconstruct pyarrow.Table
+        try:
+            import pyarrow as pa
+            import pyarrow.ipc as pa_ipc
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("pyarrow is required to reconstruct Arrow Table") from e
+
+        buf = pa.py_buffer(ipc_bytes)
+        with pa_ipc.open_stream(buf) as reader:
+            table = reader.read_all()
+        return table
 
     def read_csv(
         self,
@@ -111,8 +120,7 @@ class RustIOEngine:
         """
         Read a CSV file using Rust fast-path.
 
-        Provides 4-5x speedup over pure Python implementation with
-        parallel parsing.
+        Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
 
         Args:
             path: Path to CSV file
@@ -121,25 +129,33 @@ class RustIOEngine:
             infer_schema: Whether to infer column types
 
         Returns:
-            DataFrame (format depends on backend)
+            pyarrow.Table
 
         Example:
             >>> engine = RustIOEngine()
-            >>> df = engine.read_csv("large_file.csv")
+            >>> tbl = engine.read_csv("large_file.csv")
             >>> # Custom delimiter
-            >>> df = engine.read_csv("data.tsv", delimiter="\\t")
+            >>> tbl = engine.read_csv("data.tsv", delimiter="\t")
         """
         if not hasattr(_rustic, "read_csv_fast"):
-            raise NotImplementedError(
-                "CSV fast-path not yet implemented. Coming in Phase 3.6"
-            )
+            raise NotImplementedError("CSV fast-path not yet implemented.")
 
-        return _rustic.read_csv_fast(
+        ipc_bytes = _rustic.read_csv_fast(
             str(path),
             delimiter=delimiter,
             has_header=has_header,
             infer_schema=infer_schema,
         )
+        try:
+            import pyarrow as pa
+            import pyarrow.ipc as pa_ipc
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("pyarrow is required to reconstruct Arrow Table") from e
+
+        buf = pa.py_buffer(ipc_bytes)
+        with pa_ipc.open_stream(buf) as reader:
+            table = reader.read_all()
+        return table
 
     def get_parquet_metadata(self, path: str | Path) -> dict[str, Any]:
         """

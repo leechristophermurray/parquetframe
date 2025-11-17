@@ -157,9 +157,9 @@ def test_backend_auto_switch_respected_on_size_threshold(tmp_path, monkeypatch):
 
     # Force pandas backend
     pandas_graph = read_graph(small_sample["graph_path"], islazy=False)
-    assert not pandas_graph.vertices.islazy, (
-        "Should use pandas when explicitly requested"
-    )
+    assert (
+        not pandas_graph.vertices.islazy
+    ), "Should use pandas when explicitly requested"
 
 
 @pytest.mark.graph

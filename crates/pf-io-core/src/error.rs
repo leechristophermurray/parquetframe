@@ -47,3 +47,9 @@ impl From<parquet::errors::ParquetError> for IoError {
         IoError::Parquet(err.to_string())
     }
 }
+
+impl From<arrow::error::ArrowError> for IoError {
+    fn from(err: arrow::error::ArrowError) -> Self {
+        IoError::Other(err.to_string())
+    }
+}

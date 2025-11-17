@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 parquet.workspace = true
+arrow.workspace = true
 serde.workspace = true
 rayon.workspace = true
 thiserror.workspace = true

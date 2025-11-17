@@ -19,6 +19,34 @@ except ImportError:
     _rustic = None
 
 
+# Expose Rust-side cancellation token
+try:
+    from parquetframe._rustic import CancellationToken as _RustCancellationToken
+except Exception:  # pragma: no cover
+    _RustCancellationToken = None
+
+
+class CancellationToken:
+    """Cancellation token for stopping running workflows.
+
+    Example:
+        >>> from parquetframe.workflow_rust import CancellationToken, execute_workflow_rust
+        >>> token = CancellationToken()
+        >>> # In another thread: token.cancel()
+    """
+
+    def __init__(self) -> None:
+        if _RustCancellationToken is None:
+            raise RuntimeError("Rust workflow backend not available")
+        self._inner = _RustCancellationToken()
+
+    def cancel(self) -> None:
+        self._inner.cancel()
+
+    def is_cancelled(self) -> bool:
+        return self._inner.is_cancelled()
+
+
 class RustWorkflowEngine:
     """
     Rust-accelerated workflow execution engine.
@@ -124,6 +152,10 @@ class RustWorkflowEngine:
     def execute_workflow(
         self,
         workflow_config: dict[str, Any],
+        *,
+        on_progress: Any | None = None,
+        cancel_token: CancellationToken | None = None,
+        step_handler: Any | None = None,
     ) -> dict[str, Any]:
         """
         Execute a complete workflow using Rust parallel engine.
@@ -161,6 +193,9 @@ class RustWorkflowEngine:
         return _rustic.execute_workflow(
             workflow_config,
             max_parallel=self.max_parallel,
+            on_progress=on_progress,
+            cancel_token=(cancel_token._inner if cancel_token else None),
+            step_handler=step_handler,
         )
 
     def get_metrics(self) -> dict[str, Any]:
@@ -188,6 +223,10 @@ class RustWorkflowEngine:
 def execute_workflow_rust(
     workflow_config: dict[str, Any],
     max_parallel: int | None = None,
+    *,
+    on_progress: Any | None = None,
+    cancel_token: CancellationToken | None = None,
+    step_handler: Any | None = None,
 ) -> dict[str, Any]:
     """
     Execute a workflow using the Rust engine.
@@ -205,7 +244,12 @@ def execute_workflow_rust(
         >>> result = execute_workflow_rust(workflow_config, max_parallel=4)
     """
     engine = RustWorkflowEngine(max_parallel=max_parallel)
-    return engine.execute_workflow(workflow_config)
+    return engine.execute_workflow(
+        workflow_config,
+        on_progress=on_progress,
+        cancel_token=cancel_token,
+        step_handler=step_handler,
+    )
 
 
 def is_rust_workflow_available() -> bool:
@@ -226,6 +270,7 @@ def is_rust_workflow_available() -> bool:
 
 # Module-level availability flag
 __all__ = [
+    "CancellationToken",
     "RustWorkflowEngine",
     "execute_workflow_rust",
     "is_rust_workflow_available",

@@ -3,10 +3,15 @@
 //! This module exposes the high-performance Rust workflow engine to Python,
 //! providing parallel DAG execution with resource-aware scheduling.
 
-use pf_workflow_core::{ExecutorConfig, WorkflowExecutor, Step, StepResult, ExecutionContext, StepMetrics};
+use pf_workflow_core::{
+    ExecutorConfig, WorkflowExecutor, Step, StepResult, ExecutionContext, StepMetrics,
+    ProgressCallback, ProgressEvent, CancellationToken,
+};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList};
+use pyo3::types::{PyAny, PyDict, PyList, PyModule};
+use pyo3::PyClass;
 use serde_json::Value;
+use std::sync::Arc;
 
 /// Python step wrapper that implements the Rust Step trait.
 ///
@@ -16,15 +21,26 @@ struct PyStep {
     step_type: String,
     config: Value,
     dependencies: Vec<String>,
+    step_handler: Option<PyObject>,
+    variables: Option<PyObject>,
 }
 
 impl PyStep {
-    fn new(id: String, step_type: String, config: Value, dependencies: Vec<String>) -> Self {
+    fn new(
+        id: String,
+        step_type: String,
+        config: Value,
+        dependencies: Vec<String>,
+        step_handler: Option<PyObject>,
+        variables: Option<PyObject>,
+    ) -> Self {
         Self {
             id,
             step_type,
             config,
             dependencies,
+            step_handler,
+            variables,
         }
     }
 }
@@ -38,14 +54,56 @@ impl Step for PyStep {
         &self.dependencies
     }
 
-    fn execute(&self, _ctx: &mut ExecutionContext) -> pf_workflow_core::Result<StepResult> {
-        // For Phase 3.5, we create a simple result
-        // In Phase 3.6, this will call back to Python to execute the actual step
+fn execute(&self, ctx: &mut ExecutionContext) -> pf_workflow_core::Result<StepResult> {
         let mut metrics = StepMetrics::new(self.id.clone());
         metrics.start();
 
-        // TODO: Call Python step execution here
-        // For now, return success with placeholder data
+        if let Some(handler) = &self.step_handler {
+            let output_value = pyo3::Python::with_gil(|py| -> Value {
+                let json_mod = PyModule::import_bound(py, "json").ok();
+                // Recreate Python config dict from JSON
+                let config_py = if let Some(json_mod) = &json_mod {
+                    let s = serde_json::to_string(&self.config).unwrap_or("{}".to_string());
+                    match json_mod.call_method1("loads", (s,)) {
+                        Ok(obj) => obj.into_any().unbind(),
+                        Err(_) => PyDict::new_bound(py).into_any().unbind(),
+                    }
+                } else {
+                    PyDict::new_bound(py).into_any().unbind()
+                };
+
+                // Build context dict with prior step outputs and variables
+                let ctx_dict = PyDict::new_bound(py);
+                let data_json_str = serde_json::to_string(&ctx.data).unwrap_or("{}".to_string());
+                if let Some(json_mod) = &json_mod {
+                    if let Ok(obj) = json_mod.call_method1("loads", (data_json_str,)) {
+                        let _ = ctx_dict.set_item("data", obj);
+                    }
+                }
+                if let Some(vars) = &self.variables {
+                    let _ = ctx_dict.set_item("variables", vars);
+                }
+
+                match handler.call1(py, (self.step_type.clone(), self.id.clone(), config_py, ctx_dict)) {
+                    Ok(result_obj) => {
+                        if let Some(json_mod) = &json_mod {
+                            if let Ok(s) = json_mod.call_method1("dumps", (result_obj.clone_ref(py),)) {
+                                if let Ok(s_str) = s.extract::<String>() {
+                                    if let Ok(val) = serde_json::from_str::<Value>(&s_str) {
+                                        return val;
+                                    }
+                                }
+                            }
+                        }
+                        Value::String(format!("{}", result_obj.str().unwrap_or_else(|_| pyo3::types::PyString::new_bound(py, "<unrepr>")).to_str().unwrap_or("<unrepr>")))
+                    }
+                    Err(e) => Value::String(format!("python step error: {}", e)),
+                }
+            });
+            metrics.complete();
+            return Ok(StepResult::new(output_value, metrics));
+        }
+
         let result_data = Value::Object({
             let mut map = serde_json::Map::new();
             map.insert("step_id".to_string(), Value::String(self.id.clone()));
@@ -59,18 +117,7 @@ impl Step for PyStep {
     }
 }
 
-/// Execute a workflow step in Rust.
-///
-/// This is a placeholder for the full workflow engine integration.
-/// In Phase 3.5-3.6, this will call the pf-workflow-core engine.
-///
-/// # Arguments
-/// * `step_type` - Type of step (e.g., "read", "filter", "transform")
-/// * `config` - Step configuration as Python dict
-/// * `context` - Workflow execution context
-///
-/// # Returns
-/// Result of the step execution
+/// Execute a workflow step in Rust (placeholder).
 #[pyfunction]
 fn execute_step(
     py: Python,
@@ -78,17 +125,10 @@ fn execute_step(
     _config: &Bound<'_, PyDict>,
     _context: &Bound<'_, PyDict>,
 ) -> PyResult<Py<PyAny>> {
-    // For now, return a simple acknowledgment
-    // In full implementation, this will:
-    // 1. Parse Python config into Rust types
-    // 2. Execute step using pf-workflow-core
-    // 3. Return results to Python
-
     let result = PyDict::new(py);
     result.set_item("status", "executed")?;
     result.set_item("step_type", step_type)?;
     result.set_item("message", format!("Rust workflow step '{}' executed", step_type))?;
-
     Ok(result.into())
 }
 
@@ -126,11 +166,74 @@ fn create_dag(py: Python, steps: &Bound<'_, PyList>) -> PyResult<Py<PyAny>> {
 ///
 /// # Returns
 /// Workflow execution results
+/// Python-bridge progress callback that forwards events to a Python callable.
+#[derive(Clone)]
+struct PyProgressCallbackAdapter {
+    callback: PyObject,
+}
+
+impl ProgressCallback for PyProgressCallbackAdapter {
+    fn on_progress(&self, event: ProgressEvent) {
+        let callback = self.callback.clone();
+        pyo3::Python::with_gil(|py| {
+            let dict = PyDict::new_bound(py);
+            match event.clone() {
+                ProgressEvent::Started { step_id, timestamp: _, message } => {
+                    dict.set_item("type", "started").ok();
+                    dict.set_item("step_id", step_id).ok();
+                    if let Some(msg) = message { dict.set_item("message", msg).ok(); }
+                }
+                ProgressEvent::Completed { step_id, timestamp: _, message } => {
+                    dict.set_item("type", "completed").ok();
+                    dict.set_item("step_id", step_id).ok();
+                    if let Some(msg) = message { dict.set_item("message", msg).ok(); }
+                }
+                ProgressEvent::Failed { step_id, timestamp: _, error, message } => {
+                    dict.set_item("type", "failed").ok();
+                    dict.set_item("step_id", step_id).ok();
+                    dict.set_item("error", error).ok();
+                    if let Some(msg) = message { dict.set_item("message", msg).ok(); }
+                }
+                ProgressEvent::Cancelled { step_id, timestamp: _, message } => {
+                    dict.set_item("type", "cancelled").ok();
+                    dict.set_item("step_id", step_id).ok();
+                    if let Some(msg) = message { dict.set_item("message", msg).ok(); }
+                }
+            }
+            // Best-effort: ignore callback errors to avoid poisoning execution
+            let _ = callback.call1(py, (dict,));
+        });
+    }
+}
+
+/// Cancellation token exposed to Python.
+#[pyclass(name = "CancellationToken")]
+struct PyCancellationToken {
+    inner: CancellationToken,
+}
+
+#[pymethods]
+impl PyCancellationToken {
+    #[new]
+    fn new() -> Self { Self { inner: CancellationToken::new() } }
+
+    fn cancel(&self) { self.inner.cancel(); }
+
+    fn is_cancelled(&self) -> bool { self.inner.is_cancelled() }
+
+    fn clone_token(&self) -> Self { Self { inner: self.inner.clone() } }
+}
+
+/// Execute workflow with optional progress callback and cancellation token.
 #[pyfunction]
+#[pyo3(signature = (workflow_config, max_parallel=None, on_progress=None, cancel_token=None, step_handler=None))]
 fn execute_workflow(
     py: Python,
     workflow_config: &Bound<'_, PyDict>,
     max_parallel: Option<usize>,
+    on_progress: Option<PyObject>,
+    cancel_token: Option<&Bound<'_, PyAny>>, // will downcast to PyCancellationToken if provided
+    step_handler: Option<PyObject>,
 ) -> PyResult<Py<PyAny>> {
     let parallel_workers = max_parallel.unwrap_or_else(num_cpus::get);
 
@@ -138,6 +241,10 @@ fn execute_workflow(
     let steps_list = workflow_config
         .get_item("steps")?
         .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Missing 'steps' in workflow config"))?;
+
+    // Optional variables passthrough
+    let variables_obj = workflow_config.get_item("variables")?;
+    let variables_py = variables_obj.map(|v| v.into_any().unbind());
 
     // Create executor with configuration
     let config = ExecutorConfig::builder()
@@ -160,35 +267,63 @@ fn execute_workflow(
                     .and_then(|v| v.extract::<String>().ok())
                     .unwrap_or_else(|| "unknown".to_string());
 
-                // Parse config as JSON
-                let config_value = step_dict
-                    .get_item("config")?
-                    .map(|v| serde_json::to_value(v.to_string()).unwrap_or(Value::Null))
-                    .unwrap_or(Value::Null);
+                // Convert config to serde_json::Value via json.dumps
+                let json_mod = PyModule::import_bound(py, "json").ok();
+                let config_value = if let Some(cfg_any) = step_dict.get_item("config")? {
+                    if let Some(json_mod) = &json_mod {
+                        if let Ok(s) = json_mod.call_method1("dumps", (cfg_any,)) {
+                            if let Ok(s_str) = s.extract::<String>() {
+                                serde_json::from_str::<Value>(&s_str).unwrap_or(Value::Null)
+                            } else { Value::Null }
+                        } else { Value::Null }
+                    } else { Value::Null }
+                } else { Value::Null };
 
-                // Parse dependencies
                 let dependencies = if let Some(deps_item) = step_dict.get_item("depends_on")? {
                     if let Ok(list) = deps_item.downcast::<PyList>() {
                         list.iter()
                             .filter_map(|item| item.extract::<String>().ok())
                             .collect::<Vec<_>>()
-                    } else {
-                        Vec::new()
-                    }
-                } else {
-                    Vec::new()
-                };
+                    } else { Vec::new() }
+                } else { Vec::new() };
 
-                let py_step = PyStep::new(step_name, step_type, config_value, dependencies);
+                let py_step = PyStep::new(
+                    step_name,
+                    step_type,
+                    config_value,
+                    dependencies,
+                    step_handler.clone(),
+                    variables_py.clone(),
+                );
                 executor.add_step(Box::new(py_step));
             }
         }
     }
 
-    // Execute workflow
-    let workflow_metrics = executor
-        .execute()
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Workflow execution failed: {}", e)))?;
+    // Build optional callback adapter
+    let progress_cb: Option<Box<dyn ProgressCallback>> = on_progress.map(|cb| {
+        let adapter = PyProgressCallbackAdapter { callback: cb };
+        Box::new(adapter) as Box<dyn ProgressCallback>
+    });
+
+    // Extract optional cancellation token
+    let cancellation: Option<CancellationToken> = if let Some(bound_any) = cancel_token {
+        if let Ok(cell) = bound_any.downcast::<pyo3::PyCell<PyCancellationToken>>() {
+            let borrowed = cell.borrow();
+            Some(borrowed.inner.clone())
+        } else { None }
+    } else { None };
+
+    // Execute in parallel when max_parallel > 1; otherwise sequential
+    let workflow_metrics = if parallel_workers > 1 {
+        executor
+            .execute_parallel_with_options(cancellation, progress_cb)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Workflow execution failed: {}", e)))?
+    } else {
+        executor
+            .execute_with_options(cancellation, progress_cb)
+            .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("Workflow execution failed: {}", e)))?
+    };
 
     // Build result dictionary
     let result = PyDict::new(py);
@@ -238,6 +373,7 @@ pub fn register_workflow_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(execute_workflow, m)?)?;
     m.add_function(wrap_pyfunction!(workflow_rust_available, m)?)?;
     m.add_function(wrap_pyfunction!(workflow_metrics, m)?)?;
+    m.add_class::<PyCancellationToken>()?;
     Ok(())
 }
 

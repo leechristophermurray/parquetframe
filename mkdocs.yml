@@ -182,6 +182,18 @@ nav:
         - Default API Change: adr/0002-make-phase2-default-api.md
         - Rust First Integration: adr/0003-rust-first-integration.md
 
+  - Phase 3:
+      - Durable Conversation Summary: phase3/durable-conversation-summary.md
+      - Gap Plan (Phase 3): phase3/gap-plan-phase3.md
+      - Continuing Plan (Phase 3): phase3/continuing-plan-phase3.md
+      - Repository Inventory: phase3/repo-inventory.md
+      - Contribution Guidelines: phase3/docs-contrib-guidelines.md
+      - Metadata: phase3/metadata.md
+      - Templates:
+        - Durable Summary Template: phase3/templates/durable-summary-template.md
+        - Plan Update Template: phase3/templates/plan-update-template.md
+      - Changelog Draft: phase3/changelog-draft.md
+
 markdown_extensions:
   - abbr
   - admonition

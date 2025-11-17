@@ -2,7 +2,6 @@
 CONTEXT*
 PHASE*HANDOFF*
 IMPLEMENTATION*
-WARP.md
 __pycache__/
 *.py[cod]
 *$py.class

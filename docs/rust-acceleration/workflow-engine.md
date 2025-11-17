@@ -101,6 +101,30 @@ pipeline:
 
 ### Advanced Features
 
+Progress callback and cancellation (Python):
+
+```python
+from parquetframe.workflow_rust import RustWorkflowEngine, CancellationToken
+
+engine = RustWorkflowEngine(max_parallel=4)
+
+events = []
+
+def on_progress(ev: dict):
+    # ev: {type: 'started'|'completed'|'failed'|'cancelled', step_id: str, ...}
+    events.append(ev)
+
+wf = {
+  "steps": [
+    {"name": "load", "type": "read"},
+    {"name": "compute", "type": "transform", "depends_on": ["load"]},
+  ]
+}
+
+token = CancellationToken()
+result = engine.execute_workflow(wf, on_progress=on_progress, cancel_token=token)
+```
+
 ParquetFrame's workflow engine supports cancellation and progress tracking for more robust and observable pipelines.
 
 ```python
@@ -125,6 +149,43 @@ result = workflow.execute(on_progress=progress_callback)
 
 print(f"Workflow finished with status: {result.status}")
 ```
+
+### Python Step Handlers (Custom Execution)
+
+You can execute real Python step bodies by providing a `step_handler` callable. The handler signature is:
+
+- `handler(step_type: str, name: str, config: dict, ctx: dict) -> JSON-serializable`
+- `ctx` contains `data` (JSON of prior step outputs) and `variables` (workflow-level variables, if any)
+
+Example:
+
+```python
+from parquetframe.workflow_rust import RustWorkflowEngine
+
+engine = RustWorkflowEngine(max_parallel=2)
+
+calls = []
+
+def step_handler(step_type: str, name: str, config: dict, ctx: dict):
+    calls.append((step_type, name))  # record execution
+    # do useful work here, e.g., read/write files, call library functions
+    return {"ok": True, "name": name, "type": step_type, "config": config}
+
+wf = {
+  "variables": {"x": 1},
+  "steps": [
+    {"name": "load", "type": "read", "config": {"input": "path/to/file.parquet"}},
+    {"name": "transform", "type": "compute", "depends_on": ["load"], "config": {"k": "v"}},
+  ]
+}
+
+result = engine.execute_workflow(wf, step_handler=step_handler)
+```
+
+Notes:
+- Return values must be JSON-serializable; non-serializable values are stringified.
+- For large data, prefer file-based patterns (write/read) and pass references in results.
+- Progress and cancellation continue to work with step handlers.
 
 ## Performance
 

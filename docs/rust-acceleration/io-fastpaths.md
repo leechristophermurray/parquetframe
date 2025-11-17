@@ -82,18 +82,18 @@ for col in columns_with_types:
 
 ### Full Parquet Read
 
-When reading a full Parquet file, ParquetFrame automatically leverages the Rust backend for optimized data loading if available.
+When reading a full Parquet file, the Rust fast-path returns Arrow IPC bytes which are reconstructed to a `pyarrow.Table` on the Python side. You can convert to pandas/Polars as needed.
 
 ```python
 import parquetframe as pf
+from parquetframe.io_rust import RustIOEngine
 
-# Automatic Rust fast-path for reading Parquet
-df = pf.read("data.parquet")  # Uses Rust if available and enabled
+eng = RustIOEngine()
+# Returns pyarrow.Table for maximum flexibility
+table = eng.read_parquet("data.parquet")
 
-# Explicitly force a specific engine if needed
-df_rust = pf.read("data.parquet", engine="rust")
-df_pandas = pf.read("data.parquet", engine="pandas")
-df_polars = pf.read("data.parquet", engine="polars")
+# Convert to pandas if desired
+pdf = table.to_pandas()
 ```
 
 **Rust Implementation Details (Simplified):**
