@@ -7,8 +7,8 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
-parquet.workspace = true
-arrow.workspace = true
+parquet = { workspace = true, features = ["arrow"] }
+arrow = { workspace = true, features = ["ipc", "csv"] }
 serde.workspace = true
 rayon.workspace = true
 thiserror.workspace = true
