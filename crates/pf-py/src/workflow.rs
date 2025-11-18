@@ -9,9 +9,7 @@ use pf_workflow_core::{
 };
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyDict, PyList, PyModule};
-use pyo3::PyClass;
 use serde_json::Value;
-use std::sync::Arc;
 
 /// Python step wrapper that implements the Rust Step trait.
 ///
@@ -21,8 +19,8 @@ struct PyStep {
     step_type: String,
     config: Value,
     dependencies: Vec<String>,
-    step_handler: Option<PyObject>,
-    variables: Option<PyObject>,
+    step_handler: Option<Py<PyAny>>,
+    variables: Option<Py<PyAny>>,
 }
 
 impl PyStep {
@@ -31,8 +29,8 @@ impl PyStep {
         step_type: String,
         config: Value,
         dependencies: Vec<String>,
-        step_handler: Option<PyObject>,
-        variables: Option<PyObject>,
+        step_handler: Option<Py<PyAny>>,
+        variables: Option<Py<PyAny>>,
     ) -> Self {
         Self {
             id,
@@ -59,21 +57,21 @@ fn execute(&self, ctx: &mut ExecutionContext) -> pf_workflow_core::Result<StepRe
         metrics.start();
 
         if let Some(handler) = &self.step_handler {
-            let output_value = pyo3::Python::with_gil(|py| -> Value {
-                let json_mod = PyModule::import_bound(py, "json").ok();
+            let output_value = pyo3::Python::attach(|py| -> Value {
+                let json_mod = PyModule::import(py, "json").ok();
                 // Recreate Python config dict from JSON
                 let config_py = if let Some(json_mod) = &json_mod {
                     let s = serde_json::to_string(&self.config).unwrap_or("{}".to_string());
                     match json_mod.call_method1("loads", (s,)) {
                         Ok(obj) => obj.into_any().unbind(),
-                        Err(_) => PyDict::new_bound(py).into_any().unbind(),
+                        Err(_) => PyDict::new(py).into_any().unbind(),
                     }
                 } else {
-                    PyDict::new_bound(py).into_any().unbind()
+                    PyDict::new(py).into_any().unbind()
                 };
 
                 // Build context dict with prior step outputs and variables
-                let ctx_dict = PyDict::new_bound(py);
+                let ctx_dict = PyDict::new(py);
                 let data_json_str = serde_json::to_string(&ctx.data).unwrap_or("{}".to_string());
                 if let Some(json_mod) = &json_mod {
                     if let Ok(obj) = json_mod.call_method1("loads", (data_json_str,)) {
@@ -81,7 +79,7 @@ fn execute(&self, ctx: &mut ExecutionContext) -> pf_workflow_core::Result<StepRe
                     }
                 }
                 if let Some(vars) = &self.variables {
-                    let _ = ctx_dict.set_item("variables", vars);
+                    let _ = ctx_dict.set_item("variables", vars.bind(py));
                 }
 
                 match handler.call1(py, (self.step_type.clone(), self.id.clone(), config_py, ctx_dict)) {
@@ -95,7 +93,8 @@ fn execute(&self, ctx: &mut ExecutionContext) -> pf_workflow_core::Result<StepRe
                                 }
                             }
                         }
-                        Value::String(format!("{}", result_obj.str().unwrap_or_else(|_| pyo3::types::PyString::new_bound(py, "<unrepr>")).to_str().unwrap_or("<unrepr>")))
+                        let repr_str = result_obj.bind(py).repr().map(|r| r.to_string()).unwrap_or_else(|_| "<unrepr>".to_string());
+                        Value::String(repr_str)
                     }
                     Err(e) => Value::String(format!("python step error: {}", e)),
                 }
@@ -167,16 +166,14 @@ fn create_dag(py: Python, steps: &Bound<'_, PyList>) -> PyResult<Py<PyAny>> {
 /// # Returns
 /// Workflow execution results
 /// Python-bridge progress callback that forwards events to a Python callable.
-#[derive(Clone)]
 struct PyProgressCallbackAdapter {
-    callback: PyObject,
+    callback: Py<PyAny>,
 }
 
 impl ProgressCallback for PyProgressCallbackAdapter {
     fn on_progress(&self, event: ProgressEvent) {
-        let callback = self.callback.clone();
-        pyo3::Python::with_gil(|py| {
-            let dict = PyDict::new_bound(py);
+        pyo3::Python::attach(|py| {
+            let dict = PyDict::new(py);
             match event.clone() {
                 ProgressEvent::Started { step_id, timestamp: _, message } => {
                     dict.set_item("type", "started").ok();
@@ -201,7 +198,7 @@ impl ProgressCallback for PyProgressCallbackAdapter {
                 }
             }
             // Best-effort: ignore callback errors to avoid poisoning execution
-            let _ = callback.call1(py, (dict,));
+            let _ = self.callback.call1(py, (dict,));
         });
     }
 }
@@ -231,9 +228,9 @@ fn execute_workflow(
     py: Python,
     workflow_config: &Bound<'_, PyDict>,
     max_parallel: Option<usize>,
-    on_progress: Option<PyObject>,
+    on_progress: Option<Py<PyAny>>,
     cancel_token: Option<&Bound<'_, PyAny>>, // will downcast to PyCancellationToken if provided
-    step_handler: Option<PyObject>,
+    step_handler: Option<Py<PyAny>>,
 ) -> PyResult<Py<PyAny>> {
     let parallel_workers = max_parallel.unwrap_or_else(num_cpus::get);
 
@@ -268,7 +265,7 @@ fn execute_workflow(
                     .unwrap_or_else(|| "unknown".to_string());
 
                 // Convert config to serde_json::Value via json.dumps
-                let json_mod = PyModule::import_bound(py, "json").ok();
+                let json_mod = PyModule::import(py, "json").ok();
                 let config_value = if let Some(cfg_any) = step_dict.get_item("config")? {
                     if let Some(json_mod) = &json_mod {
                         if let Ok(s) = json_mod.call_method1("dumps", (cfg_any,)) {
@@ -292,8 +289,8 @@ fn execute_workflow(
                     step_type,
                     config_value,
                     dependencies,
-                    step_handler.clone(),
-                    variables_py.clone(),
+                    step_handler.as_ref().map(|h| h.clone_ref(py)),
+                    variables_py.as_ref().map(|v| v.clone_ref(py)),
                 );
                 executor.add_step(Box::new(py_step));
             }
@@ -308,9 +305,8 @@ fn execute_workflow(
 
     // Extract optional cancellation token
     let cancellation: Option<CancellationToken> = if let Some(bound_any) = cancel_token {
-        if let Ok(cell) = bound_any.downcast::<pyo3::PyCell<PyCancellationToken>>() {
-            let borrowed = cell.borrow();
-            Some(borrowed.inner.clone())
+        if let Ok(token_ref) = bound_any.downcast::<PyCancellationToken>() {
+            Some(token_ref.borrow().inner.clone())
         } else { None }
     } else { None };
 

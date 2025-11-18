@@ -113,7 +113,7 @@ fn read_parquet_fast(
     let rgs_ref = row_groups.as_ref().map(|v| v.as_slice());
     let buf = pf_io_core::read_parquet_ipc(path, cols_ref, rgs_ref, Some(8192))
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let pybytes = pyo3::types::PyBytes::new_bound(py, &buf);
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
     Ok(pybytes.into())
 }
 
@@ -138,7 +138,7 @@ fn read_csv_fast(
     let delim = delimiter.as_bytes().get(0).cloned().unwrap_or(b',');
     let buf = pf_io_core::read_csv_ipc(path, delim, has_header, infer_schema, Some(8192))
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let pybytes = pyo3::types::PyBytes::new_bound(py, &buf);
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
     Ok(pybytes.into())
 }
 
