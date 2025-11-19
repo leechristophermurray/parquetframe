@@ -496,7 +496,7 @@ cargo test --features proptest
 *   [Graph Algorithms](./graph-algorithms.md) - In-depth look at Rust-accelerated graph processing.
 *   [Workflow Engine](./workflow-engine.md) - Explanation of the parallel DAG execution in Rust.
 *   [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
-*   [Development Guide](./development.md) - Guide for contributing to the Rust codebase.
+*   [Distribution Guide](distribution.md) - Guide for building and distributing the Rust codebase.
 
 ## References
 

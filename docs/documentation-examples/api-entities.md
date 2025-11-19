@@ -400,6 +400,6 @@ def __post_init__(self):
 
 ## See Also
 
-- **[Entity Framework Guide](../phase2/USER_GUIDE.md#entity-framework)** - Complete entity framework tutorial
-- **[Todo/Kanban Walkthrough](../documentation-examples/tutorials.md)** - Real-world entity framework example
-- **[Relationships Guide](../phase2/USER_GUIDE.md#relationships)** - Deep dive into entity relationships
+- **[Entity Framework Guide](../legacy-migration/phase2-user-guide.md)** - Complete entity framework tutorial
+- **[Todo/Kanban Example](todo-kanban-example.md)** - Full application example
+- **[Examples Gallery](examples-gallery.md)** - More entity framework examples

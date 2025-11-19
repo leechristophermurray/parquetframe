@@ -7,24 +7,21 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
-serde.workspace = true
+tokio = { version = "1.35", features = ["full"] }
+serde = { workspace = true, features = ["derive"] }
+serde_yaml = "0.9"
 serde_json = "1.0"
-rayon.workspace = true
-crossbeam.workspace = true
-parking_lot.workspace = true
-thiserror.workspace = true
-num_cpus = "1.16"
-
-[dependencies.tokio]
-workspace = true
-optional = true
-
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+datafusion = { version = "45.0.0" }
+arrow = { workspace = true }
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+odbc-api = { version = "0.50", optional = true }
+thiserror = { workspace = true }
+pf-ml = { path = "../pf-ml" }
+async-trait = "0.1"
+futures = "0.3"
+chrono = "0.4"
+uuid = { version = "1.0", features = ["v4"] }
 
 [features]
-async = ["tokio"]
-
-[[bench]]
-name = "workflow_benchmarks"
-harness = false
+default = ["odbc"]
+odbc = ["dep:odbc-api"]

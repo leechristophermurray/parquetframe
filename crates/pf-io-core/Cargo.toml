@@ -13,4 +13,8 @@ serde.workspace = true
 rayon.workspace = true
 thiserror.workspace = true
 apache-avro = { version = "0.16", features = ["snappy", "zstandard"] }
-orc-rust = "0.7.0"
+# orc-rust = { version = "0.7.0", optional = true }
+
+[features]
+default = []
+# orc = ["dep:orc-rust"]

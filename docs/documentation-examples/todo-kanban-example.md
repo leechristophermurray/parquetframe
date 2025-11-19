@@ -913,13 +913,13 @@ This Todo/Kanban application demonstrates:
 - **Run the Demo**: `python examples/integration/todo_kanban/demo.py`
 - **Read the Source**: Study `models.py`, `permissions.py`, `app.py`
 - **Build Your Own**: Use this as a template for your application
-- **Check Documentation**: [Phase 2 Guide](../phase2/README.md)
+- **Check Documentation**: [Phase 2 Guide](../legacy-migration/phase2-overview.md)
 
 ---
 
 ## Related Documentation
 
-- **[Phase 2 Overview](../phase2/README.md)** - Phase 2 architecture and features
+- **[Phase 2 Overview](../legacy-migration/phase2-overview.md)** - Phase 2 architecture and features
 - **[Entity Framework Guide](../phase2/entities.md)** - Complete @entity documentation
 - **[Relationship Guide](../phase2/relationships.md)** - @rel decorator and patterns
 - **[Permissions System](../user-guide/permissions.md)** - Zanzibar permission details

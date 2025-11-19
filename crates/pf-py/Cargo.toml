@@ -18,5 +18,7 @@ num_cpus = "1.16"
 parking_lot.workspace = true
 pf-graph-core = { path = "../pf-graph-core" }
 pf-io-core = { path = "../pf-io-core" }
-pf-workflow-core = { path = "../pf-workflow-core" }
-pf-time-core = { path = "../pf-time-core" }
+pf-workflow-core = { workspace = true }
+pf-time-core = { workspace = true }
+tokio = { version = "1.35", features = ["full"] }
+serde_yaml = "0.9"

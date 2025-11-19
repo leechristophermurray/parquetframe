@@ -87,6 +87,6 @@ pframe interactive data.parquet
 
 ## Further Reading
 
-- [Core API Reference](core.md)
-- [CLI Guide](../cli-interface/index.md)
-- [CLI Examples](../cli/examples.md)
+- [Core API Reference](api-core.md)
+- [Entity API Reference](api-entities.md)
+- [Examples Gallery](examples-gallery.md)

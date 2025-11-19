@@ -20,6 +20,7 @@ pub mod io_fast;
 pub mod avro;
 
 /// ORC schema resolution and deserialization
+#[cfg(feature = "orc")]
 pub mod orc;
 
 // Re-export common types
@@ -27,4 +28,5 @@ pub use error::{IoError, Result};
 pub use parquet_meta::{ColumnStatistics, ParquetMetadata};
 pub use io_fast::{read_csv_ipc, read_parquet_ipc};
 pub use avro::read_avro_ipc;
+#[cfg(feature = "orc")]
 pub use orc::read_orc_ipc;

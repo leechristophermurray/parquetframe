@@ -176,7 +176,7 @@ For more detailed benchmarks and optimization tips, refer to the [Performance Gu
 *   **[Graph Algorithms](./graph-algorithms.md)** - Comprehensive guide to Rust-accelerated graph algorithms.
 *   **[Workflow Engine](./workflow-engine.md)** - Explains the parallel DAG execution capabilities of the Rust workflow engine.
 *   **[Benchmark Results](./benchmark_results.md)** - Detailed performance comparisons and methodology.
-*   **[Development](./development.md)** - Guide for contributing to the Rust codebase (Coming soon).
+*   **[Distribution](distribution.md)** - Guide for building and distributing Rust wheels.
 
 ## Related Categories
 
@@ -230,7 +230,7 @@ print(f"File has {meta['num_rows']:,} rows and {len(meta['columns'])} columns.")
 
 *   **New to Rust acceleration?** Start with the [Architecture Overview](./architecture.md) in this section.
 *   **Ready to use?** Check the [Installation Guide](../getting-started/installation.md#rust-backend) for setup instructions.
-*   **Want to contribute?** See the [Development Guide](./development.md) (Coming soon) for how to get involved with the Rust codebase.
+*   **Want to contribute?** See the [Distribution Guide](distribution.md) for how to contribute to the Rust codebase.
 
 ## System Requirements
 

@@ -559,7 +559,7 @@ graph TD
 
 * [Architecture](./architecture.md) - Overview of the Rust backend architecture.
 * [Performance Guide](../performance.md) - General optimization tips for ParquetFrame.
-* [Development Guide](./development.md) - Contributing to the Rust I/O codebase.
+* [Distribution Guide](distribution.md) - Building and distributing the Rust I/O codebase.
 
 ## References
 

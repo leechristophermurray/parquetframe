@@ -623,6 +623,6 @@ reset_config()
 
 ## Next Steps
 
-- See [API Reference](documentation-examples/api-reference.md) for complete API documentation
-- See [Migration Guide](legacy-migration/migration-guide.md) for upgrading from Phase 1
-- See [Examples](documentation-examples/examples-gallery.md) for more code examples
+- See [API Reference](../documentation-examples/api-core.md) for complete API documentation
+- See [Migration Guide](migration-guide.md) for upgrading from Phase 1
+- See [Examples](../documentation-examples/examples-gallery.md) for more code examples

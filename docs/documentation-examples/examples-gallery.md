@@ -73,7 +73,7 @@ class User:
 
 ### 📚 Full Tutorial
 
-**[Complete Todo/Kanban Walkthrough →](documentation-examples/todo-kanban-example.md)**
+**[Complete Todo/Kanban Walkthrough →](todo-kanban-example.md)**
 
 The complete 850+ line tutorial covers:
 - Architecture and setup
@@ -468,11 +468,11 @@ print("Analysis complete! Saved to task_analysis.png")
 For examples using the legacy Phase 1 API with pandas/Dask backend switching:
 
 - **[Legacy Basic Usage](legacy-migration/phase1-usage.md)** - Phase 1 file operations
-- **[Legacy Backend Switching](legacy-migration/phase1-backends.md)** - pandas/Dask switching examples
+- **[Legacy Backend Switching](../legacy-migration/phase1-backends.md)** - pandas/Dask switching examples
 
 ### Migration Path
 
-If you're using Phase 1 code, see the **[Migration Guide](getting-started/migration.md)** for:
+If you're using Phase 1 code, see the **[Migration Guide](../getting-started/quickstart.md)** for:
 - Side-by-side code comparisons
 - Step-by-step migration instructions
 - Breaking changes and workarounds
@@ -481,12 +481,12 @@ If you're using Phase 1 code, see the **[Migration Guide](getting-started/migrat
 
 ## More Examples
 
-- **[📚 Todo/Kanban Tutorial](documentation-examples/todo-kanban-example.md)** - Complete 850+ line walkthrough
+- **[📚 Todo/Kanban Tutorial](todo-kanban-example.md)** - Complete 850+ line walkthrough
 - **[🔐 Permissions Tutorial](../permissions-system/tutorial.md)** - Step-by-step Zanzibar guide
 - **[🏗️ Entity Advanced Patterns](../entity-framework/advanced-examples.md)** - Many-to-many & inheritance
-- **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities
-- **[Permissions Guide](user-guide/permissions.md)** - Complete permission examples
-- **[Workflows Guide](user-guide/workflows.md)** - YAML workflow patterns
+- **[Entity Framework Guide](../phase2/entities.md)** - Deep dive into entities
+- **[Permissions Guide](../user-guide/permissions.md)** - Complete permission examples
+- **[Workflows Guide](../user-guide/workflows.md)** - YAML workflow patterns
 
 All examples use Phase 2 API unless explicitly marked as legacy.
 ```

@@ -1,0 +1,25 @@
+version: pf/v1
+
+config:
+  stop_on_failure: true
+
+steps:
+  - name: fetch_data
+    type: http.get
+    params:
+      url: "https://jsonplaceholder.typicode.com/posts"
+      format: "json"
+    output: raw_posts
+
+  - name: filter_posts
+    type: datafusion.sql
+    inputs: [raw_posts]
+    params:
+      sql: 'SELECT * FROM raw_posts WHERE "userId" = 1'
+    output: filtered_posts
+
+  - name: save_results
+    type: parquet.write
+    input: filtered_posts
+    params:
+      path: "filtered_posts.parquet"
