@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "parquetframe"
-version = "2.0.0-beta"
+version = "2.0.0-beta.5"
 authors = [
     {name = "Christopher Murray", email = "lee.christopher.murray@gmail.com"},
 ]
@@ -129,6 +129,7 @@ module-name = "parquetframe._rustic"
 python-source = "src"
 manifest-path = "crates/pf-py/Cargo.toml"
 include = ["LICENSE", "README.md", "CHANGELOG.md"]
+exclude = ["CONTEXT_*"]
 
 # Tool configurations
 [tool.ruff]

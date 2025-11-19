@@ -37,6 +37,17 @@ pip install -e ".[dev]"
 pip install git+https://github.com/leechristophermurray/parquetframe.git
 ```
 
+### Rust Backend
+
+To enable the Rust backend for performance acceleration:
+
+```bash
+pip install parquetframe[rust]
+```
+
+This installs the `pf-py` bindings and required Rust crates.
+
+
 ## Verify Installation
 
 Test your installation:

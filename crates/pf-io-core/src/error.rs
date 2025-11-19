@@ -9,9 +9,17 @@ pub type Result<T> = std::result::Result<T, IoError>;
 /// Error types for I/O operations.
 #[derive(Error, Debug)]
 pub enum IoError {
-    /// File not found or inaccessible
+    /// Error when file is not found
     #[error("File not found: {0}")]
     FileNotFound(String),
+
+    /// Error when parsing data
+    #[error("Parse error: {0}")]
+    ParseError(String),
+
+    /// Error when serializing data
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
 
     /// Failed to read file
     #[error("Failed to read file: {0}")]
@@ -45,5 +53,11 @@ pub enum IoError {
 impl From<parquet::errors::ParquetError> for IoError {
     fn from(err: parquet::errors::ParquetError) -> Self {
         IoError::Parquet(err.to_string())
+    }
+}
+
+impl From<arrow::error::ArrowError> for IoError {
+    fn from(err: arrow::error::ArrowError) -> Self {
+        IoError::Other(err.to_string())
     }
 }

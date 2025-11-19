@@ -11,22 +11,28 @@ Google Zanzibar-style Relationship-Based Access Control (ReBAC) with check, expa
 
 ## Quick Start
 
-```python
-from parquetframe.permissions import PermissionManager
+> [!TIP]
+> Check out the **[Step-by-Step Tutorial](tutorial.md)** for a complete walkthrough.
 
-permissions = PermissionManager("./permissions_graph")
+```python
+```python
+from parquetframe.permissions import TupleStore, RelationTuple, check, list_objects, list_subjects
+
+store = TupleStore()
 
 # Grant permission
-permissions.grant("user:alice", "document:readme", "viewer")
+store.add_tuple(RelationTuple("document", "readme", "viewer", "user", "alice"))
 
 # Check permission
-can_view = permissions.check("user:alice", "document:readme", "viewer")
+can_view = check(store, "user", "alice", "viewer", "document", "readme")
 
-# List accessible resources
-docs = permissions.list_objects("user:alice", "document", "viewer")
+# List accessible resources (for a subject)
+# Note: list_objects finds objects with a specific relation,
+# to find what 'alice' can view requires expand() or logic
+docs = list_objects(store, "viewer", "document")
 
 # List users with access
-viewers = permissions.list_subjects("document:readme", "viewer")
+viewers = list_subjects(store, "viewer", "document", "readme")
 ```
 
 ## Zanzibar Four APIs

@@ -11,6 +11,7 @@ import pandas as pd
 import yaml
 
 from ..core.reader import read_avro, read_parquet
+from .delta_log import DeltaLog
 
 
 class EntityStore:
@@ -26,28 +27,42 @@ class EntityStore:
         self.metadata = metadata
         self._ensure_storage()
 
+        # Initialize Delta Log for O(1) writes
+        self.delta_log = DeltaLog(
+            storage_path=self.metadata.storage_path,
+            primary_key=self.metadata.primary_key,
+        )
+
     def _ensure_storage(self) -> None:
         """Ensure storage directory exists."""
         self.metadata.storage_path.mkdir(parents=True, exist_ok=True)
 
     def _load_dataframe(self) -> pd.DataFrame:
-        """Load entity data as pandas DataFrame."""
-        storage_file = self.metadata.storage_file
+        """Load entity data as pandas DataFrame with delta log replay."""
+        base_path = self.metadata.storage_path / "base.parquet"
 
-        if not storage_file.exists():
-            # Return empty DataFrame with correct schema
-            return pd.DataFrame(columns=list(self.metadata.fields.keys()))
-
-        # Read using Phase 2 reader
-        if self.metadata.format == "parquet":
-            proxy = read_parquet(storage_file, engine="pandas")
-        elif self.metadata.format == "avro":
-            proxy = read_avro(storage_file, engine="pandas")
+        # Load base data
+        if base_path.exists():
+            base_df = pd.read_parquet(base_path)
         else:
-            raise ValueError(f"Unsupported format: {self.metadata.format}")
+            # Try legacy storage file
+            storage_file = self.metadata.storage_file
+            if storage_file.exists():
+                if self.metadata.format == "parquet":
+                    proxy = read_parquet(storage_file, engine="pandas")
+                    base_df = proxy.native
+                elif self.metadata.format == "avro":
+                    proxy = read_avro(storage_file, engine="pandas")
+                    base_df = proxy.native
+                else:
+                    raise ValueError(f"Unsupported format: {self.metadata.format}")
+            else:
+                # No data yet
+                base_df = pd.DataFrame(columns=list(self.metadata.fields.keys()))
 
-        # Return native pandas DataFrame
-        return proxy.native
+        # Apply delta log
+        merged_df = self.delta_log.replay(base_df)
+        return merged_df
 
     def _save_dataframe(self, df: pd.DataFrame) -> None:
         """Save DataFrame to storage."""
@@ -139,7 +154,7 @@ class EntityStore:
 
     def save(self, instance: Any) -> None:
         """
-        Save an entity instance.
+        Save an entity instance using O(1) delta log append.
 
         Args:
             instance: Entity instance to save
@@ -147,48 +162,38 @@ class EntityStore:
         # Convert instance to dict
         data = asdict(instance)
 
-        # Load existing data
+        # Append to delta log (O(1) operation!)
+        self.delta_log.append("UPSERT", data)
+
+        # Trigger compaction if needed (background-worthy)
+        if self.delta_log.should_compact():
+            self._compact()
+
+    def _compact(self) -> None:
+        """Compact delta log into base parquet file."""
+        # Load all data with deltas
         df = self._load_dataframe()
 
-        # Check if entity already exists (update vs insert)
-        pk_value = data[self.metadata.primary_key]
-        pk_col = self.metadata.primary_key
+        # Compact
+        self.delta_log.compact(df)
 
-        if len(df) > 0 and pk_col in df.columns:
-            # Update existing or append new
-            mask = df[pk_col] == pk_value
-            if mask.any():
-                # Update existing row
-                for col, value in data.items():
-                    df.loc[mask, col] = value
-            else:
-                # Append new row
-                df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
-        else:
-            # First record
-            df = pd.DataFrame([data])
-
-        # Save back to storage
-        self._save_dataframe(df)
+        # Update GraphAr metadata
+        self._write_graphar_metadata(df)
 
     def delete(self, pk_value: Any) -> None:
         """
-        Delete an entity by primary key.
+        Delete an entity by primary key using O(1) delta log append.
 
         Args:
             pk_value: Primary key value
         """
-        df = self._load_dataframe()
+        # Append delete operation to delta log
+        data = {self.metadata.primary_key: pk_value}
+        self.delta_log.append("DELETE", data)
 
-        if len(df) == 0:
-            return
-
-        # Filter out the entity
-        pk_col = self.metadata.primary_key
-        df = df[df[pk_col] != pk_value]
-
-        # Save back
-        self._save_dataframe(df)
+        # Trigger compaction if needed
+        if self.delta_log.should_compact():
+            self._compact()
 
     def find(self, pk_value: Any) -> Any | None:
         """

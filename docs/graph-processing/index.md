@@ -311,3 +311,11 @@ For detailed API documentation, see:
 - `parquetframe.graph.algorithms` - Algorithm implementations
 - `parquetframe.graph.graphar` - GraphAr format support
 - `parquetframe.graph_rust` - Rust-accelerated functions
+
+## Error Handling
+
+Common issues when working with graphs:
+
+- **Schema Mismatch**: Ensure your Parquet files match `_schema.yaml`.
+- **Missing Metadata**: `_metadata.yaml` is required in the graph directory.
+- **Memory Errors**: Use `islazy=True` (Dask) for graphs larger than memory.

@@ -25,6 +25,20 @@ Thank you for your interest in contributing to ParquetFrame! This document provi
    pre-commit install
    ```
 
+5. **Rust Setup (for backend development)**
+   - Install Rust via [rustup](https://rustup.rs/):
+     ```bash
+     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+     ```
+   - Install `maturin` for building the Python extension:
+     ```bash
+     pip install maturin
+     ```
+   - Build and install in development mode:
+     ```bash
+     maturin develop
+     ```
+
 ## Development Workflow
 
 ### Code Style
@@ -49,6 +63,9 @@ mypy src/
 
 # Run tests
 pytest
+
+# Run Rust tests
+cargo test
 ```
 
 ### Testing

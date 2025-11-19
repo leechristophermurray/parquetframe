@@ -11,6 +11,9 @@ ParquetFrame's Entity Framework provides a powerful, decorator-based system for 
 
 ## Quick Start
 
+> [!TIP]
+> See **[Advanced Examples](advanced-examples.md)** for many-to-many relationships and inheritance.
+
 ```python
 from parquetframe.entity import entity, rel
 from dataclasses import dataclass

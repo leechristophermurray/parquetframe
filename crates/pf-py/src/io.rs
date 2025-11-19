@@ -93,38 +93,31 @@ fn get_parquet_column_stats_rust(py: Python, path: String) -> PyResult<Vec<Py<Py
     Ok(result)
 }
 
-/// Read Parquet file with Rust fast-path (placeholder).
-///
-/// This is a placeholder for Phase 3.6 implementation.
-/// Will provide 2.5-3x speedup over pure Python.
+/// Read Parquet file with Rust fast-path and return Arrow IPC bytes.
 ///
 /// # Arguments
 /// * `path` - Path to Parquet file
-/// * `columns` - Optional list of columns to read
+/// * `columns` - Optional list of columns to read (projection)
 ///
 /// # Returns
-/// Dictionary with Arrow table data (to be converted to DataFrame)
+/// Arrow IPC stream as Python bytes; reconstruct in Python using pyarrow.ipc.open_stream.
 #[pyfunction]
-#[pyo3(signature = (path, columns=None))]
+#[pyo3(signature = (path, columns=None, row_groups=None))]
 fn read_parquet_fast(
     py: Python,
     path: String,
     columns: Option<Vec<String>>,
-) -> PyResult<Py<PyDict>> {
-    // TODO: Implement actual Parquet reading with arrow-rs
-    // For now, return placeholder indicating the function exists
-    let result = PyDict::new(py);
-    result.set_item("status", "not_implemented")?;
-    result.set_item("message", "Parquet fast-path coming in Phase 3.6")?;
-    result.set_item("path", path)?;
-    result.set_item("columns", columns)?;
-    Ok(result.into())
+    row_groups: Option<Vec<usize>>,
+) -> PyResult<Py<PyAny>> {
+    let cols_ref = columns.as_ref().map(|v| v.as_slice());
+    let rgs_ref = row_groups.as_ref().map(|v| v.as_slice());
+    let buf = pf_io_core::read_parquet_ipc(path, cols_ref, rgs_ref, Some(8192))
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
 }
 
-/// Read CSV file with Rust fast-path (placeholder).
-///
-/// This is a placeholder for Phase 3.6 implementation.
-/// Will provide 4-5x speedup over pure Python with parallel parsing.
+/// Read CSV file with Rust fast-path and return Arrow IPC bytes.
 ///
 /// # Arguments
 /// * `path` - Path to CSV file
@@ -132,24 +125,41 @@ fn read_parquet_fast(
 /// * `has_header` - Whether file has header row
 ///
 /// # Returns
-/// Dictionary with Arrow table data (to be converted to DataFrame)
+/// Arrow IPC stream as Python bytes; reconstruct in Python using pyarrow.ipc.open_stream.
 #[pyfunction]
-#[pyo3(signature = (path, delimiter=",".to_string(), has_header=true))]
+#[pyo3(signature = (path, delimiter=",".to_string(), has_header=true, infer_schema=true))]
 fn read_csv_fast(
     py: Python,
     path: String,
     delimiter: String,
     has_header: bool,
-) -> PyResult<Py<PyDict>> {
-    // TODO: Implement actual CSV reading with arrow-rs
-    // For now, return placeholder indicating the function exists
-    let result = PyDict::new(py);
-    result.set_item("status", "not_implemented")?;
-    result.set_item("message", "CSV fast-path coming in Phase 3.6")?;
-    result.set_item("path", path)?;
-    result.set_item("delimiter", delimiter)?;
-    result.set_item("has_header", has_header)?;
-    Ok(result.into())
+    infer_schema: bool,
+) -> PyResult<Py<PyAny>> {
+    let delim = delimiter.as_bytes().get(0).cloned().unwrap_or(b',');
+    let buf = pf_io_core::read_csv_ipc(path, delim, has_header, infer_schema, Some(8192))
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
+}
+
+/// Read Avro file with Rust fast-path and return Arrow IPC bytes.
+///
+/// # Arguments
+/// * `path` - Path to Avro file
+///
+/// # Returns
+/// Arrow IPC stream as Python bytes; reconstruct in Python using pyarrow.ipc.open_stream.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=None))]
+fn read_avro_fast(
+    py: Python,
+    path: String,
+    batch_size: Option<usize>,
+) -> PyResult<Py<PyAny>> {
+    let buf = pf_io_core::read_avro_ipc(path, batch_size)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
 }
 
 /// Check if I/O fast-paths are available.
@@ -158,8 +168,23 @@ fn read_csv_fast(
 /// true if fast-path implementations are ready
 #[pyfunction]
 fn io_fastpaths_available() -> bool {
-    // Will return true once implementations are complete
-    false  // TODO: Change to true when fast-paths are implemented
+    true
+}
+
+/// Read ORC file using fast Rust implementation.
+///
+/// Returns Arrow IPC stream bytes that can be converted to PyArrow Table.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=None))]
+fn read_orc_fast(
+    py: Python,
+    path: String,
+    batch_size: Option<usize>,
+) -> PyResult<Py<PyAny>> {
+    let buf = pf_io_core::read_orc_ipc(&path, batch_size)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
 }
 
 /// Register I/O functions with Python module.
@@ -173,6 +198,8 @@ pub fn register_io_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Fast-path functions (placeholders for Phase 3.6)
     m.add_function(wrap_pyfunction!(read_parquet_fast, m)?)?;
     m.add_function(wrap_pyfunction!(read_csv_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(read_avro_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(read_orc_fast, m)?)?;
     m.add_function(wrap_pyfunction!(io_fastpaths_available, m)?)?;
 
     Ok(())
