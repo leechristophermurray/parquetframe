@@ -12,6 +12,7 @@ from typing import Any, TypeVar
 
 from .entity_store import EntityStore
 from .metadata import EntityMetadata, registry
+from .query import RelationshipQuery
 
 T = TypeVar("T")
 
@@ -234,8 +235,8 @@ def rel(
     def decorator(func: Callable) -> Callable:
         # Store metadata to be resolved later when entity class is available
         @wraps(func)
-        def wrapper(self) -> list[Any] | Any | None:
-            """Resolve the relationship."""
+        def wrapper(self, **kwargs: Any) -> list[Any] | Any | None | RelationshipQuery:
+            """Resolve the relationship with optional filtering."""
             # Get source entity metadata from self
             source_class = self.__class__
             source_metadata = registry.get_by_class(source_class)
@@ -264,10 +265,24 @@ def rel(
                 # their foreign key matches our primary key
                 pk_value = getattr(self, source_metadata.primary_key)
 
-                # Query target entities using foreign key
-                target_store = EntityStore(target_metadata)
-                results = target_store.find_by(**{foreign_key: pk_value})
-                return results
+                # Create filter function that queries the target store
+                def filter_func(filters: dict[str, Any]) -> list[Any]:
+                    # Always filter by the FK matching our PK
+                    combined_filters = {foreign_key: pk_value, **filters}
+                    target_store = EntityStore(target_metadata)
+                    return target_store.find_by(**combined_filters)
+
+                # If kwargs provided, create query with initial filters and execute
+                if kwargs:
+                    query = RelationshipQuery(
+                        target_metadata.cls, filter_func, filters=kwargs
+                    )
+                    return query.all()  # Execute immediately for backward compatibility
+                else:
+                    # No filters, return query builder for chaining
+                    return RelationshipQuery(
+                        target_metadata.cls, filter_func, filters={}
+                    )
 
         # Store relationship info for registration
         wrapper._rel_target = target

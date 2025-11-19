@@ -1,125 +1,161 @@
 # Gap Plan (Phase 3)
 
-Focused, actionable gap analysis aligned with v2.0.0-beta and the current repository state. All items are commit-safe and avoid private planning references.
+This document consolidates all gaps/features identified across repo code and docs.
 
-## Legend
-- Status: NS (Not Started), P (Planned), IP (In Progress), D (Done)
-- Priority: P1 (high), P2 (medium), P3 (lower)
-
----
-
-## 1) Rust Acceleration Distribution (P1, Status: P)
-- Gaps
-  - Prebuilt wheels (Linux manylinux, macOS x86_64/aarch64, Windows) not yet published
-  - Release CI for maturin build/test/signing not documented in docs
-- Work Items
-  - Define CI matrix for wheels (maturin) and smoke tests; verify `pyo3/extension-module` wheels import on all platforms
-  - Document release procedure and troubleshooting (link from Rust Acceleration → Architecture)
-- Acceptance Criteria
-  - CI plan and docs exist; dry-run release produces testable wheels; installation docs updated
-
-## 2) Rust I/O Fast-Paths (Parquet/CSV/Avro) (P1, Status: P)
-- Current State
-  - Metadata paths are wired via `_rustic` (read_parquet_metadata_rust, get_row_count, column names/stats)
-  - Full readers in Python wrappers check for `_rustic` functions and raise NotImplementedError if missing
-- Gaps
-  - Implement and export `_rustic.read_parquet_fast` and `_rustic.read_csv_fast` (+ Avro) with Arrow zero-copy, GIL release, and parallelism
-  - Unify CLI fast-path usage and document graceful fallback
-- Work Items
-  - Implement Rust functions and PyO3 bindings; add Python wrappers/tests/benchmarks; update docs/rust-acceleration/io-fastpaths.md with current status
-- Acceptance Criteria
-  - Fast-path functions available and covered by tests/benchmarks; CLI and docs reflect behavior/fallback
-
-## 3) Rust Workflow Engine Integration (P1, Status: IP)
-- Current State
-  - Python bindings export `_rustic.workflow_rust_available`, `create_dag`, `execute_workflow`, `workflow_metrics` and support progress/cancellation hooks; Python step_handler is wired for real step execution
-- Gaps
-  - CLI tie-in (optional) for invoking workflows with progress; additional examples; performance benchmarking docs
-- Work Items
-  - Add CLI workflow subcommands (optional), more examples; benchmark DAG executor; update docs where needed
-- Acceptance Criteria
-  - End-to-end workflow executes via Rust engine with progress/cancellation and custom step handlers; docs updated; optional CLI usage documented
-
-## 4) Entity Framework – Advanced Patterns (P1, Status: P)
-- Gaps
-  - Many-to-many relationships, inheritance, richer query examples
-- Work Items
-  - Author advanced examples/tutorial; add runnable snippets and cross-links from entity-framework index
-- Acceptance Criteria
-  - Docs include advanced scenarios with runnable examples
-
-## 5) Permissions (Zanzibar/ReBAC) Tutorial (P1, Status: P)
-- Gaps
-  - End-to-end tutorial with realistic scenario (relation tuples, roles, expand, list_objects/list_subjects, check)
-- Work Items
-  - Tutorial + example app integration (e.g., Todo/Kanban); link from permissions-system index and examples gallery
-- Acceptance Criteria
-  - Tutorial runs locally and is discoverable from the permissions section
-
-## 6) Documentation Placeholders (P1, Status: P)
-- Files to complete
-  - `docs/yaml-workflows/advanced.md`
-  - `docs/sql-support/duckdb.md`
-  - `docs/sql-support/databases.md`
-  - `docs/bioframe-integration/index.md`
-  - `docs/testing-quality/index.md`
-- Acceptance Criteria
-  - Each placeholder replaced with concrete guidance, examples, and links; `mkdocs build --strict` passes
-
-## 7) AI-Powered Exploration: Notebook + CLI Walkthrough (P2, Status: P)
-- Gaps
-  - Executable notebook and unified CLI walkthrough
-- Work Items
-  - Add `examples/ai-data-exploration.ipynb`; expand CLI examples with an end-to-end session
-- Acceptance Criteria
-  - Notebook executes locally; CLI steps reproducible
-
-## 8) Cloud Storage Integration (S3-first) (P2, Status: NS)
-- Gaps
-  - Minimal S3 read/write utilities and docs (auth patterns, env/IAM)
-- Work Items
-  - Prototype `read_parquet_s3` / `write_parquet_s3`; author `docs/cloud-integration/aws-s3.md`; note GCS/Azure follow-on
-- Acceptance Criteria
-  - Docs approved; minimal helpers validated; follow-up issues for other providers
-
-## 9) Multi-Format Polish (CSV/JSON/ORC/Avro) (P2, Status: P)
-- Gaps
-  - Broaden examples/tests, clarify engine selection interactions and options
-- Work Items
-  - Extend tests/docs; performance notes; update feature matrix if needed
-- Acceptance Criteria
-  - Clear user guidance and tests for all supported formats
-
-## 10) Real-time Monitoring & Metrics (P3, Status: NS)
-- Gaps
-  - Expose basic metrics (latency, memory, error rates) and a simple dashboard
-- Work Items
-  - Define metrics surface and a small demo (e.g., Streamlit/Dash)
-- Acceptance Criteria
-  - Concept doc & minimal demo checked in; issues created for productionization
-
-## 11) Visualization Convenience API (P3, Status: NS)
-- Gaps
-  - Lightweight `.plot()` layer without locking users to a single backend
-- Work Items
-  - Propose API surface, extras gating, and examples; keep backend-agnostic
-- Acceptance Criteria
-  - Concept doc approved; issues filed for prototype
-
-## 12) Streaming Capabilities (P3, Status: NS)
-- Gaps
-  - Streaming/batch-iterative patterns for very large files
-- Work Items
-  - Document patterns with Dask/Polars; examples and limitations
-- Acceptance Criteria
-  - Concept doc + examples; issues for future enhancements
+## Scope & Current State
+- Python multi-engine core (pandas/Polars/Dask) with intelligent selection and unified API
+- CLI with batch, interactive, SQL, AI, workflows, benchmarking
+- Rust acceleration via Cargo workspace:
+  - pf-io-core (I/O fast-paths)
+  - pf-graph-core (graph algorithms)
+  - pf-workflow-core (parallel workflow engine)
+  - pf-py (PyO3 bindings, exposed as parquetframe._rustic)
+- Docs: extensive Rust Acceleration, Features, and Phase 3 planning; several placeholders to complete
 
 ---
 
-## Risk Notes
-- Wheel publishing matrix and manylinux nuances may require iteration
-- S3 auth patterns must be clearly documented to avoid misconfiguration
-- Visualization API should avoid vendor lock-in and heavy deps by default
+## Gap Matrix
+Legend: Priority P1 (high), P2 (medium), P3 (lower)
+
+### P1. Rust Distribution (Wheels)
+- Current
+  - maturin build configured via pyproject.toml (module-name parquetframe._rustic)
+  - No public wheel CI pipeline and publish documentation
+- Gaps
+  - Prebuilt wheels for Linux (manylinux), macOS (x86_64/aarch64), Windows
+  - CI matrix and smoke tests (import test on each platform)
+  - Release procedure docs (signing, auditwheel/delocate)
+- Work Items
+  - CI plan (.github/workflows): maturin build matrix; cache; run `python -c "import parquetframe; print(parquetframe.rust_available())"`
+  - Document “Releasing Wheels” page and troubleshooting
+- Dependencies
+  - GitHub Actions runners; maturin; pyo3
+- Acceptance Criteria
+  - Dry-run produces testable wheels; docs updated; plan approved
+- Risks/Mitigations
+  - manylinux quirks → test with official manylinux images; constrain Rust/Arrow versions
+
+### P1. Rust I/O Fast-Paths (Parquet/CSV/Avro)
+- Current
+  - `_rustic` metadata functions available (read_parquet_metadata_rust, get_parquet_row_count_rust, get_parquet_column_names_rust, get_parquet_column_stats_rust)
+  - Full readers (read_parquet_fast/read_csv_fast) guarded; may be NotImplemented pending bindings
+- Gaps
+  - Implement `_rustic.read_parquet_fast` and `_rustic.read_csv_fast` (+ Avro) with Arrow zero-copy, GIL release, parallel read
+  - Integrate with CLI and docs; robust fallback
+- Work Items
+  - Implement Rust fns in pf-io-core + PyO3 in pf-py; Python wrappers + tests + Criterion benchmarks; update docs/rust-acceleration/io-fastpaths.md
+- Dependencies
+  - arrow, parquet crates; numpy; pyo3; rayon
+- Acceptance Criteria
+  - Functions available; tests/benchmarks passing; CLI leverages fast-path when available
+- Risks/Mitigations
+  - Binary incompatibilities → pin versions; provide meaningful fallbacks and logging
+
+### P1. Rust Workflow Engine Integration
+- Current
+  - Python wrappers expect `_rustic.workflow_rust_available`, `execute_step`, `create_dag`, `execute_workflow`, `workflow_metrics`
+- Gaps
+  - Ensure bindings exported; end-to-end example; progress/cancellation plumbing; CLI tie-in
+- Work Items
+  - Bindings + example workflow; smoke tests; benchmark DAG executor; update docs/workflow-engine.md
+- Dependencies
+  - pf-workflow-core; pyo3; rayon/crossbeam; optional tokio
+- Acceptance Criteria
+  - E2E run via Rust engine with progress/cancellation shown; docs updated
+- Risks/Mitigations
+  - Threading/GIL nuances → explicit allow_threads in bindings; deterministic tests
+
+### P1. Permissions (Zanzibar) Tutorial
+- Current
+  - API surface documented; examples exist in broader docs
+- Gaps
+  - Cohesive tutorial + example app (relation tuples, roles, expand/list/check)
+- Work Items
+  - Tutorial page; sample data; commands; cross-links to CLI
+- Acceptance Criteria
+  - Tutorial runnable locally and referenced from permissions index
+
+### P1. Entity Framework – Advanced Patterns
+- Current
+  - Decorator-based entities, relations, GraphAr integration
+- Gaps
+  - Many-to-many; inheritance; advanced queries
+- Work Items
+  - Advanced examples/tutorial; update entity index; tests for examples
+- Acceptance Criteria
+  - Runnable examples and clear docs
+
+### P1. Documentation Placeholders
+- Files
+  - docs/yaml-workflows/advanced.md
+  - docs/sql-support/duckdb.md
+  - docs/sql-support/databases.md
+  - docs/bioframe-integration/index.md
+  - docs/testing-quality/index.md
+- Work Items
+  - Author/complete with runnable snippets; cross-linking; ensure mkdocs strict build passes
+- Acceptance Criteria
+  - All placeholders replaced; nav and links valid
+
+### P2. AI: Notebook + CLI Walkthrough
+- Gaps
+  - Add `examples/ai-data-exploration.ipynb` and unify CLI walkthrough
+- Work Items
+  - Notebook with DataContext + LLMAgent usage; CLI transcript; screenshots optional
+- Acceptance Criteria
+  - Notebook executes; CLI reproducible on local env
+
+### P2. Cloud S3 Minimal Support
+- Gaps
+  - Minimal helpers + docs; auth patterns (env/IAM)
+- Work Items
+  - `read_parquet_s3`/`write_parquet_s3` using fsspec/s3fs; docs/cloud-integration/aws-s3.md; note GCS/Azure later
+- Acceptance Criteria
+  - Helper functions and docs validated locally
+
+### P2. Multi-Format Polish
+- Gaps
+  - Broaden examples/tests; clarify engine selection interplay across CSV/JSON/ORC/Avro
+- Work Items
+  - Expand tests/docs; performance notes; feature matrix update as needed
+- Acceptance Criteria
+  - Clear user guidance with runnable snippets
+
+### P3. Monitoring & Metrics
+- Gaps
+  - Emit metrics and provide minimal dashboard
+- Work Items
+  - Define metrics; implement counters/timers; Streamlit/Dash prototype
+- Acceptance Criteria
+  - Concept doc and prototype checked in
+
+### P3. Visualization Convenience API
+- Gaps
+  - `.plot()` façade that stays backend-agnostic
+- Work Items
+  - API design doc; extras gating; thin wrappers; examples
+- Acceptance Criteria
+  - Concept doc accepted; issues for prototype
+
+### P3. Streaming Patterns
+- Gaps
+  - Document patterns for huge files (batch iteration, memory map) with Dask/Polars
+- Work Items
+  - Examples; limitations; guidance
+- Acceptance Criteria
+  - Concept doc + examples merged
+
+---
+
+## Cross-Cutting
+- Docs coherence & cross-links; feature matrix reconciliation
+- Release notes and versioning discipline for beta → stable
 
 ## Tracking
-- Each item maps to issues/PRs labeled by area (rust, docs, ai, permissions, workflows, sql, cloud) and phase3; links added in PR descriptions
+- Labels: phase3 + area (rust, docs, ai, permissions, workflows, sql, cloud)
+- PR titles: conventional commits (e.g., `docs(phase3): ...`, `feat(io-rust): ...`)
+
+## Validation Gates (applies broadly)
+- mkdocs build --strict passes
+- pytest -q green; cargo test -q green (workspace)
+- ruff check .; black --check .; mypy (relaxed config) clean

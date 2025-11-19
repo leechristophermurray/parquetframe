@@ -1,63 +1,65 @@
 # Continuing Plan (Phase 3)
 
-Execution plan to close v2.0.0-beta gaps with clear milestones, acceptance criteria, and validation gates.
+This execution plan is derived from the Gap Plan. It sequences milestones, adds checklists, and defines validation and Definition of Done (DoD).
 
-## Milestones
+## Milestones & Checklists
 
-### M1: Phase 3 docs sync (short)
-- Tasks
-  - Ensure sanitized planning docs under `docs/phase3/` reflect current scope (Gap Plan + Continuing Plan)
-  - Verify navigation and cross-links
-- Acceptance Criteria
-  - `mkdocs build --strict` passes; Phase 3 appears in nav; links valid; no private files referenced
+### M1. Phase 3 docs sync (short)
+- [x] Update docs/phase3/gap-plan-phase3.md and continuing-plan-phase3.md (sanitized)
+- [x] Verify mkdocs nav/cross-links
+- [x] Build with `mkdocs build --strict`
+- DoD: sanitized plans in repo; build passes; no private refs
 
-### M2: Fill high-value placeholders (short)
-- Tasks
-  - Author: `docs/yaml-workflows/advanced.md`
-  - Author: `docs/sql-support/duckdb.md`, `docs/sql-support/databases.md`
-  - Improve: `docs/bioframe-integration/index.md`, `docs/testing-quality/index.md`
-- Acceptance Criteria
-  - Pages contain runnable patterns and cross-links; build passes
+### M2. Fill high-value placeholders (short)
+- [x] Author docs/yaml-workflows/advanced.md (variables, conditionals, retries/timeouts, resource hints, progress/cancel, Rust executor usage)
+- [x] Author docs/sql-support/duckdb.md (registration, joins, EXPLAIN/validate, tips)
+- [x] Author docs/sql-support/databases.md (URIs, auth, pooling, safe configs)
+- [x] Improve docs/bioframe-integration/index.md (overlap/coverage/cluster examples)
+- [x] Author docs/testing-quality/index.md (strategy; py/rust tests; coverage; ruff/black/mypy; CI)
+- DoD: pages contain runnable snippets; links valid; build passes
 
-### M3: Permissions tutorial + Entity advanced examples (short/medium)
-- Tasks
-  - Add permissions tutorial (relation tuples, roles, expand, list_objects/list_subjects, check)
-  - Author entity framework advanced examples (many-to-many, inheritance, queries)
-- Acceptance Criteria
-  - Examples run locally; referenced from index pages and examples gallery
+### M3. Permissions tutorial + Entity advanced examples (short/medium)
+- [x] Permissions tutorial (relation tuples, roles, expand, list_objects/list_subjects, check) integrated with example
+- [x] Entity advanced (many-to-many, inheritance, queries) with runnable examples
+- [x] Add to examples gallery and cross-link from indexes
+- DoD: examples run locally; CI smoke tests OK
 
-### M4: Rust distribution & contributor guide (medium)
-- Tasks
-  - Document CI matrix for maturin wheels; add contributor development/benchmarking guide
-  - Dry-run wheel build + import smoke tests (documented)
-- Acceptance Criteria
-  - Docs approved; issues created for CI implementation; dry-run validated
+### M4. Rust distribution & contributor guide (medium)
+- [x] Draft CI matrix (maturin wheels) and smoke import plan
+- [x] Write contributor dev/bench guide (layout, building, cargo test/bench, pyo3 notes)
+- [x] Dry-run wheel build; record results
+- DoD: docs approved; issues created for CI implementation; dry-run validated
 
-### M5: AI example notebook + CLI walkthrough (medium)
-- Tasks
-  - Add `examples/ai-data-exploration.ipynb`; unify CLI walkthrough
-- Acceptance Criteria
-  - Notebook executes end-to-end; CLI steps reproducible
+### M5. AI notebook + CLI walkthrough (medium)
+- [x] Create `examples/ai-data-exploration.ipynb`
+- [x] Expand CLI walkthrough with end-to-end transcript
+- DoD: notebook executes; CLI steps reproducible
 
-### M6: Cloud (S3) minimal helpers + docs (medium)
-- Tasks
-  - Author `docs/cloud-integration/aws-s3.md`; outline `read_parquet_s3`/`write_parquet_s3`
-- Acceptance Criteria
-  - Doc approved; minimal helpers validated; follow-up issues for GCS/Azure
+### M6. Cloud S3 minimal helpers + docs (medium)
+- [x] Prototype `read_parquet_s3` / `write_parquet_s3` (fsspec/s3fs)
+- [x] Author docs/cloud-integration/aws-s3.md (auth patterns, examples)
+- DoD: helpers validated locally; doc approved; issues filed for GCS/Azure
 
-### M7: Monitoring & Visualizations concepts (long)
-- Tasks
-  - Draft metrics exposure + dashboard concept; propose visualization convenience API
-- Acceptance Criteria
-  - Concept docs accepted; prototype issues filed
+### M7. Monitoring & Visualizations concepts (long)
+- [x] Metrics surface (latency, memory, error rates); demo dashboard
+- [x] Visualization convenience API design doc
+- DoD: concept docs accepted; prototype issues created
 
-## Quality Gates
-- MkDocs Material style and consistent headings
-- Internal links maintained; no references to private/local planning files
-- Conventional commits for documentation changes
+## Validation Gates (all milestones)
+- mkdocs build --strict
+- pytest -q; cargo test -q (workspace)
+- ruff check .; black --check .; mypy (relaxed)
+- Examples in docs execute or are clearly marked as upcoming
 
-## Validation
-- Build: `mkdocs build --strict`
-- Local review: `mkdocs serve`
-- Link checks: run a link checker and fix broken references
-- Optional: smoke `pytest -q` and `cargo test -q` for referenced examples
+## Risk Register (selected)
+- Wheel matrix complexity → iterate; start with manylinux + macOS ARM/Intel; add Windows after
+- S3 auth pitfalls → document env/IAM patterns clearly; provide safe defaults
+- Visualization backend lock-in → API façade, extras-gated optional deps
+
+## Labels & Tracking
+- Use labels: phase3 + area (rust, docs, ai, permissions, workflows, sql, cloud)
+- Conventional commits for PRs; small, focused changes
+
+## Non-Goals (this phase)
+- Distributed Rust scheduler beyond single-node
+- GPU acceleration (tracked as future)

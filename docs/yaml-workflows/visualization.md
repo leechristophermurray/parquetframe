@@ -8,9 +8,9 @@ ParquetFrame supports three visualization formats, each with unique strengths:
 
 | Format | Best For | Output Types | Dependencies |
 |--------|----------|--------------|--------------|
-| **[Graphviz](#graphviz)** | Publication-ready diagrams | SVG, PNG, PDF | `graphviz` |
-| **[NetworkX](#networkx)** | Interactive exploration | PNG, interactive | `networkx`, `matplotlib` |
-| **[Mermaid](#mermaid)** | Documentation & web integration | Markdown, HTML | None |
+| **[Graphviz](#graphviz-visualization)** | Publication-ready diagrams | SVG, PNG, PDF | `graphviz` |
+| **[NetworkX](#networkx-visualization)** | Interactive exploration | PNG, interactive | `networkx`, `matplotlib` |
+| **[Mermaid](#mermaid-visualization)** | Documentation & web integration | Markdown, HTML | None |
 
 ## 🔧 Installation
 

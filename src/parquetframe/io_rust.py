@@ -157,6 +157,81 @@ class RustIOEngine:
             table = reader.read_all()
         return table
 
+    def read_avro(
+        self,
+        path: str | Path,
+        batch_size: int | None = None,
+    ) -> Any:
+        """
+        Read an Avro file using Rust fast-path.
+
+        Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
+
+        Args:
+            path: Path to Avro file
+            batch_size: Number of rows per batch (default: 8192)
+
+        Returns:
+            pyarrow.Table
+
+        Example:
+            >>> engine = RustIOEngine()
+            >>> tbl = engine.read_avro("data.avro")
+            >>> # Custom batch size
+            >>> tbl = engine.read_avro("data.avro", batch_size=4096)
+        """
+        if not hasattr(_rustic, "read_avro_fast"):
+            raise NotImplementedError("Avro fast-path not yet implemented.")
+
+        ipc_bytes = _rustic.read_avro_fast(str(path), batch_size=batch_size)
+        try:
+            import pyarrow as pa
+            import pyarrow.ipc as pa_ipc
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("pyarrow is required to reconstruct Arrow Table") from e
+
+        buf = pa.py_buffer(ipc_bytes)
+        with pa_ipc.open_stream(buf) as reader:
+            table = reader.read_all()
+        return table
+
+    def read_orc(
+        self,
+        path: str | Path,
+        batch_size: int | None = None,
+    ) -> Any:
+        """
+        Read an ORC file using Rust fast-path.
+
+        Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
+
+        Args:
+            path: Path to ORC file
+            batch_size: Number of rows per batch (default: 8192)
+
+        Returns:
+            pyarrow.Table
+
+        Example:
+            >>> engine = RustIOEngine()
+            >>> tbl = engine.read_orc("data.orc")
+            >>> df = tbl.to_pandas()
+        """
+        if not hasattr(_rustic, "read_orc_fast"):
+            raise NotImplementedError("ORC fast-path not yet implemented.")
+
+        ipc_bytes = _rustic.read_orc_fast(str(path), batch_size=batch_size)
+        try:
+            import pyarrow as pa
+            import pyarrow.ipc as pa_ipc
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError("pyarrow is required to reconstruct Arrow Table") from e
+
+        buf = pa.py_buffer(ipc_bytes)
+        with pa_ipc.open_stream(buf) as reader:
+            table = reader.read_all()
+        return table
+
     def get_parquet_metadata(self, path: str | Path) -> dict[str, Any]:
         """
         Get Parquet file metadata using Rust.
@@ -294,6 +369,52 @@ def read_csv_fast(
     return engine.read_csv(path, delimiter=delimiter, has_header=has_header)
 
 
+def read_avro_fast(
+    path: str, batch_size: int | None = None
+) -> Any:  # Changed from pa.Table to Any to match original type hint
+    """
+    Read Avro file using the Rust fast-path.
+
+    This is a convenience function wrapping RustIOEngine.read_avro.
+
+    Args:
+        path: Path to Avro file
+        batch_size: Optional batch size for reading
+
+    Returns:
+        PyArrow Table
+
+    Example:
+        >>> table = read_avro_fast("data.avro")
+        >>> df = table.to_pandas()
+    """
+    engine = RustIOEngine()
+    return engine.read_avro(path, batch_size)
+
+
+def read_orc_fast(
+    path: str, batch_size: int | None = None
+) -> Any:  # Changed from pa.Table to Any to match original type hint
+    """
+    Read ORC file using the Rust fast-path.
+
+    This is a convenience function wrapping RustIOEngine.read_orc.
+
+    Args:
+        path: Path to ORC file
+        batch_size: Optional batch size for reading
+
+    Returns:
+        PyArrow Table
+
+    Example:
+        >>> table = read_orc_fast("data.orc")
+        >>> df = table.to_pandas()
+    """
+    engine = RustIOEngine()
+    return engine.read_orc(path, batch_size)
+
+
 def is_rust_io_available() -> bool:
     """
     Check if Rust I/O fast-paths are available.
@@ -315,6 +436,8 @@ __all__ = [
     "RustIOEngine",
     "read_parquet_fast",
     "read_csv_fast",
+    "read_avro_fast",
+    "read_orc_fast",
     "is_rust_io_available",
     "RUST_IO_AVAILABLE",
 ]

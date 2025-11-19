@@ -12,3 +12,5 @@ arrow = { workspace = true, features = ["ipc", "csv"] }
 serde.workspace = true
 rayon.workspace = true
 thiserror.workspace = true
+apache-avro = { version = "0.16", features = ["snappy", "zstandard"] }
+orc-rust = "0.7.0"

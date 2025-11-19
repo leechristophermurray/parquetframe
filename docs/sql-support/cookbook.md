@@ -9,7 +9,7 @@ Real-world SQL recipes and patterns for common data analysis tasks using Parquet
 - [Cross-Format Joins](#cross-format-joins)
 - [Time Series Analysis](#time-series-analysis)
 - [Window Functions](#window-functions)
-- [Data Quality & Validation](#data-quality--validation)
+- [Data Quality & Validation](#data-quality-validation)
 - [Performance Optimization](#performance-optimization)
 - [Advanced Analytics](#advanced-analytics)
 

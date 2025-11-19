@@ -182,25 +182,28 @@ print(f"{customer.name} has {len(all_orders)} orders")
 
 ```python
 # path=null start=null
-from parquetframe.permissions import PermissionManager
+from parquetframe.permissions import TupleStore, RelationTuple, check, list_objects, list_subjects
 
-# Initialize permission manager
-perm_mgr = PermissionManager()
+# Initialize store
+store = TupleStore()
 
 # Grant permissions
-perm_mgr.grant_permission(
-    user_id="user_001",
-    resource_type="document",
-    resource_id="doc_123",
-    relation="editor"
-)
+store.add_tuple(RelationTuple(
+    namespace="document",
+    object_id="doc_123",
+    relation="editor",
+    subject_namespace="user",
+    subject_id="user_001"
+))
 
 # Check permissions - uses Zanzibar check() API
-can_edit = perm_mgr.check_permission(
-    user_id="user_001",
-    resource_type="document",
-    resource_id="doc_123",
-    relation="editor"
+can_edit = check(
+    store=store,
+    subject_namespace="user",
+    subject_id="user_001",
+    relation="editor",
+    object_namespace="document",
+    object_id="doc_123"
 )
 
 print(f"User can edit: {can_edit}")
@@ -210,20 +213,12 @@ print(f"User can edit: {can_edit}")
 
 ```python
 # path=null start=null
-# Find all documents user can access - uses expand() API
-accessible_docs = perm_mgr.list_user_permissions(
-    user_id="user_001",
-    resource_type="document",
-    relation="viewer"
-)
-
-print(f"User has access to {len(accessible_docs)} documents")
-
 # Find all users with access to a document - uses list_subjects() API
-authorized_users = perm_mgr.list_resource_permissions(
-    resource_type="document",
-    resource_id="doc_123",
-    relation="editor"
+authorized_users = list_subjects(
+    store=store,
+    relation="editor",
+    object_namespace="document",
+    object_id="doc_123"
 )
 
 print(f"{len(authorized_users)} users can edit this document")
@@ -487,6 +482,8 @@ If you're using Phase 1 code, see the **[Migration Guide](getting-started/migrat
 ## More Examples
 
 - **[📚 Todo/Kanban Tutorial](documentation-examples/todo-kanban-example.md)** - Complete 850+ line walkthrough
+- **[🔐 Permissions Tutorial](../permissions-system/tutorial.md)** - Step-by-step Zanzibar guide
+- **[🏗️ Entity Advanced Patterns](../entity-framework/advanced-examples.md)** - Many-to-many & inheritance
 - **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities
 - **[Permissions Guide](user-guide/permissions.md)** - Complete permission examples
 - **[Workflows Guide](user-guide/workflows.md)** - YAML workflow patterns

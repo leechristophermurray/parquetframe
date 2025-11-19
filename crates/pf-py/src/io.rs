@@ -142,6 +142,26 @@ fn read_csv_fast(
     Ok(pybytes.into())
 }
 
+/// Read Avro file with Rust fast-path and return Arrow IPC bytes.
+///
+/// # Arguments
+/// * `path` - Path to Avro file
+///
+/// # Returns
+/// Arrow IPC stream as Python bytes; reconstruct in Python using pyarrow.ipc.open_stream.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=None))]
+fn read_avro_fast(
+    py: Python,
+    path: String,
+    batch_size: Option<usize>,
+) -> PyResult<Py<PyAny>> {
+    let buf = pf_io_core::read_avro_ipc(path, batch_size)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
+}
+
 /// Check if I/O fast-paths are available.
 ///
 /// # Returns
@@ -149,6 +169,22 @@ fn read_csv_fast(
 #[pyfunction]
 fn io_fastpaths_available() -> bool {
     true
+}
+
+/// Read ORC file using fast Rust implementation.
+///
+/// Returns Arrow IPC stream bytes that can be converted to PyArrow Table.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=None))]
+fn read_orc_fast(
+    py: Python,
+    path: String,
+    batch_size: Option<usize>,
+) -> PyResult<Py<PyAny>> {
+    let buf = pf_io_core::read_orc_ipc(&path, batch_size)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let pybytes = pyo3::types::PyBytes::new(py, &buf);
+    Ok(pybytes.into())
 }
 
 /// Register I/O functions with Python module.
@@ -162,6 +198,8 @@ pub fn register_io_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Fast-path functions (placeholders for Phase 3.6)
     m.add_function(wrap_pyfunction!(read_parquet_fast, m)?)?;
     m.add_function(wrap_pyfunction!(read_csv_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(read_avro_fast, m)?)?;
+    m.add_function(wrap_pyfunction!(read_orc_fast, m)?)?;
     m.add_function(wrap_pyfunction!(io_fastpaths_available, m)?)?;
 
     Ok(())

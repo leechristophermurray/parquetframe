@@ -8,82 +8,85 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build-wheels:
-    name: Build wheels (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+  linux:
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-13, macos-14, windows-latest]
-
+        target: [x86_64, aarch64]
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-reg-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo target
-        uses: actions/cache@v4
-        with:
-          path: |
-            target
-          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install maturin
-        run: |
-          python -m pip install --upgrade pip
-          pip install maturin
-        shell: bash
-
-      - name: Build wheels with maturin
-        run: |
-          # Build platform wheels; on Linux this uses manylinux via Docker if available
-          maturin build --release --out dist --find-interpreter
-          maturin sdist --out dist
-        shell: bash
-
-      - name: List built artifacts
-        run: |
-          ls -la dist
-        shell: bash
-
-      - name: Create venv and smoke-test wheel (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-          # Install wheel produced in dist (correct one is auto-picked for current interpreter)
-          pip install --no-index --find-links dist parquetframe
-          python -c "import parquetframe as pf; print('pf import ok, version:', pf.__version__); from parquetframe import _rustic; print('rustic available:', hasattr(_rustic, 'rust_available')); print('io meta fn:', hasattr(_rustic, 'read_parquet_metadata_rust')); print('workflow exec fn:', hasattr(_rustic, 'execute_workflow'))"
-        shell: bash
-
-      - name: Create venv and smoke-test wheel (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          python -m venv .venv
-          .venv\Scripts\Activate.ps1
-          python -m pip install --upgrade pip
-          pip install --no-index --find-links dist parquetframe
-          python -c "import parquetframe as pf; print('pf import ok, version:', pf.__version__); from parquetframe import _rustic; print('rustic available:', hasattr(_rustic, 'rust_available')); print('io meta fn:', hasattr(_rustic, 'read_parquet_metadata_rust')); print('workflow exec fn:', hasattr(_rustic, 'execute_workflow'))"
-        shell: pwsh
-
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: 'true'
+          manylinux: auto
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
-          path: dist/
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
+
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: 'true'
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.target }}
+          path: dist
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          sccache: 'true'
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.target }}
+          path: dist
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
