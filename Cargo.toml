@@ -1,11 +1,12 @@
 [workspace]
 members = [
-    "crates/pf-graph-core",
     "crates/pf-io-core",
-    "crates/pf-workflow-core",
+    "crates/pf-graph-core",
     "crates/pf-time-core",
+    "crates/pf-workflow-core",
+    "crates/pf-ml",
+    "crates/pf-fin-core",
     "crates/pf-py",
-    "crates/pf-ml"
 ]
 resolver = "2"
 
