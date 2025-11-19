@@ -4,8 +4,8 @@ Welcome to ParquetFrame Phase 2 documentation!
 
 ## Quick Links
 
-- **[User Guide](legacy-migration/phase2-user-guide.md)** - Complete guide to Phase 2 features
-- **[Migration Guide](legacy-migration/migration-guide.md)** - Migrate from Phase 1 to Phase 2
+- **[User Guide](phase2-user-guide.md)** - Complete guide to Phase 2 features
+- **[Migration Guide](migration-guide.md)** - Migrate from Phase 1 to Phase 2
 - **Progress Report (removed broken link)** - Development progress and stats
 
 ## What is Phase 2?

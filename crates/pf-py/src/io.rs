@@ -174,17 +174,20 @@ fn io_fastpaths_available() -> bool {
 /// Read ORC file using fast Rust implementation.
 ///
 /// Returns Arrow IPC stream bytes that can be converted to PyArrow Table.
+#[cfg(feature = "orc")]
 #[pyfunction]
-#[pyo3(signature = (path, batch_size=None))]
-fn read_orc_fast(
-    py: Python,
-    path: String,
-    batch_size: Option<usize>,
-) -> PyResult<Py<PyAny>> {
-    let buf = pf_io_core::read_orc_ipc(&path, batch_size)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let pybytes = pyo3::types::PyBytes::new(py, &buf);
-    Ok(pybytes.into())
+pub fn read_orc_fast(path: String) -> PyResult<PyObject> {
+    let batches = pf_io_core::read_orc_ipc(&path).map_err(|e| {
+        PyErr::new::<pyo3::exceptions::PyIOError, _>(format!("Failed to read ORC: {}", e))
+    })?;
+
+    Python::with_gil(|py| {
+        // Convert batches to Python list of PyBytes
+        let py_batches: Vec<PyObject> = batches.into_iter()
+            .map(|b| pyo3::types::PyBytes::new(py, &b).into())
+            .collect();
+        Ok(py_batches.into())
+    })
 }
 
 /// Register I/O functions with Python module.
@@ -199,6 +202,7 @@ pub fn register_io_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(read_parquet_fast, m)?)?;
     m.add_function(wrap_pyfunction!(read_csv_fast, m)?)?;
     m.add_function(wrap_pyfunction!(read_avro_fast, m)?)?;
+    #[cfg(feature = "orc")]
     m.add_function(wrap_pyfunction!(read_orc_fast, m)?)?;
     m.add_function(wrap_pyfunction!(io_fastpaths_available, m)?)?;
 

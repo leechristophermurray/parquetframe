@@ -56,7 +56,7 @@ ParquetFrame's Rust backend provides **10-50x speedups** for performance-critica
 | Parquet metadata (1GB file) | 180         | 22        | **8.2x** |
 | Connected components (500K edges) | 3100        | 115       | **27.0x** |
 
-For detailed benchmarks and how to run them on your system, refer to the [Rust Acceleration Guide](../rust-acceleration/index.md) and [Benchmark Results](../rust-acceleration/benchmark_results.md).
+For detailed benchmarks and how to run them on your system, refer to the [Rust Acceleration Guide](rust-acceleration/index.md) and [Benchmark Results](rust-acceleration/benchmark_results.md).
 
 ## 3. Memory Optimization
 
@@ -106,7 +106,7 @@ result = polars_df.group_by("category").agg(pf.col("value").sum()).collect()
 
 ## Further Reading
 
-*   [Rust Acceleration Guide](../rust-acceleration/index.md)
-*   [Multi-Engine Support](../core-features/multi-engine.md)
-*   [Benchmark Results](../rust-acceleration/benchmark_results.md)
-*   [I/O Fast-Paths](../rust-acceleration/io-fastpaths.md)
+*   [Rust Acceleration Guide](rust-acceleration/index.md)
+*   [Multi-Engine Support](core-features/multi-engine.md)
+*   [Benchmark Results](rust-acceleration/benchmark_results.md)
+*   [I/O Fast-Paths](rust-acceleration/io-fastpaths.md)

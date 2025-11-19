@@ -1,0 +1,43 @@
+version: giza/v1
+
+dashboard:
+  name: "Sales Overview (YAML)"
+  description: "Generated from Giza YAML spec"
+
+sources:
+  - name: sales
+    table: "sales_data"
+    time_column: "date"
+
+metrics:
+  - name: total_revenue
+    label: "Total Revenue"
+    sql: "SUM(amount)"
+    format: "usd"
+
+  - name: transaction_count
+    label: "Transactions"
+    sql: "COUNT(*)"
+    format: "integer"
+
+charts:
+  - name: "Revenue KPI"
+    type: "kpi"
+    source: "sales"
+    metrics:
+      - "total_revenue"
+
+  - name: "Transaction Count"
+    type: "kpi"
+    source: "sales"
+    metrics:
+      - "transaction_count"
+
+  - name: "Recent Transactions"
+    type: "table"
+    source: "sales"
+    metrics:
+      - "total_revenue"
+    dimensions:
+      - "date"
+      - "region"

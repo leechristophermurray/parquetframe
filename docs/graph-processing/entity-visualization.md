@@ -373,6 +373,6 @@ export_to_graphviz(G, "data_model.dot")
 ## See Also
 
 - [Entity Framework](index.md) - Entity system overview
-- [Advanced Queries](advanced-queries.md) - Relationship querying
+- [Tutorial](tutorial.md) - Complete entity framework walkthrough
 - [NetworkX Documentation](https://networkx.org/) - Graph analysis
 - [PyVis Documentation](https://pyvis.readthedocs.io/) - Interactive visualizations

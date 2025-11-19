@@ -35,6 +35,6 @@ df.save("output.parquet")
 
 ## Further Reading
 
-- [Quick Start Guide](getting-started/quickstart.md)
-- [Legacy Basic Usage](legacy-migration/phase1-usage.md)
-- [CLI Guide](cli-interface/index.md)
+- [Quick Start Guide](quickstart.md)
+- [Legacy Basic Usage](../legacy-migration/phase1-usage.md)
+- [CLI Guide](../cli-interface/index.md)

@@ -2,7 +2,7 @@
 
 Get up and running with ParquetFrame Phase 2 in minutes!
 
-> **Note:** This guide covers Phase 2 API with the Entity Framework. For legacy Phase 1 documentation, see [Legacy Basic Usage](legacy-migration/phase1-usage.md).
+> **Note:** This guide covers Phase 2 API with the Entity Framework. For legacy Phase 1 documentation, see [Legacy Basic Usage](../legacy-migration/phase1-usage.md).
 
 ## Installation
 
@@ -343,26 +343,34 @@ if can_edit:
 
 **Explore the Todo/Kanban Tutorial:**
 
-- **[Full Todo/Kanban Walkthrough](documentation-examples/todo-kanban-example.md)** - Complete application example with all Phase 2 features
+- **[Full Todo/Kanban Walkthrough](todo-kanban-example.md)** - Complete application example with all Phase 2 features
 
 **Learn More:**
 
-1. **[Entity Framework Guide](phase2/entities.md)** - Deep dive into entities and decorators
-2. **[Relationships Guide](phase2/relationships.md)** - Master object navigation
-3. **[Permissions System](user-guide/permissions.md)** - Comprehensive Zanzibar permission examples
-4. **[Workflows](user-guide/workflows.md)** - YAML-based ETL pipelines
-5. **[Migration Guide](getting-started/migration.md)** - Migrate from Phase 1 to Phase 2
+1. **[Entity Framework Guide](../phase2/entities.md)** - Deep dive into entities and decorators
+2. **[Relationships Guide](../phase2/relationships.md)** - Master object navigation
+3. **[Permissions System](../user-guide/permissions.md)** - Comprehensive Zanzibar permission examples
+4. **[Workflows](../user-guide/workflows.md)** - YAML-based ETLFor existing users of ParquetFrame v1.x, please see the [Migration Guide](../legacy-migration/migration-guide.md).
+
+## Core Concepts
+
+ParquetFrame is built around a few key concepts:
+
+*   **[DataFrameProxy](../documentation-examples/api-core.md)**: The main entry point for data operations.
+*   **[Entities](../documentation-examples/api-entities.md)**: Define schema and relationships for your data.
+*   **[Permissions](../documentation-examples/api-permissions.md)**: Manage access control with Zanzibar-style tuples.
 
 **API Documentation:**
 
-- **[Core API Reference](documentation-examples/api-core.md)** - Complete core API documentation
-- **[Entity API Reference](documentation-examples/api-entities.md)** - Entity framework APIs
-- **[Permissions API Reference](documentation-examples/api-permissions.md)** - Zanzibar permission APIs
+- **[Core API Reference](../documentation-examples/api-core.md)** - Complete core API documentation
+- **[Entity API Reference](../documentation-examples/api-entities.md)** - Entity framework APIs
+- **[Permissions API Reference](../documentation-examples/api-permissions.md)** - Zanzibar permission APIs
 
 ## Need Help?
 
 - Browse **[examples](../documentation-examples/examples-gallery.md)** for common use cases
-- Check the **[Migration Guide](getting-started/migration.md)** if coming from Phase 1
+- Check the **[Migration Guide](../legacy-migration/migration-guide.md)** if coming from Phase 1
 - Report issues on **[GitHub](https://github.com/leechristophermurray/parquetframe/issues)**
 
 Happy building! 🚀
+```
