@@ -3,6 +3,7 @@ members = [
     "crates/pf-graph-core",
     "crates/pf-io-core",
     "crates/pf-workflow-core",
+    "crates/pf-time-core",
     "crates/pf-py"
 ]
 resolver = "2"

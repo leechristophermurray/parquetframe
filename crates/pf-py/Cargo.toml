@@ -19,3 +19,4 @@ parking_lot.workspace = true
 pf-graph-core = { path = "../pf-graph-core" }
 pf-io-core = { path = "../pf-io-core" }
 pf-workflow-core = { path = "../pf-workflow-core" }
+pf-time-core = { path = "../pf-time-core" }

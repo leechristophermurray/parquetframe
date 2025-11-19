@@ -10,6 +10,7 @@
 mod graph;
 mod io;
 mod workflow;
+mod time;
 
 use pyo3::prelude::*;
 
@@ -60,6 +61,12 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     match workflow::register_workflow_functions(m) {
         Ok(_) => {}
         Err(e) => eprintln!("Error registering workflow functions: {:?}", e),
+    }
+
+    // Time-series functions
+    match time::register_time_functions(m) {
+        Ok(_) => {}
+        Err(e) => eprintln!("Error registering time functions: {:?}", e),
     }
 
     Ok(())
