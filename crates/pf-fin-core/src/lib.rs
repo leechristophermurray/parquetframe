@@ -7,6 +7,8 @@ pub mod error;
 pub mod indicators;
 pub mod advanced;
 pub mod portfolio;
+pub mod ohlcv;
+pub mod indicators_extended;
 pub mod utils;
 
 pub use error::FinError;
@@ -19,3 +21,5 @@ pub use portfolio::{
     returns, volatility, sharpe_ratio, sortino_ratio,
     value_at_risk, conditional_value_at_risk
 };
+pub use ohlcv::resample_ohlcv;
+pub use indicators_extended::{atr, adx};
