@@ -7,6 +7,7 @@ Declarative framework for building interactive data dashboards.
 from .dashboard import Dashboard, Page
 from .layout import Row, Column, Container
 from .widgets import Widget, Chart, Table, Metric, Markdown
+from .parser import GizaParser
 
 __all__ = [
     "Dashboard",
@@ -19,4 +20,5 @@ __all__ = [
     "Table",
     "Metric",
     "Markdown",
+    "GizaParser",
 ]
