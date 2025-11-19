@@ -187,7 +187,7 @@ mod tests {
         let result = resample_ohlcv(&timestamps, &open, &high, &low, &close, &volume, 5000);
         assert!(result.is_ok());
 
-        let (_ts_out, open_out, _high_out, _low_out, _close_out, _volume_out) = result.unwrap();
+        let (ts_out, open_out, _high_out, _low_out, _close_out, _volume_out) = result.unwrap();
 
         // Should have at least 1 bar
         assert!(ts_out.len() >= 1, "Expected at least 1 bar, got {}", ts_out.len());

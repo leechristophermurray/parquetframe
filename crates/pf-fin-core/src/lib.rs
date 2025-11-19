@@ -9,6 +9,7 @@ pub mod advanced;
 pub mod portfolio;
 pub mod ohlcv;
 pub mod indicators_extended;
+pub mod backtest;
 pub mod utils;
 
 pub use error::FinError;
@@ -23,3 +24,4 @@ pub use portfolio::{
 };
 pub use ohlcv::resample_ohlcv;
 pub use indicators_extended::{atr, adx};
+pub use backtest::{backtest, BacktestResult};

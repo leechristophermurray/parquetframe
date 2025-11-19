@@ -142,10 +142,20 @@ pub fn adx(
             plus_di_builder.append_null();
             minus_di_builder.append_null();
         } else {
-            // Calculate smoothed values
-            let smoothed_plus_dm = plus_dm_values[(i - period + 1)..=i].iter().sum::<f64>() / period as f64;
-            let smoothed_minus_dm = minus_dm_values[(i - period + 1)..=i].iter().sum::<f64>() / period as f64;
-            let smoothed_tr = tr_values[(i - period + 1)..=i].iter().sum::<f64>() / period as f64;
+            // Calculate smoothed values - ensure we don't go out of bounds
+            let start_idx = if i >= period { i - period + 1 } else { 1 };
+            let end_idx = i.min(plus_dm_values.len() - 1);
+
+            if start_idx > end_idx || end_idx >= plus_dm_values.len() {
+                adx_builder.append_null();
+                plus_di_builder.append_null();
+                minus_di_builder.append_null();
+                continue;
+            }
+
+            let smoothed_plus_dm = plus_dm_values[start_idx..=end_idx].iter().sum::<f64>() / (end_idx - start_idx + 1) as f64;
+            let smoothed_minus_dm = minus_dm_values[start_idx..=end_idx].iter().sum::<f64>() / (end_idx - start_idx + 1) as f64;
+            let smoothed_tr = tr_values[start_idx..=end_idx].iter().sum::<f64>() / (end_idx - start_idx + 1) as f64;
 
             if smoothed_tr == 0.0 {
                 adx_builder.append_null();
@@ -208,25 +218,27 @@ mod tests {
 
     #[test]
     fn test_adx() {
+        // Use 20 data points to ensure enough for period of 14
         let high = Arc::new(Float64Array::from(vec![
-            12.0, 13.0, 14.0, 13.5, 12.5, 13.5, 14.5, 15.0, 14.5, 13.5, 12.5, 13.0, 14.0, 15.0, 16.0,
+            12.0, 13.0, 14.0, 13.5, 12.5, 13.5, 14.5, 15.0, 14.5, 13.5,
+            12.5, 13.0, 14.0, 15.0, 16.0, 15.5, 16.5, 17.0, 16.5, 17.5,
         ])) as ArrayRef;
 
         let low = Arc::new(Float64Array::from(vec![
-            10.0, 10.5, 11.0, 10.5, 9.5, 10.5, 11.5, 12.0, 11.5, 10.5, 9.5, 10.0, 11.0, 12.0, 13.0,
+            10.0, 10.5, 11.0, 10.5, 9.5, 10.5, 11.5, 12.0, 11.5, 10.5,
+            9.5, 10.0, 11.0, 12.0, 13.0, 12.5, 13.5, 14.0, 13.5, 14.5,
         ])) as ArrayRef;
 
         let close = Arc::new(Float64Array::from(vec![
-            11.0, 12.0, 13.0, 12.0, 11.0, 12.0, 13.0, 14.0, 13.0, 12.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+            11.0, 12.0, 13.0, 12.0, 11.0, 12.0, 13.0, 14.0, 13.0, 12.0,
+            11.0, 12.0, 13.0, 14.0, 15.0, 14.5, 15.5, 16.0, 15.5, 16.5,
         ])) as ArrayRef;
 
         let result = adx(&high, &low, &close, 14);
         assert!(result.is_ok());
 
         let (adx_values, plus_di, minus_di) = result.unwrap();
-
-        // Should have 2 bars (0-4999ms and 5000-9999ms)
-        assert!(adx_values.len() >= 2, "Expected at least 2 bars, got {}", adx_values.len());
+        assert_eq!(adx_values.len(), close.len());
         assert_eq!(plus_di.len(), close.len());
         assert_eq!(minus_di.len(), close.len());
     }
