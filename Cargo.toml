@@ -6,6 +6,7 @@ members = [
     "crates/pf-workflow-core",
     "crates/pf-ml",
     "crates/pf-fin-core",
+    "crates/pf-geo-core",
     "crates/pf-py",
 ]
 resolver = "2"
