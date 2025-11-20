@@ -4,6 +4,7 @@ use tetnus_core::{Tensor, ops};
 use tetnus_core::ops::Op;
 
 /// A fully connected linear layer: y = xA^T + b
+#[derive(Clone)]
 pub struct Linear {
     weight: Tensor,
     bias: Option<Tensor>,
@@ -18,10 +19,13 @@ impl Linear {
     /// * `bias` - If set to false, the layer will not learn an additive bias.
     pub fn new(in_features: usize, out_features: usize, bias: bool) -> Result<Self> {
         // Kaiming initialization or similar would be better, but using randn for now
-        let weight = Tensor::randn(vec![out_features, in_features])?;
+        let mut weight = Tensor::randn(vec![out_features, in_features])?;
+        weight = weight.requires_grad_();
 
         let bias_tensor = if bias {
-            Some(Tensor::zeros(vec![out_features])?)
+            let mut b = Tensor::zeros(vec![out_features])?;
+            b = b.requires_grad_();
+            Some(b)
         } else {
             None
         };

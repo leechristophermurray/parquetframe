@@ -61,6 +61,13 @@ class Tensor:
         """Create tensor filled with ones."""
         return Tensor(tetnus.ones(shape))
 
+    @staticmethod
+    def randn(*shape):
+        """Create tensor with random values from standard normal distribution."""
+        if len(shape) == 1 and isinstance(shape[0], list | tuple):
+            shape = shape[0]
+        return Tensor(tetnus.randn(list(shape)))
+
     @property
     def shape(self):
         """Tensor shape."""

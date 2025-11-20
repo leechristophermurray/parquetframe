@@ -203,6 +203,14 @@ fn sqrt(tensor: &PyTensor) -> PyResult<PyTensor> {
         .map_err(tetnus_err_to_py)
 }
 
+/// Rectified Linear Unit
+#[pyfunction]
+fn relu(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::relu(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
 /// Create tensor from Python list
 #[pyfunction]
 fn from_list(_py: Python, data: &Bound<'_, PyList>, shape: Vec<usize>) -> PyResult<PyTensor> {
@@ -329,6 +337,7 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(exp, &m)?)?;
     m.add_function(wrap_pyfunction!(log, &m)?)?;
     m.add_function(wrap_pyfunction!(sqrt, &m)?)?;
+    m.add_function(wrap_pyfunction!(relu, &m)?)?;
 
     // Register NN submodule
     crate::tetnus_nn::register_nn_module(&m)?;
