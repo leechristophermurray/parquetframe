@@ -50,7 +50,7 @@ pip install parquetframe[rust]
 Frequencies use standard notation:
 - `"1s"`, `"30s"` - Seconds
 - `"1m"`, `"5min"` - Minutes
-- `"1h"`, `"2hr"` - Hours  
+- `"1h"`, `"2hr"` - Hours
 - `"1d"`, `"7day"` - Days
 
 ### Aggregation Methods

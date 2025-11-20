@@ -2,18 +2,30 @@
 Tests for Dashboard as Code (DaC).
 """
 
-import pytest
 import pandas as pd
-from parquetframe.dac import Dashboard, Page, Row, Column, Metric, Table, Markdown, Chart, Container
+
+from parquetframe.dac import (
+    Chart,
+    Column,
+    Container,
+    Dashboard,
+    Markdown,
+    Metric,
+    Page,
+    Row,
+    Table,
+)
 
 
 def test_layout_structure():
     """Test layout hierarchy construction."""
-    row = Row([
-        Column(6, children=[Markdown("Left")]),
-        Column(6, children=[Markdown("Right")])
-    ])
-    
+    row = Row(
+        [
+            Column(6, children=[Markdown("Left")]),
+            Column(6, children=[Markdown("Right")]),
+        ]
+    )
+
     assert len(row.children) == 2
     assert isinstance(row.children[0], Column)
     assert row.children[0].width == 6
@@ -26,9 +38,9 @@ def test_dashboard_rendering():
     page = Page("Page 1")
     page.add(Row([Column(12, children=[Metric("KPI", 100)])]))
     dashboard.add_page(page)
-    
+
     html = dashboard.render()
-    
+
     assert "<!DOCTYPE html>" in html
     assert "Test Dash" in html
     assert "KPI" in html
@@ -45,12 +57,12 @@ def test_widget_rendering():
     assert "$100" in html
     assert "+10%" in html
     assert "dac-text-green" in html
-    
+
     # Markdown
     md = Markdown("# Title")
     html = md.render()
     assert "<h1>Title</h1>" in html
-    
+
     # Table
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
     t = Table(df)
@@ -62,11 +74,12 @@ def test_widget_rendering():
 
 def test_chart_rendering():
     """Test chart widget."""
+
     # Mock figure
     class MockFig:
         def __str__(self):
             return "MockChart"
-            
+
     c = Chart(MockFig())
     html = c.render()
     assert "MockChart" in html
@@ -77,12 +90,13 @@ def test_container_nesting():
     """Test deep nesting of containers."""
     c = Container()
     c.add(Row().add(Column().add(Markdown("Deep"))))
-    
+
     html = c.render()
     assert "Deep" in html
     assert "dac-container" in html
     assert "dac-row" in html
     assert "dac-col" in html
+
 
 if __name__ == "__main__":
     # Manual run

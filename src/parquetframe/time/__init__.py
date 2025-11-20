@@ -5,7 +5,7 @@ High-performance time-series functionality powered by Rust.
 """
 
 from .dataframe import TimeSeriesDataFrame
-from .operations import resample, rolling_window, asof_join
+from .operations import asof_join, resample, rolling_window
 
 __all__ = [
     "TimeSeriesDataFrame",

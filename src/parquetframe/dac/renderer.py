@@ -2,8 +2,6 @@
 HTML Renderer for Dashboard as Code.
 """
 
-from typing import Dict, Any
-
 CSS_RESET = """
 * { box-sizing: border-box; }
 body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
@@ -39,6 +37,7 @@ CSS_COMPONENTS = """
 .dac-nav-content { max-width: 1200px; margin: 0 auto; padding: 0 1rem; display: flex; justify-content: space-between; align-items: center; }
 .dac-title { font-size: 1.25rem; font-weight: 700; color: #111827; }
 """
+
 
 class HtmlRenderer:
     """Renders dashboard to HTML."""
