@@ -155,6 +155,54 @@ fn full(shape: Vec<usize>, value: f32) -> PyResult<PyTensor> {
         .map_err(tetnus_err_to_py)
 }
 
+/// Element-wise sine
+#[pyfunction]
+fn sin(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::sin(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise cosine
+#[pyfunction]
+fn cos(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::cos(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise tangent
+#[pyfunction]
+fn tan(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::tan(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise exponential
+#[pyfunction]
+fn exp(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::exp(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise natural logarithm
+#[pyfunction]
+fn log(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::log(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise square root
+#[pyfunction]
+fn sqrt(tensor: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::sqrt(&tensor.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
 /// Create tensor from Python list
 #[pyfunction]
 fn from_list(_py: Python, data: &Bound<'_, PyList>, shape: Vec<usize>) -> PyResult<PyTensor> {
@@ -275,6 +323,12 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(transpose, &m)?)?;
     m.add_function(wrap_pyfunction!(sum, &m)?)?;
     m.add_function(wrap_pyfunction!(backward, &m)?)?;
+    m.add_function(wrap_pyfunction!(sin, &m)?)?;
+    m.add_function(wrap_pyfunction!(cos, &m)?)?;
+    m.add_function(wrap_pyfunction!(tan, &m)?)?;
+    m.add_function(wrap_pyfunction!(exp, &m)?)?;
+    m.add_function(wrap_pyfunction!(log, &m)?)?;
+    m.add_function(wrap_pyfunction!(sqrt, &m)?)?;
 
     parent.add_submodule(&m)?;
     Ok(())

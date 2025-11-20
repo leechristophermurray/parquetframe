@@ -4,7 +4,6 @@ Verification script for MOB (Mobility) module.
 Demonstrates geofencing and route reconstruction capabilities.
 """
 
-import numpy as np
 import pandas as pd
 
 print("=" * 60)
@@ -39,11 +38,13 @@ else:
 
 # Test 3: Geofencing with DataFrame accessor
 print("\n3. Testing geofencing with DataFrame accessor...")
-df_geo = pd.DataFrame({
-    "lon": [-5.0, 5.0, 15.0, 5.0, 20.0],
-    "lat": [5.0, 5.0, 5.0, 5.0, 5.0],
-    "label": ["Outside", "Inside", "Outside", "Inside", "Outside"],
-})
+df_geo = pd.DataFrame(
+    {
+        "lon": [-5.0, 5.0, 15.0, 5.0, 20.0],
+        "lat": [5.0, 5.0, 5.0, 5.0, 5.0],
+        "label": ["Outside", "Inside", "Outside", "Inside", "Outside"],
+    }
+)
 
 result_within = df_geo.mob.geofence_check("lon", "lat", fence, op="within")
 print(f"\n{result_within[['lon', 'lat', 'label', 'geofence_within']]}")
@@ -56,11 +57,13 @@ else:
 
 # Test 4: Enter/Exit detection
 print("\n4. Testing fence enter/exit detection...")
-test_path = pd.DataFrame({
-    "lon": [-5.0, 5.0, 6.0, 15.0, 5.0, -5.0],
-    "lat": [5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
-    "step": ["Start", "Enter", "Inside", "Exit", "Re-enter", "Exit again"],
-})
+test_path = pd.DataFrame(
+    {
+        "lon": [-5.0, 5.0, 6.0, 15.0, 5.0, -5.0],
+        "lat": [5.0, 5.0, 5.0, 5.0, 5.0, 5.0],
+        "step": ["Start", "Enter", "Inside", "Exit", "Re-enter", "Exit again"],
+    }
+)
 
 lons = test_path["lon"].values
 lats = test_path["lat"].values
@@ -68,7 +71,7 @@ lats = test_path["lat"].values
 enters = _rustic.mob.mob_geofence_detect_enter(lons, lats, fence)
 exits = _rustic.mob.mob_geofence_detect_exit(lons, lats, fence)
 
-print(f"\nTest path:")
+print("\nTest path:")
 print(test_path[["lon", "lat", "step"]])
 print(f"\nEnter events at indices: {list(enters)}")
 print(f"Exit events at indices: {list(exits)}")
@@ -80,13 +83,15 @@ else:
 
 # Test 5: Route reconstruction
 print("\n5. Testing route reconstruction...")
-route_df = pd.DataFrame({
-    "timestamp": pd.date_range("2024-01-01 09:00", periods=6, freq="5min"),
-    "lon": [-74.0060, -74.0050, -74.0040,-74.0030, -74.0020, -74.0010],
-    "lat": [40.7128, 40.7138, 40.7148, 40.7158, 40.7168, 40.7178],
-})
+route_df = pd.DataFrame(
+    {
+        "timestamp": pd.date_range("2024-01-01 09:00", periods=6, freq="5min"),
+        "lon": [-74.0060, -74.0050, -74.0040, -74.0030, -74.0020, -74.0010],
+        "lat": [40.7128, 40.7138, 40.7148, 40.7158, 40.7168, 40.7178],
+    }
+)
 
-print(f"\nSample GPS data:")
+print("\nSample GPS data:")
 print(route_df)
 
 # Reconstruct route
@@ -122,23 +127,38 @@ downtown_fence = [
 ]
 
 # Simulated vehicle telemetry
-fleet_data = pd.DataFrame({
-    "timestamp": pd.date_range("2024-01-01 08:00", periods=10, freq="10min"),
-    "vehicle_id": ["VEH001"] * 10,
-    "lon": [-74.03, -74.01, -74.00, -73.99, -73.99, -74.00, -74.01, -74.02, -74.03, -74.04],
-    "lat": [40.72, 40.72, 40.72, 40.72, 40.73, 40.73, 40.73, 40.72, 40.72, 40.72],
-})
+fleet_data = pd.DataFrame(
+    {
+        "timestamp": pd.date_range("2024-01-01 08:00", periods=10, freq="10min"),
+        "vehicle_id": ["VEH001"] * 10,
+        "lon": [
+            -74.03,
+            -74.01,
+            -74.00,
+            -73.99,
+            -73.99,
+            -74.00,
+            -74.01,
+            -74.02,
+            -74.03,
+            -74.04,
+        ],
+        "lat": [40.72, 40.72, 40.72, 40.72, 40.73, 40.73, 40.73, 40.72, 40.72, 40.72],
+    }
+)
 
 # Check which points are in downtown
 fleet_result = fleet_data.mob.geofence_check(
     "lon", "lat", downtown_fence, op="within", output_col="in_downtown"
 )
 
-print(f"\nFleet tracking data:")
+print("\nFleet tracking data:")
 print(fleet_result[["timestamp", "vehicle_id", "lon", "lat", "in_downtown"]])
 
 downtown_time = fleet_result["in_downtown"].sum()
-print(f"\nVehicle was in downtown area for {downtown_time} data points (~{downtown_time * 10} minutes)")
+print(
+    f"\nVehicle was in downtown area for {downtown_time} data points (~{downtown_time * 10} minutes)"
+)
 
 print("\n" + "=" * 60)
 print("✓ MOB Module Verification Complete!")

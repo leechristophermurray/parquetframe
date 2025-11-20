@@ -179,7 +179,6 @@ class TestMobAccessor:
         import pandas as pd
 
         # Import the accessor
-        from parquetframe.mob import MobDataFrameAccessor
 
         # Create a simple DataFrame
         df = pd.DataFrame(
@@ -195,8 +194,6 @@ class TestMobAccessor:
     def test_mob_geofence_within_accessor(self):
         """Test geofencing with accessor."""
         import pandas as pd
-
-        from parquetframe.mob import MobDataFrameAccessor
 
         fence = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0), (0.0, 0.0)]
 
@@ -215,8 +212,6 @@ class TestMobAccessor:
     def test_mob_route_reconstruction_accessor(self):
         """Test route reconstruction with accessor."""
         import pandas as pd
-
-        from parquetframe.mob import MobDataFrameAccessor
 
         df = pd.DataFrame(
             {

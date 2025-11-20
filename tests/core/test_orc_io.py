@@ -1,18 +1,18 @@
-import pytest
-import pandas as pd
-import pyarrow as pa
 import tempfile
 from pathlib import Path
+
+import pandas as pd
+import pyarrow as pa
+import pytest
+
 from parquetframe.core.frame import DataFrameProxy
 from parquetframe.core.reader import DataReader
 
+
 @pytest.fixture
 def sample_df():
-    return pd.DataFrame({
-        "a": [1, 2, 3],
-        "b": ["x", "y", "z"],
-        "c": [1.1, 2.2, 3.3]
-    })
+    return pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"], "c": [1.1, 2.2, 3.3]})
+
 
 def test_orc_io_roundtrip(sample_df):
     """Test writing to ORC and reading back."""
@@ -34,13 +34,14 @@ def test_orc_io_roundtrip(sample_df):
         # Force ORC read (auto-detection might not be set up for .orc extension yet in all places)
         # But DataReader.read_orc exists.
         read_proxy = reader.read_orc(path)
-        
+
         result_df = read_proxy.to_pandas().native
-        
+
         pd.testing.assert_frame_equal(sample_df, result_df)
-        
+
     finally:
         Path(path).unlink(missing_ok=True)
+
 
 def test_orc_read_auto_detect(sample_df):
     """Test reading ORC with auto-detection (if implemented)."""
@@ -51,10 +52,11 @@ def test_orc_read_auto_detect(sample_df):
 
     with tempfile.NamedTemporaryFile(suffix=".orc", delete=False) as f:
         path = f.name
-    
+
     # Create ORC file using pyarrow directly to ensure valid file
     table = pa.Table.from_pandas(sample_df)
     import pyarrow.orc as orc
+
     orc.write_table(table, path)
 
     try:
@@ -67,7 +69,7 @@ def test_orc_read_auto_detect(sample_df):
         # If DataReader doesn't support .orc auto-detection, this might fail.
         # Let's check DataReader.read implementation if possible, but for now we test explicit read_orc
         # as the requirement was "Add ORC read/write".
-        
+
         read_proxy = reader.read_orc(path)
         result_df = read_proxy.to_pandas().native
         pd.testing.assert_frame_equal(sample_df, result_df)

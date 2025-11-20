@@ -180,4 +180,158 @@ mod tests {
 
         assert_eq!(c.data(), vec![10.0, 18.0, 28.0]);
     }
+
+    #[test]
+    fn test_sin() {
+        let a = Tensor::new(vec![0.0, std::f32::consts::PI / 2.0, std::f32::consts::PI], vec![3]).unwrap();
+        let c = sin(&a).unwrap();
+        let data = c.data();
+
+        assert!((data[0] - 0.0).abs() < 1e-6);
+        assert!((data[1] - 1.0).abs() < 1e-6);
+        assert!((data[2] - 0.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_cos() {
+        let a = Tensor::new(vec![0.0, std::f32::consts::PI / 2.0, std::f32::consts::PI], vec![3]).unwrap();
+        let c = cos(&a).unwrap();
+        let data = c.data();
+
+        assert!((data[0] - 1.0).abs() < 1e-6);
+        assert!((data[1] - 0.0).abs() < 1e-6);
+        assert!((data[2] - (-1.0)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_exp() {
+        let a = Tensor::new(vec![0.0, 1.0, 2.0], vec![3]).unwrap();
+        let c = exp(&a).unwrap();
+        let data = c.data();
+
+        assert!((data[0] - 1.0).abs() < 1e-6);
+        assert!((data[1] - std::f32::consts::E).abs() < 1e-6);
+        assert!((data[2] - (std::f32::consts::E * std::f32::consts::E)).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_log() {
+        let a = Tensor::new(vec![1.0, std::f32::consts::E, 10.0], vec![3]).unwrap();
+        let c = log(&a).unwrap();
+        let data = c.data();
+
+        assert!((data[0] - 0.0).abs() < 1e-6);
+        assert!((data[1] - 1.0).abs() < 1e-6);
+        assert!((data[2] - 10.0_f32.ln()).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_sqrt() {
+        let a = Tensor::new(vec![1.0, 4.0, 9.0, 16.0], vec![4]).unwrap();
+        let c = sqrt(&a).unwrap();
+        let data = c.data();
+
+        assert_eq!(data, vec![1.0, 2.0, 3.0, 4.0]);
+    }
 }
+
+/// Unary operation for mathematical functions
+pub struct UnaryOp {
+    name: String,
+    forward_fn: fn(f32) -> f32,
+    backward_fn: fn(f32, f32) -> f32,  // (input, grad_output) -> grad_input
+    input: Tensor,
+}
+
+impl UnaryOp {
+    pub fn new(
+        name: String,
+        forward_fn: fn(f32) -> f32,
+        backward_fn: fn(f32, f32) -> f32,
+        input: &Tensor,
+    ) -> Self {
+        Self {
+            name,
+            forward_fn,
+            backward_fn,
+            input: input.clone(),
+        }
+    }
+}
+
+impl Op for UnaryOp {
+    fn forward(&self, inputs: &[&Tensor]) -> Result<Tensor> {
+        if inputs.len() != 1 {
+            return Err(TetnusError::InvalidOperation(
+                format!("{} requires exactly 1 input", self.name)
+            ));
+        }
+
+        let a = inputs[0];
+        let a_data = a.data();
+        let c_data: Vec<f32> = a_data.iter().map(|&x| (self.forward_fn)(x)).collect();
+
+        Tensor::new(c_data, a.shape().to_vec())
+    }
+
+    fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {
+        let input_data = self.input.data();
+        let grad_data = grad_output.data();
+        let grad_input: Vec<f32> = input_data
+            .iter()
+            .zip(grad_data.iter())
+            .map(|(&x, &g)| (self.backward_fn)(x, g))
+            .collect();
+
+        Ok(vec![Tensor::new(grad_input, self.input.shape().to_vec())?])
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+/// Helper macro for creating unary operations
+macro_rules! unary_op {
+    ($name:ident, $forward:expr, $backward:expr) => {
+        pub fn $name(a: &Tensor) -> Result<Tensor> {
+            let op = UnaryOp::new(
+                stringify!($name).to_string(),
+                $forward,
+                $backward,
+                a,
+            );
+            let result = op.forward(&[a])?;
+
+            if a.0.requires_grad {
+                let internal = &*result.0;
+                Ok(Tensor(Arc::new(crate::tensor::TensorInternal {
+                    data: Arc::clone(&internal.data),
+                    shape: internal.shape.clone(),
+                    strides: internal.strides.clone(),
+                    offset: internal.offset,
+                    device: internal.device,
+                    requires_grad: true,
+                    grad: parking_lot::Mutex::new(None),
+                    op: Some(Arc::new(op)),
+                    inputs: vec![a.clone()],
+                })))
+            } else {
+                Ok(result)
+            }
+        }
+    };
+}
+
+// Trigonometric functions
+unary_op!(sin, |x: f32| x.sin(), |x: f32, g: f32| g * x.cos());
+unary_op!(cos, |x: f32| x.cos(), |x: f32, g: f32| g * (-x.sin()));
+unary_op!(tan, |x: f32| x.tan(), |x: f32, g: f32| {
+    let c = x.cos();
+    g / (c * c)
+});
+
+// Exponential and logarithmic
+unary_op!(exp, |x: f32| x.exp(), |x: f32, g: f32| g * x.exp());
+unary_op!(log, |x: f32| x.ln(), |_x: f32, g: f32| g / _x);
+unary_op!(sqrt, |x: f32| x.sqrt(), |x: f32, g: f32| g / (2.0 * x.sqrt()));

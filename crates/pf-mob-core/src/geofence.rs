@@ -30,13 +30,13 @@ pub fn check_within_polygon(
     }
 
     let point = Geometry::Point(Point::new(lon, lat));
-    
+
     // Convert coordinates to Coord and create LineString
     let coords: Vec<Coord> = polygon_coords
         .iter()
         .map(|(x, y)| Coord { x: *x, y: *y })
         .collect();
-    
+
     let exterior = LineString::new(coords);
     let polygon = Geometry::Polygon(Polygon::new(exterior, vec![]));
 
@@ -91,12 +91,12 @@ pub fn detect_fence_enter(
 
     for i in 1..lons.len() {
         let curr_inside = check_within_polygon(lons[i], lats[i], polygon_coords)?;
-        
+
         // Detect transition from outside to inside
         if !prev_inside && curr_inside {
             enter_indices.push(i);
         }
-        
+
         prev_inside = curr_inside;
     }
 
@@ -134,12 +134,12 @@ pub fn detect_fence_exit(
 
     for i in 1..lons.len() {
         let curr_inside = check_within_polygon(lons[i], lats[i], polygon_coords)?;
-        
+
         // Detect transition from inside to outside
         if prev_inside && !curr_inside {
             exit_indices.push(i);
         }
-        
+
         prev_inside = curr_inside;
     }
 
@@ -163,13 +163,13 @@ mod tests {
     #[test]
     fn test_within_polygon() {
         let fence = sample_square_fence();
-        
+
         // Point inside
         assert!(check_within_polygon(5.0, 5.0, &fence).unwrap());
-        
+
         // Point outside
         assert!(!check_within_polygon(15.0, 15.0, &fence).unwrap());
-        
+
         // Point on edge (boundary behavior may vary)
         let on_edge = check_within_polygon(0.0, 5.0, &fence).unwrap();
         assert!(on_edge || !on_edge); // Either is acceptable
@@ -178,10 +178,10 @@ mod tests {
     #[test]
     fn test_outside_polygon() {
         let fence = sample_square_fence();
-        
+
         // Point inside
         assert!(!check_outside_polygon(5.0, 5.0, &fence).unwrap());
-        
+
         // Point outside
         assert!(check_outside_polygon(15.0, 15.0, &fence).unwrap());
     }
@@ -189,11 +189,11 @@ mod tests {
     #[test]
     fn test_detect_fence_enter() {
         let fence = sample_square_fence();
-        
+
         // Path: outside -> inside -> inside
         let lons = vec![-5.0, 5.0, 6.0];
         let lats = vec![5.0, 5.0, 5.0];
-        
+
         let enters = detect_fence_enter(&lons, &lats, &fence).unwrap();
         assert_eq!(enters.len(), 1);
         assert_eq!(enters[0], 1); // Entry at index 1
@@ -202,11 +202,11 @@ mod tests {
     #[test]
     fn test_detect_fence_exit() {
         let fence = sample_square_fence();
-        
+
         // Path: inside -> inside -> outside
         let lons = vec![5.0, 6.0, 15.0];
         let lats = vec![5.0, 5.0, 5.0];
-        
+
         let exits = detect_fence_exit(&lons, &lats, &fence).unwrap();
         assert_eq!(exits.len(), 1);
         assert_eq!(exits[0], 2); // Exit at index 2
@@ -215,16 +215,16 @@ mod tests {
     #[test]
     fn test_multiple_transitions() {
         let fence = sample_square_fence();
-        
+
         // Path: outside -> inside -> outside -> inside -> outside
         let lons = vec![-5.0, 5.0, 15.0, 5.0, -5.0];
         let lats = vec![5.0, 5.0, 5.0, 5.0, 5.0];
-        
+
         let enters = detect_fence_enter(&lons, &lats, &fence).unwrap();
         assert_eq!(enters.len(), 2);
         assert_eq!(enters[0], 1);
         assert_eq!(enters[1], 3);
-        
+
         let exits = detect_fence_exit(&lons, &lats, &fence).unwrap();
         assert_eq!(exits.len(), 2);
         assert_eq!(exits[0], 2);
@@ -236,10 +236,10 @@ mod tests {
         let fence = sample_square_fence();
         let lons: Vec<f64> = vec![];
         let lats: Vec<f64> = vec![];
-        
+
         let enters = detect_fence_enter(&lons, &lats, &fence).unwrap();
         assert_eq!(enters.len(), 0);
-        
+
         let exits = detect_fence_exit(&lons, &lats, &fence).unwrap();
         assert_eq!(exits.len(), 0);
     }
@@ -248,7 +248,7 @@ mod tests {
     fn test_invalid_polygon() {
         // Polygon with less than 3 points
         let invalid_fence = vec![(0.0, 0.0), (1.0, 1.0)];
-        
+
         let result = check_within_polygon(5.0, 5.0, &invalid_fence);
         assert!(result.is_err());
     }
@@ -258,7 +258,7 @@ mod tests {
         let fence = sample_square_fence();
         let lons = vec![1.0, 2.0, 3.0];
         let lats = vec![1.0, 2.0]; // Different length
-        
+
         let result = detect_fence_enter(&lons, &lats, &fence);
         assert!(result.is_err());
     }

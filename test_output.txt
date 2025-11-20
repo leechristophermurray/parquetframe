@@ -29,8 +29,8 @@ self = <tests.rust.test_rust_io_fastpaths_read.TestRustFastReaders object at 0x1
 >           table = eng.read_csv(p, delimiter=",", has_header=True)
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests/rust/test_rust_io_fastpaths_read.py:73: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/rust/test_rust_io_fastpaths_read.py:73:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <parquetframe.io_rust.RustIOEngine object at 0x1198ffd90>
 path = PosixPath('/var/folders/fd/r98_rxv5565918lvylk8tzhh0000gq/T/tmpp6wr6m7o.csv')
@@ -45,18 +45,18 @@ delimiter = ',', has_header = True, infer_schema = True
     ) -> Any:
         """
         Read a CSV file using Rust fast-path.
-    
+
         Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
-    
+
         Args:
             path: Path to CSV file
             delimiter: Field delimiter (default: ',')
             has_header: Whether file has header row
             infer_schema: Whether to infer column types
-    
+
         Returns:
             pyarrow.Table
-    
+
         Example:
             >>> engine = RustIOEngine()
             >>> tbl = engine.read_csv("large_file.csv")
@@ -65,7 +65,7 @@ delimiter = ',', has_header = True, infer_schema = True
         """
         if not hasattr(_rustic, "read_csv_fast"):
             raise NotImplementedError("CSV fast-path not yet implemented.")
-    
+
 >       ipc_bytes = _rustic.read_csv_fast(
             str(path),
             delimiter=delimiter,

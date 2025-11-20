@@ -134,6 +134,36 @@ class Tensor:
         result = tetnus.sum(self._tensor)
         return Tensor(result)
 
+    def sin(self):
+        """Element-wise sine."""
+        result = tetnus.sin(self._tensor)
+        return Tensor(result)
+
+    def cos(self):
+        """Element-wise cosine."""
+        result = tetnus.cos(self._tensor)
+        return Tensor(result)
+
+    def tan(self):
+        """Element-wise tangent."""
+        result = tetnus.tan(self._tensor)
+        return Tensor(result)
+
+    def exp(self):
+        """Element-wise exponential."""
+        result = tetnus.exp(self._tensor)
+        return Tensor(result)
+
+    def log(self):
+        """Element-wise natural logarithm."""
+        result = tetnus.log(self._tensor)
+        return Tensor(result)
+
+    def sqrt(self):
+        """Element-wise square root."""
+        result = tetnus.sqrt(self._tensor)
+        return Tensor(result)
+
     def __repr__(self):
         return f"Tensor(shape={self.shape}, requires_grad={self.requires_grad})"
 
