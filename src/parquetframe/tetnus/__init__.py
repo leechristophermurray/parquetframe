@@ -129,6 +129,10 @@ class Tensor:
         result = tetnus.transpose(self._tensor)
         return Tensor(result)
 
+    def transpose(self, *args):
+        """Transpose tensor. Currently alias for T() for 2D."""
+        return self.T()
+
     def sum(self):
         """Sum all elements."""
         result = tetnus.sum(self._tensor)
@@ -220,4 +224,8 @@ __all__ = [
     "rand",
     "randn",
     "full",
+    "numpy",
 ]
+
+# Expose numpy submodule
+from . import numpy  # noqa: E402
