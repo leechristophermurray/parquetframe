@@ -335,3 +335,6 @@ unary_op!(tan, |x: f32| x.tan(), |x: f32, g: f32| {
 unary_op!(exp, |x: f32| x.exp(), |x: f32, g: f32| g * x.exp());
 unary_op!(log, |x: f32| x.ln(), |_x: f32, g: f32| g / _x);
 unary_op!(sqrt, |x: f32| x.sqrt(), |x: f32, g: f32| g / (2.0 * x.sqrt()));
+
+// Activation functions
+unary_op!(relu, |x: f32| if x > 0.0 { x } else { 0.0 }, |x: f32, g: f32| if x > 0.0 { g } else { 0.0 });

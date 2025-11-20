@@ -1,6 +1,7 @@
 /// View operations (reshape, transpose) - zero-copy when possible
 
-use crate::{Tensor, Result, TetnusError, ops::Op};
+use crate::{Tensor, Result, TetnusError, ops::{Op, with_graph}};
+use std::sync::Arc;
 
 pub struct ReshapeOp {
     old_shape: Vec<usize>,
@@ -34,7 +35,9 @@ impl Op for ReshapeOp {
 
         // Reshape is a view operation - just change shape
         let data = input.data();
-        Tensor::new(data, self.new_shape.clone())
+        let result = Tensor::new(data, self.new_shape.clone())?;
+
+        Ok(with_graph(result, Arc::new(ReshapeOp::new(self.old_shape.clone(), self.new_shape.clone())), inputs.iter().map(|&t| t.clone()).collect()))
     }
 
     fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {
@@ -82,14 +85,19 @@ impl Op for TransposeOp {
         // Simple transpose implementation
         let data = input.data();
         let mut result = vec![0.0; data.len()];
-
         for i in 0..m {
             for j in 0..n {
                 result[j * m + i] = data[i * n + j];
             }
         }
 
-        Tensor::new(result, vec![n, m])
+        let result_tensor = Tensor::new(result, vec![n, m])?;
+
+        Ok(with_graph(
+            result_tensor,
+            Arc::new(TransposeOp::new(self.shape.clone())),
+            inputs.iter().map(|&t| t.clone()).collect()
+        ))
     }
 
     fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {

@@ -44,3 +44,52 @@ class Linear(Module):
         return (
             f"Linear(in_features={self.in_features}, out_features={self.out_features})"
         )
+
+
+class ReLU(Module):
+    """Rectified Linear Unit"""
+
+    def __init__(self):
+        self._inner = _rust_tetnus.nn.ReLU()
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def __repr__(self):
+        return "ReLU()"
+
+
+class Sequential(Module):
+    """A sequential container."""
+
+    def __init__(self, *args):
+        self._inner = _rust_tetnus.nn.Sequential()
+        self._modules = []
+        for module in args:
+            self.add(module)
+
+    def add(self, module: Module):
+        if not hasattr(module, "_inner"):
+            raise TypeError(
+                "Sequential currently only supports Rust-backed modules (Linear, ReLU)"
+            )
+
+        # Add to Rust sequential
+        # Note: this copies/clones the module into Rust Sequential
+        self._inner.add(module._inner)
+        self._modules.append(module)
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def parameters(self):
+        return [Tensor(p) for p in self._inner.parameters()]
+
+    def __repr__(self):
+        return "Sequential(\n  " + "\n  ".join(str(m) for m in self._modules) + "\n)"

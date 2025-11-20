@@ -1,7 +1,8 @@
 /// Reduction operations
 
-use crate::{Tensor, Result, TetnusError, ops::Op};
+use crate::{Tensor, Result, TetnusError, ops::{Op, with_graph}};
 use crate::kernels::cpu;
+use std::sync::Arc;
 
 pub struct SumOp {
     input_shape: Vec<usize>,
@@ -26,7 +27,9 @@ impl Op for SumOp {
         let sum_val = cpu::cpu_sum(&data);
 
         // Return scalar (shape [1])
-        Tensor::new(vec![sum_val], vec![1])
+        let result = Tensor::new(vec![sum_val], vec![1])?;
+
+        Ok(with_graph(result, Arc::new(SumOp::new(input.shape().to_vec())), inputs.iter().map(|&t| t.clone()).collect()))
     }
 
     fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {
