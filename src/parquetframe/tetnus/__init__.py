@@ -3,6 +3,7 @@ TETNUS: Zero-Copy DataFrame-Native ML Framework
 
 Arrow-native tensor library with automatic differentiation.
 """
+# ruff: noqa: E402
 
 try:
     from parquetframe import _rustic
@@ -225,7 +226,8 @@ __all__ = [
     "randn",
     "full",
     "numpy",
+    "nn",
 ]
 
-# Expose numpy submodule
-from . import numpy  # noqa: E402
+# Expose submodules
+from . import nn, numpy

@@ -26,6 +26,7 @@ pf-fin-core = { path = "../pf-fin-core" }
 pf-geo-core = { path = "../pf-geo-core" }
 pf-mob-core = { path = "../pf-mob-core" }
 tetnus-core = { path = "../tetnus-core" }
+tetnus-nn = { path = "../tetnus-nn" }
 tokio = { version = "1.35", features = ["full"] }
 serde_yaml = "0.9"
 arrow-array = { version = "53.0" }

@@ -6,7 +6,7 @@ use numpy::{PyArrayDyn, PyArrayMethods, PyUntypedArrayMethods, IntoPyArray};
 use tetnus_core::Tensor;
 
 /// Convert TetnusError to PyErr
-fn tetnus_err_to_py(err: tetnus_core::TetnusError) -> PyErr {
+pub fn tetnus_err_to_py(err: tetnus_core::TetnusError) -> PyErr {
     PyValueError::new_err(format!("{}", err))
 }
 
@@ -329,6 +329,9 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(exp, &m)?)?;
     m.add_function(wrap_pyfunction!(log, &m)?)?;
     m.add_function(wrap_pyfunction!(sqrt, &m)?)?;
+
+    // Register NN submodule
+    crate::tetnus_nn::register_nn_module(&m)?;
 
     parent.add_submodule(&m)?;
     Ok(())

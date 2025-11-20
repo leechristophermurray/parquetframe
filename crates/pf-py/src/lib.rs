@@ -15,6 +15,7 @@ mod fin;
 mod geo;
 mod mob;
 mod tetnus;
+mod tetnus_nn;
 
 use pyo3::prelude::*;
 
