@@ -7,11 +7,11 @@ def test_add_grad():
     a = tt.ones([2]).requires_grad_()
     b = tt.ones([2]).requires_grad_()
     # c = a + b = [2, 2]
-    c = tt.add(a, b)
+    c = a + b
     # loss = sum(c) = 4
-    loss = tt.sum(c)
+    loss = c.sum()
 
-    tt.backward(loss)
+    loss.backward()
 
     # dL/da = 1, dL/db = 1
     grad_a = a.grad.data()
@@ -25,10 +25,10 @@ def test_sub_grad():
     a = tt.ones([2]).requires_grad_()
     b = tt.ones([2]).requires_grad_()
     # c = a - b = [0, 0]
-    c = tt.sub(a, b)
-    loss = tt.sum(c)
+    c = a - b
+    loss = c.sum()
 
-    tt.backward(loss)
+    loss.backward()
 
     # dL/da = 1, dL/db = -1
     grad_a = a.grad.data()
@@ -42,10 +42,10 @@ def test_mul_grad():
     a = tt.full([2], 2.0).requires_grad_()
     b = tt.full([2], 3.0).requires_grad_()
     # c = a * b = [6, 6]
-    c = tt.mul(a, b)
-    loss = tt.sum(c)
+    c = a * b
+    loss = c.sum()
 
-    tt.backward(loss)
+    loss.backward()
 
     # L = sum(a * b)
     # dL/da = b
@@ -62,10 +62,10 @@ def test_div_grad():
     a = tt.full([2], 6.0).requires_grad_()
     b = tt.full([2], 2.0).requires_grad_()
     # c = a / b = [3, 3]
-    c = tt.div(a, b)
-    loss = tt.sum(c)
+    c = a / b
+    loss = c.sum()
 
-    tt.backward(loss)
+    loss.backward()
 
     # L = sum(a / b)
     # dL/da = 1/b
@@ -82,11 +82,11 @@ def test_div_grad():
 
 
 def test_mean_grad():
-    a = tt.new([1.0, 2.0, 3.0, 4.0], [4]).requires_grad_()
+    a = tt.Tensor([1.0, 2.0, 3.0, 4.0], [4]).requires_grad_()
     # mean = 2.5
-    m = tt.mean(a)
+    m = a.mean()
 
-    tt.backward(m)
+    m.backward()
 
     # dL/da = 1/N = 0.25
     grad_a = a.grad.data()
@@ -99,11 +99,11 @@ def test_mean_grad():
 def test_unary_sin_grad():
     # L = sin(x)
     # dL/dx = cos(x)
-    x = tt.new([0.0, math.pi / 2, math.pi], [3]).requires_grad_()
-    y = tt.sin(x)
-    loss = tt.sum(y)
+    x = tt.Tensor([0.0, math.pi / 2, math.pi], [3]).requires_grad_()
+    y = x.sin()
+    loss = y.sum()
 
-    tt.backward(loss)
+    loss.backward()
 
     grads = x.grad.data()
     # cos(0) = 1
@@ -121,10 +121,10 @@ def test_complex_graph():
     two = tt.full([1], 2.0)
     three = tt.full([1], 3.0)
 
-    a = tt.add(x, two)
-    b = tt.mul(a, three)
+    a = x + two
+    b = a * three
 
-    tt.backward(b)
+    b.backward()
 
     # df/dx = 3
     assert x.grad.data()[0] == 3.0

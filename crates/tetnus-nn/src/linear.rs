@@ -51,7 +51,7 @@ impl Module for Linear {
         if let Some(b) = &self.bias {
             // Broadcast add
             // Current tetnus-core::add requires exact shape match.
-            // We manually broadcast bias [Out] -> [Batch, Out]
+            // We broadcast bias [Out] -> [Batch, Out] using MatMul: Ones(Batch, 1) @ Bias(1, Out)
             let batch_size = output.shape()[0];
             let out_features = output.shape()[1];
 
@@ -62,15 +62,19 @@ impl Module for Linear {
                 )));
             }
 
-            // Create expanded bias
-            // TODO: Optimize with true broadcasting in tetnus-core
-            let bias_data = b.data();
-            let expanded_data: Vec<f32> = (0..batch_size)
-                .flat_map(|_| bias_data.iter().cloned())
-                .collect();
+            // 1. Create ones [Batch, 1]
+            let ones = Tensor::ones(vec![batch_size, 1])?;
 
-            let bias_broadcast = Tensor::new(expanded_data, vec![batch_size, out_features])?;
+            // 2. Reshape bias [Out] -> [1, Out]
+            // We must use the Op to ensure the graph is built
+            let reshape_op = ops::view::ReshapeOp::new(b.shape().to_vec(), vec![1, out_features]);
+            let b_reshaped = reshape_op.forward(&[b])?;
 
+            // 3. Broadcast via MatMul -> [Batch, Out]
+            // This connects bias to the computation graph
+            let bias_broadcast = ops::matmul::matmul(&ones, &b_reshaped)?;
+
+            // 4. Add
             output = ops::elementwise::add(&output, &bias_broadcast)?;
         }
 
