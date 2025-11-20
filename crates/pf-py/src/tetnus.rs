@@ -253,6 +253,22 @@ fn add(a: &PyTensor, b: &PyTensor) -> PyResult<PyTensor> {
         .map_err(tetnus_err_to_py)
 }
 
+/// Element-wise subtraction
+#[pyfunction]
+fn sub(a: &PyTensor, b: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::sub(&a.inner, &b.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
+/// Element-wise division
+#[pyfunction]
+fn div(a: &PyTensor, b: &PyTensor) -> PyResult<PyTensor> {
+    tetnus_core::ops::elementwise::div(&a.inner, &b.inner)
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
 /// Element-wise multiplication
 #[pyfunction]
 fn mul(a: &PyTensor, b: &PyTensor) -> PyResult<PyTensor> {
@@ -300,6 +316,18 @@ fn sum(tensor: &PyTensor) -> PyResult<PyTensor> {
         .map_err(tetnus_err_to_py)
 }
 
+/// Mean of all elements
+#[pyfunction]
+fn mean(tensor: &PyTensor) -> PyResult<PyTensor> {
+    use tetnus_core::ops::Op;
+
+    let op = tetnus_core::ops::reduce::MeanOp::new(tensor.inner.shape().to_vec());
+
+    op.forward(&[&tensor.inner])
+        .map(|t| PyTensor { inner: t })
+        .map_err(tetnus_err_to_py)
+}
+
 /// Compute gradients via backpropagation
 #[pyfunction]
 fn backward(tensor: &PyTensor) -> PyResult<()> {
@@ -326,10 +354,13 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_list, &m)?)?;
     m.add_function(wrap_pyfunction!(matmul, &m)?)?;
     m.add_function(wrap_pyfunction!(add, &m)?)?;
+    m.add_function(wrap_pyfunction!(sub, &m)?)?;
     m.add_function(wrap_pyfunction!(mul, &m)?)?;
+    m.add_function(wrap_pyfunction!(div, &m)?)?;
     m.add_function(wrap_pyfunction!(reshape, &m)?)?;
     m.add_function(wrap_pyfunction!(transpose, &m)?)?;
     m.add_function(wrap_pyfunction!(sum, &m)?)?;
+    m.add_function(wrap_pyfunction!(mean, &m)?)?;
     m.add_function(wrap_pyfunction!(backward, &m)?)?;
     m.add_function(wrap_pyfunction!(sin, &m)?)?;
     m.add_function(wrap_pyfunction!(cos, &m)?)?;
