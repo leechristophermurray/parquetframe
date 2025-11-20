@@ -120,9 +120,19 @@ class Tensor:
         result = tetnus.add(self._tensor, other._tensor)
         return Tensor(result)
 
+    def __sub__(self, other):
+        """Element-wise subtraction: a - b"""
+        result = tetnus.sub(self._tensor, other._tensor)
+        return Tensor(result)
+
     def __mul__(self, other):
         """Element-wise multiplication: a * b"""
         result = tetnus.mul(self._tensor, other._tensor)
+        return Tensor(result)
+
+    def __truediv__(self, other):
+        """Element-wise division: a / b"""
+        result = tetnus.div(self._tensor, other._tensor)
         return Tensor(result)
 
     def reshape(self, *shape):
@@ -144,6 +154,11 @@ class Tensor:
     def sum(self):
         """Sum all elements."""
         result = tetnus.sum(self._tensor)
+        return Tensor(result)
+
+    def mean(self):
+        """Mean of all elements."""
+        result = tetnus.mean(self._tensor)
         return Tensor(result)
 
     def sin(self):

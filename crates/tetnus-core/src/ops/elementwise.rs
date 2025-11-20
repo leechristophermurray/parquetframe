@@ -1,6 +1,6 @@
 /// Element-wise operations
 
-use crate::{Tensor, Result, TetnusError, ops::Op};
+use crate::{Tensor, Result, TetnusError, ops::{Op, with_graph}};
 use crate::kernels::cpu;
 use std::sync::Arc;
 
@@ -43,6 +43,55 @@ impl Op for AddOp {
 
     fn name(&self) -> &str {
         "add"
+    }
+}
+
+pub struct SubOp;
+
+impl Op for SubOp {
+    fn forward(&self, inputs: &[&Tensor]) -> Result<Tensor> {
+        if inputs.len() != 2 {
+            return Err(TetnusError::InvalidOperation(
+                "Sub requires exactly 2 inputs".to_string()
+            ));
+        }
+
+        let a = inputs[0];
+        let b = inputs[1];
+
+        if a.shape() != b.shape() {
+            return Err(TetnusError::ShapeMismatch {
+                expected: a.shape().to_vec(),
+                actual: b.shape().to_vec(),
+            });
+        }
+
+        let a_data = a.data();
+        let b_data = b.data();
+        let mut c_data = vec![0.0; a.numel()];
+
+        cpu::cpu_sub(&a_data, &b_data, &mut c_data);
+
+        Tensor::new(c_data, a.shape().to_vec())
+    }
+
+    fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {
+        // For C = A - B:
+        // dL/dA = dL/dC
+        // dL/dB = -dL/dC
+        let grad_data = grad_output.data();
+
+        // Negate gradient for B
+        let grad_b_data: Vec<f32> = grad_data.iter().map(|&x| -x).collect();
+
+        Ok(vec![
+            grad_output.clone(),
+            Tensor::new(grad_b_data, grad_output.shape().to_vec())?,
+        ])
+    }
+
+    fn name(&self) -> &str {
+        "sub"
     }
 }
 
@@ -112,49 +161,111 @@ impl Op for MulOp {
     }
 }
 
+pub struct DivOp {
+    a: Tensor,
+    b: Tensor,
+}
+
+impl DivOp {
+    pub fn new(a: &Tensor, b: &Tensor) -> Self {
+        Self {
+            a: a.clone(),
+            b: b.clone(),
+        }
+    }
+}
+
+impl Op for DivOp {
+    fn forward(&self, inputs: &[&Tensor]) -> Result<Tensor> {
+        if inputs.len() != 2 {
+            return Err(TetnusError::InvalidOperation(
+                "Div requires exactly 2 inputs".to_string()
+            ));
+        }
+
+        let a = inputs[0];
+        let b = inputs[1];
+
+        if a.shape() != b.shape() {
+            return Err(TetnusError::ShapeMismatch {
+                expected: a.shape().to_vec(),
+                actual: b.shape().to_vec(),
+            });
+        }
+
+        let a_data = a.data();
+        let b_data = b.data();
+        let mut c_data = vec![0.0; a.numel()];
+
+        cpu::cpu_div(&a_data, &b_data, &mut c_data);
+
+        Tensor::new(c_data, a.shape().to_vec())
+    }
+
+    fn backward(&self, grad_output: &Tensor) -> Result<Vec<Tensor>> {
+        // For C = A / B:
+        // dL/dA = dL/dC / B
+        // dL/dB = -dL/dC * A / B^2
+        let grad_c = grad_output.data();
+        let a_data = self.a.data();
+        let b_data = self.b.data();
+
+        let mut grad_a = vec![0.0; grad_c.len()];
+        let mut grad_b = vec![0.0; grad_c.len()];
+
+        // Need parallel iterator? Using simple loop for now or iter if small.
+        // Since cpu kernels use rayon, we should probably use standard iter for clarity unless performance critical here.
+        // Actually, zip everything.
+        for i in 0..grad_c.len() {
+            let g = grad_c[i];
+            let a_val = a_data[i];
+            let b_val = b_data[i];
+
+            // dL/dA = g / b
+            grad_a[i] = g / b_val;
+
+            // dL/dB = -g * a / b^2
+            grad_b[i] = -g * a_val / (b_val * b_val);
+        }
+
+        Ok(vec![
+            Tensor::new(grad_a, self.a.shape().to_vec())?,
+            Tensor::new(grad_b, self.b.shape().to_vec())?,
+        ])
+    }
+
+    fn name(&self) -> &str {
+        "div"
+    }
+}
+
 /// Helper functions
 pub fn add(a: &Tensor, b: &Tensor) -> Result<Tensor> {
     let op = AddOp;
     let result = op.forward(&[a, b])?;
 
-    if a.0.requires_grad || b.0.requires_grad {
-        let internal = &*result.0;
-        Ok(Tensor(Arc::new(crate::tensor::TensorInternal {
-            data: Arc::clone(&internal.data),
-            shape: internal.shape.clone(),
-            strides: internal.strides.clone(),
-            offset: internal.offset,
-            device: internal.device,
-            requires_grad: true,
-            grad: parking_lot::Mutex::new(None),
-            op: Some(Arc::new(op)),
-            inputs: vec![a.clone(), b.clone()],
-        })))
-    } else {
-        Ok(result)
-    }
+    Ok(with_graph(result, Arc::new(op), vec![a.clone(), b.clone()]))
+}
+
+pub fn sub(a: &Tensor, b: &Tensor) -> Result<Tensor> {
+    let op = SubOp;
+    let result = op.forward(&[a, b])?;
+
+    Ok(with_graph(result, Arc::new(op), vec![a.clone(), b.clone()]))
 }
 
 pub fn mul(a: &Tensor, b: &Tensor) -> Result<Tensor> {
     let op = MulOp::new(a, b);
     let result = op.forward(&[a, b])?;
 
-    if a.0.requires_grad || b.0.requires_grad {
-        let internal = &*result.0;
-        Ok(Tensor(Arc::new(crate::tensor::TensorInternal {
-            data: Arc::clone(&internal.data),
-            shape: internal.shape.clone(),
-            strides: internal.strides.clone(),
-            offset: internal.offset,
-            device: internal.device,
-            requires_grad: true,
-            grad: parking_lot::Mutex::new(None),
-            op: Some(Arc::new(op)),
-            inputs: vec![a.clone(), b.clone()],
-        })))
-    } else {
-        Ok(result)
-    }
+    Ok(with_graph(result, Arc::new(op), vec![a.clone(), b.clone()]))
+}
+
+pub fn div(a: &Tensor, b: &Tensor) -> Result<Tensor> {
+    let op = DivOp::new(a, b);
+    let result = op.forward(&[a, b])?;
+
+    Ok(with_graph(result, Arc::new(op), vec![a.clone(), b.clone()]))
 }
 
 #[cfg(test)]
@@ -303,22 +414,7 @@ macro_rules! unary_op {
             );
             let result = op.forward(&[a])?;
 
-            if a.0.requires_grad {
-                let internal = &*result.0;
-                Ok(Tensor(Arc::new(crate::tensor::TensorInternal {
-                    data: Arc::clone(&internal.data),
-                    shape: internal.shape.clone(),
-                    strides: internal.strides.clone(),
-                    offset: internal.offset,
-                    device: internal.device,
-                    requires_grad: true,
-                    grad: parking_lot::Mutex::new(None),
-                    op: Some(Arc::new(op)),
-                    inputs: vec![a.clone()],
-                })))
-            } else {
-                Ok(result)
-            }
+            Ok(with_graph(result, Arc::new(op), vec![a.clone()]))
         }
     };
 }

@@ -27,8 +27,8 @@ pub fn backward(tensor: &Tensor) -> Result<()> {
     // Topological sort
     let sorted = topological_sort(tensor)?;
 
-    // Backward pass in reverse topological order
-    for node in sorted.iter().rev() {
+    // Backward pass in reverse topological order (which is the order returned by BFS)
+    for node in sorted.iter() {
         if !node.0.requires_grad {
             continue;
         }

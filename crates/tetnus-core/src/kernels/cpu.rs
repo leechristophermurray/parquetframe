@@ -35,12 +35,30 @@ pub fn cpu_add(a: &[f32], b: &[f32], c: &mut [f32]) {
         });
 }
 
+/// Element-wise subtraction: C = A - B
+pub fn cpu_sub(a: &[f32], b: &[f32], c: &mut [f32]) {
+    c.par_iter_mut()
+        .zip(a.par_iter().zip(b.par_iter()))
+        .for_each(|(c_val, (a_val, b_val))| {
+            *c_val = a_val - b_val;
+        });
+}
+
 /// Element-wise multiplication: C = A * B
 pub fn cpu_mul(a: &[f32], b: &[f32], c: &mut [f32]) {
     c.par_iter_mut()
         .zip(a.par_iter().zip(b.par_iter()))
         .for_each(|(c_val, (a_val, b_val))| {
             *c_val = a_val * b_val;
+        });
+}
+
+/// Element-wise division: C = A / B
+pub fn cpu_div(a: &[f32], b: &[f32], c: &mut [f32]) {
+    c.par_iter_mut()
+        .zip(a.par_iter().zip(b.par_iter()))
+        .for_each(|(c_val, (a_val, b_val))| {
+            *c_val = a_val / b_val;
         });
 }
 
