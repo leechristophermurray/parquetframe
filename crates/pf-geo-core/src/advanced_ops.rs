@@ -3,9 +3,7 @@
 /// Provides buffer, intersection, union, and difference operations.
 
 use crate::{Geometry, GeoError, Result};
-use geo::{
-    Buffer, BooleanOps, LineString as GeoLineString, Point as GeoPoint, Polygon as GeoPolygon,
-};
+use geo::{Buffer, BooleanOps, Contains};
 
 /// Create a buffer around a geometry.
 ///
@@ -105,10 +103,11 @@ pub fn difference(geom1: &Geometry, geom2: &Geometry) -> Result<Option<Geometry>
 
 /// Check if two geometries are disjoint (do not intersect).
 pub fn disjoint(geom1: &Geometry, geom2: &Geometry) -> Result<bool> {
-    use geo::Intersects;
-
     match (geom1, geom2) {
-        (Geometry::Polygon(p1), Geometry::Polygon(p2)) => Ok(!p1.intersects(p2)),
+        (Geometry::Polygon(p1), Geometry::Polygon(p2)) => {
+            use geo::Intersects;
+            Ok(!p1.intersects(p2))
+        }
         (Geometry::Point(pt), Geometry::Polygon(poly)) => Ok(!poly.contains(pt)),
         (Geometry::Polygon(poly), Geometry::Point(pt)) => Ok(!poly.contains(pt)),
         _ => Err(GeoError::GeometryError(
