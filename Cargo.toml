@@ -9,7 +9,7 @@ members = [
     "crates/pf-geo-core",
     "crates/pf-mob-core",
     "crates/tetnus-core",
-    "crates/pf-py",
+    "crates/pf-py", "crates/tetnus-nn",
 ]
 resolver = "2"
 
