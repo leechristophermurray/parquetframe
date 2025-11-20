@@ -77,8 +77,6 @@ pub fn union(geom1: &Geometry, geom2: &Geometry) -> Result<Geometry> {
 
 /// Calculate the difference of two geometries (geom1 - geom2).
 pub fn difference(geom1: &Geometry, geom2: &Geometry) -> Result<Option<Geometry>> {
-/// Calculate the difference of two geometries (geom1 - geom2).
-pub fn difference(geom1: &Geometry, geom2: &Geometry) -> Result<Option<Geometry>> {
     match (geom1, geom2) {
         (Geometry::Polygon(p1), Geometry::Polygon(p2)) => {
             // difference() returns MultiPolygon directly

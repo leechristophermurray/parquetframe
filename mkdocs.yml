@@ -100,6 +100,7 @@ nav:
 
   - Entity Framework:
       - Overview: entity-framework/index.md
+      - Relationships: entity-framework/relationships.md
 
   - YAML Workflows:
       - Overview: yaml-workflows/index.md
