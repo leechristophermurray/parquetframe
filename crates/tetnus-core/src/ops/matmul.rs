@@ -1,6 +1,6 @@
 /// Matrix multiplication operation with gradient support
 
-use crate::{Tensor, Result, TetnusError, ops::Op};
+use crate::{Tensor, Result, TetnusError, ops::{Op, with_graph}};
 use crate::kernels::cpu;
 use std::sync::Arc;
 
@@ -115,24 +115,7 @@ pub fn matmul(a: &Tensor, b: &Tensor) -> Result<Tensor> {
     let op = MatMulOp::new(a, b);
     let result = op.forward(&[a, b])?;
 
-    // If either input requires grad, track the operation
-    if a.0.requires_grad || b.0.requires_grad {
-        // Build computation graph
-        let internal = &*result.0;
-        Ok(Tensor(Arc::new(crate::tensor::TensorInternal {
-            data: Arc::clone(&internal.data),
-            shape: internal.shape.clone(),
-            strides: internal.strides.clone(),
-            offset: internal.offset,
-            device: internal.device,
-            requires_grad: true,
-            grad: parking_lot::Mutex::new(None),
-            op: Some(Arc::new(op)),
-            inputs: vec![a.clone(), b.clone()],
-        })))
-    } else {
-        Ok(result)
-    }
+    Ok(with_graph(result, Arc::new(op), vec![a.clone(), b.clone()]))
 }
 
 #[cfg(test)]

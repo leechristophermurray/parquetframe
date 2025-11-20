@@ -47,14 +47,12 @@ class TestTetnusNNSequential(unittest.TestCase):
 
         self.assertEqual(y.shape, (10, 2))
 
-        # loss = y.sum()
-        # loss.backward()
+        loss = y.sum()
+        loss.backward()
 
-        # Check if parameters exist and require grad
-        for p in model.parameters():
+        # Check if gradients are populated
+        for i, p in enumerate(model.parameters()):
             self.assertTrue(p.requires_grad)
-            # TODO: Full backward pass with grad propagation through all ops
-
-
-if __name__ == "__main__":
-    unittest.main()
+            # Gradient should be present after backward
+            g = p.grad
+            self.assertIsNotNone(g, f"Parameter {i} has no gradient")
