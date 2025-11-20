@@ -1,0 +1,171 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0 -- /Users/temp/Documents/Projects/parquetframe/.venv/bin/python3
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /Users/temp/Documents/Projects/parquetframe
+configfile: pyproject.toml
+plugins: mock-3.15.1, asyncio-1.2.0, hypothesis-6.142.1, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tests/rust/test_rust_io_fastpaths_read.py::TestRustFastReaders::test_parquet_read_fast_returns_pyarrow_table PASSED [ 33%]
+tests/rust/test_rust_io_fastpaths_read.py::TestRustFastReaders::test_parquet_projection_and_row_groups PASSED [ 66%]
+tests/rust/test_rust_io_fastpaths_read.py::TestRustFastReaders::test_csv_read_fast_returns_pyarrow_table FAILED [100%]
+ERROR: Coverage failure: total of 7 is less than fail-under=45
+
+
+=================================== FAILURES ===================================
+_________ TestRustFastReaders.test_csv_read_fast_returns_pyarrow_table _________
+
+self = <tests.rust.test_rust_io_fastpaths_read.TestRustFastReaders object at 0x1199d82b0>
+
+    def test_csv_read_fast_returns_pyarrow_table(self):
+        df = pd.DataFrame({"a": ["u", "v", "w"], "b": [1, 2, 3]})
+        with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
+            df.to_csv(f, index=False)
+            p = Path(f.name)
+        try:
+            eng = RustIOEngine()
+>           table = eng.read_csv(p, delimiter=",", has_header=True)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/rust/test_rust_io_fastpaths_read.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <parquetframe.io_rust.RustIOEngine object at 0x1198ffd90>
+path = PosixPath('/var/folders/fd/r98_rxv5565918lvylk8tzhh0000gq/T/tmpp6wr6m7o.csv')
+delimiter = ',', has_header = True, infer_schema = True
+
+    def read_csv(
+        self,
+        path: str | Path,
+        delimiter: str = ",",
+        has_header: bool = True,
+        infer_schema: bool = True,
+    ) -> Any:
+        """
+        Read a CSV file using Rust fast-path.
+    
+        Returns a pyarrow.Table reconstructed from Arrow IPC bytes produced by the Rust engine.
+    
+        Args:
+            path: Path to CSV file
+            delimiter: Field delimiter (default: ',')
+            has_header: Whether file has header row
+            infer_schema: Whether to infer column types
+    
+        Returns:
+            pyarrow.Table
+    
+        Example:
+            >>> engine = RustIOEngine()
+            >>> tbl = engine.read_csv("large_file.csv")
+            >>> # Custom delimiter
+            >>> tbl = engine.read_csv("data.tsv", delimiter="\t")
+        """
+        if not hasattr(_rustic, "read_csv_fast"):
+            raise NotImplementedError("CSV fast-path not yet implemented.")
+    
+>       ipc_bytes = _rustic.read_csv_fast(
+            str(path),
+            delimiter=delimiter,
+            has_header=has_header,
+            infer_schema=infer_schema,
+        )
+E       ValueError: CSV fast-path is temporarily unavailable on Arrow 57; falling back to Python reader is recommended
+
+src/parquetframe/io_rust.py:143: ValueError
+================================ tests coverage ================================
+_______________ coverage: platform darwin, python 3.13.7-final-0 _______________
+
+Name                                               Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------------------------
+src/parquetframe/__init__.py                          50     28      4      0    41%   64-65, 70-72, 76-78, 82-84, 116-119, 187, 204-209, 223-228, 273-280
+src/parquetframe/ai/__init__.py                        3      3      0      0     0%   8-11
+src/parquetframe/ai/agent.py                         238    238     72      0     0%   9-536
+src/parquetframe/ai/prompts.py                        61     61      8      0     0%   8-192
+src/parquetframe/backends/__init__.py                  0      0      0      0   100%
+src/parquetframe/backends/rust_backend.py             34     34      8      0     0%   8-97
+src/parquetframe/benchmark.py                        301    301    120      0     0%   8-620
+src/parquetframe/benchmark_rust.py                   193    193     64      0     0%   8-405
+src/parquetframe/bio.py                              139    139     38      0     0%   8-353
+src/parquetframe/cache.py                            153    153     48      0     0%   7-389
+src/parquetframe/cli.py                             1232   1232    428      0     0%   8-2751
+src/parquetframe/cloud/__init__.py                     2      2      0      0     0%   1-3
+src/parquetframe/cloud/s3.py                          19     19      2      0     0%   1-54
+src/parquetframe/config.py                            94     41     34     12    51%   58-59, 62-65, 68-71, 75-76, 79, 83, 86, 89, 93-95, 102, 109, 118-122, 126, 135, 169-198, 213->215, 228-229, 235, 250-257
+src/parquetframe/core.py                              15     15      2      0     0%   28-131
+src/parquetframe/core/__init__.py                     15      6      2      0    53%   64-115
+src/parquetframe/core/base.py                         25      6      0      0    76%   18-20, 26-28
+src/parquetframe/core/frame.py                       211    165     90      0    15%   21-23, 48-60, 67, 72, 77, 82-87, 91-95, 99-103, 108-110, 115-121, 130-134, 146-166, 170, 174, 178, 201-213, 250-284, 308-310, 336-342, 361-364, 382-385, 389-391, 395-414, 423-447, 452-460, 468-470, 476-485, 489-494, 498-503, 507-512, 516-521, 525-530, 534-539
+src/parquetframe/core/heuristics.py                   97     76     34      0    16%   14-15, 56-104, 116-140, 146-157, 166-178, 184-190, 197, 201-211, 217-219
+src/parquetframe/core/reader.py                      182    150     78      0    12%   16-18, 23-24, 33-35, 60-100, 116-145, 161-192, 208-245, 261-297, 315-334, 349-359, 374-412, 434, 451, 468, 485, 502, 535
+src/parquetframe/core/registry.py                     68     29     12      1    50%   38-41, 60-67, 71, 75-77, 97-112, 130-131, 149-150, 165-166, 170-172, 176
+src/parquetframe/core_legacy.py                      479    398    200      0    12%   55-82, 144-152, 158-161, 170-173, 177-199, 212-223, 233-243, 247-263, 273-289, 298-315, 319-335, 347-362, 371-386, 390-405, 461-465, 470, 481-489, 494-500, 513-537, 543-545, 554-582, 589-616, 621-629, 636-666, 708-795, 822-848, 857-872, 885-894, 939-978, 1005-1011, 1046-1048, 1074-1076, 1091-1093, 1112-1114, 1133-1135, 1170-1224, 1230, 1236, 1242, 1248, 1271-1273, 1299-1301, 1334-1336, 1352-1367, 1378-1396, 1405, 1411-1415, 1428-1431
+src/parquetframe/dac/__init__.py                       5      5      0      0     0%   7-12
+src/parquetframe/dac/dashboard.py                     23     23      2      0     0%   5-42
+src/parquetframe/dac/layout.py                        32     32      2      0     0%   5-67
+src/parquetframe/dac/parser.py                        90     90     32      0     0%   7-168
+src/parquetframe/dac/renderer.py                       8      8      0      0     0%   5-49
+src/parquetframe/dac/widgets.py                       52     52     10      0     0%   5-123
+src/parquetframe/datacontext/__init__.py              66     66     18      0     0%   9-285
+src/parquetframe/datacontext/database_context.py     222    222     66      0     0%   9-416
+src/parquetframe/datacontext/parquet_context.py      207    207     90      0     0%   9-435
+src/parquetframe/dpac/__init__.py                      2      2      0      0     0%   5-7
+src/parquetframe/dpac/runner.py                       12     12      2      0     0%   5-33
+src/parquetframe/engines/__init__.py                   4      0      0      0   100%
+src/parquetframe/engines/dask_engine.py               67     45     24      0    24%   15-17, 35, 44-47, 51-54, 58-65, 69-75, 79-100, 104-117
+src/parquetframe/engines/pandas_engine.py             39     18      6      0    47%   27, 36-37, 41, 45, 49-57, 61, 65-71, 75
+src/parquetframe/engines/polars_engine.py             62     40     22      0    26%   15-17, 35, 44-48, 52-55, 59-68, 72-78, 82-104, 108-111
+src/parquetframe/entity/__init__.py                    9      2      0      0    78%   27-28
+src/parquetframe/entity/decorators.py                 95     84     22      0     9%   52-189, 235-295
+src/parquetframe/entity/delta_log.py                  95     79     30      0    13%   72-83, 101-129, 149-181, 194-208, 227-253, 262-269, 278-289
+src/parquetframe/entity/entity_store.py              115     94     36      0    14%   27-31, 38, 42-65, 69-86, 90-115, 120-153, 163-170, 175-181, 191-196, 208-222, 231-242, 254-273, 282-283, 287-290
+src/parquetframe/entity/metadata.py                   47     11      6      1    70%   26-27, 32, 53->56, 60, 64, 68-71, 75, 79
+src/parquetframe/entity/query.py                      53     38      4      0    26%   39-44, 59-60, 78-84, 99-105, 117-118, 131-149, 161-162, 174, 178-181, 185, 189
+src/parquetframe/entity/relationship.py               20      6      2      0    64%   26, 30-33, 37, 44
+src/parquetframe/entity/visualization.py              87     74     36      0    11%   19-21, 27-29, 56-145, 173-234, 257-270, 288
+src/parquetframe/exceptions.py                       223    223     54      0     0%   8-522
+src/parquetframe/fin/__init__.py                      38     38      8      0     0%   8-128
+src/parquetframe/geo/__init__.py                      56     56     16      0     0%   7-191
+src/parquetframe/graph/__init__.py                   127     91     30      0    23%   91-98, 103, 108, 113, 118, 123, 148-157, 178-187, 206-216, 232, 241-251, 260-270, 288, 306, 323-324, 372-374, 423-425, 465-467, 505-507, 542-544, 601-653, 703-706
+src/parquetframe/graph/adjacency.py                  218    185     98      0    10%   67-86, 114-208, 218, 223, 228, 244-249, 265-268, 285-293, 310-314, 331-357, 375-388, 438-457, 480-574, 584, 589, 594, 610-615, 631-634, 646-654
+src/parquetframe/graph/algo/__init__.py                3      0      0      0   100%
+src/parquetframe/graph/algo/components.py            147    147     64      0     0%   9-432
+src/parquetframe/graph/algo/pagerank.py              184    184     88      0     0%   8-631
+src/parquetframe/graph/algo/shortest_path.py         181    171     98      0     4%   65-99, 141-181, 216-331, 358-503, 533-557
+src/parquetframe/graph/algo/traversal.py             246    246    130      0     0%   8-631
+src/parquetframe/graph/algo/utils.py                   7      7      0      0     0%   8-158
+src/parquetframe/graph/data.py                       146    108     44      0    20%   59-65, 96-110, 124-147, 151-163, 173-182, 187-191, 196, 201-203, 219-224, 228, 276-282, 313-327, 341-379, 384-395, 405-414, 419-425, 430-434, 439, 444-447, 463-467, 483-487, 506-513, 517
+src/parquetframe/graph/io/__init__.py                  2      2      0      0     0%   8-10
+src/parquetframe/graph/io/graphar.py                 173    173     66      0     0%   15-549
+src/parquetframe/graph/rust_backend.py                80     64     20      0    16%   19-22, 29, 34, 58-78, 102-122, 148-167, 193-208, 250-266, 311-327, 371-385
+src/parquetframe/graph_rust.py                        41     41      4      0     0%   15-347
+src/parquetframe/history.py                          229    229     70      0     0%   11-613
+src/parquetframe/interactive.py                      354    354     94      0     0%   8-847
+src/parquetframe/io/io_backend.py                     94     75     20      0    17%   19-21, 35-46, 59-67, 97-103, 123-129, 146-152, 176-182, 198-205, 220-227, 242-249, 266-273, 298-323
+src/parquetframe/io_new/__init__.py                    2      0      0      0   100%
+src/parquetframe/io_new/avro.py                      129    110     62      0    10%   15-17, 38-52, 57-80, 87-88, 101-118, 122-139, 143-163, 167-188, 195-196, 218-228, 232-247, 256-282
+src/parquetframe/io_rust.py                           82     45      4      1    44%   22-24, 52, 65-68, 149-158, 183-196, 220-233, 259, 276, 293, 316, 343-344, 368-369, 391-392, 414-415, 431
+src/parquetframe/legacy/__init__.py                   14     14      2      0     0%   47-106
+src/parquetframe/permissions/__init__.py               6      0      0      0   100%
+src/parquetframe/permissions/api.py                  100     82     32      0    14%   79-99, 118-146, 165-214, 257-294, 308-323, 347-356, 384-394, 422-436
+src/parquetframe/permissions/core.py                 284    223    112      0    15%   60-82, 89, 94, 99, 103, 115, 129, 159-177, 182, 187, 191, 203-213, 225-238, 250-257, 269-272, 295-323, 344-351, 372-379, 383-385, 389-391, 395-397, 401-405, 409, 413, 442-465, 488-511, 515-525, 546-610, 619-695, 703-728, 736-744, 755-791, 802-824, 836-856, 871-892
+src/parquetframe/permissions/models.py                74     44     26      0    30%   48-52, 64, 77-87, 104-121, 144, 184, 228, 272, 309, 330-332, 336-345, 349-359, 363, 367
+src/parquetframe/sql.py                              365    365    148      0     0%   9-1097
+src/parquetframe/stats.py                            253    253     88      0     0%   9-745
+src/parquetframe/time/__init__.py                      3      3      0      0     0%   7-10
+src/parquetframe/time/dataframe.py                    26     26      8      0     0%   7-127
+src/parquetframe/time/operations.py                   48     48     16      0     0%   8-173
+src/parquetframe/timeseries.py                       218    218     80      0     0%   9-644
+src/parquetframe/workflow_history.py                 179    179     50      0     0%   8-317
+src/parquetframe/workflow_rust.py                     44     44      6      0     0%   11-272
+src/parquetframe/workflow_visualization.py           179    179     78      0     0%   8-412
+src/parquetframe/workflows.py                        306    306    106      0     0%   9-621
+----------------------------------------------------------------------------------------------
+TOTAL                                               9884   9032   3376     15     7%
+Coverage HTML written to dir htmlcov
+FAIL Required test coverage of 45% not reached. Total coverage: 6.54%
+=========================== short test summary info ============================
+FAILED tests/rust/test_rust_io_fastpaths_read.py::TestRustFastReaders::test_csv_read_fast_returns_pyarrow_table
+========================= 1 failed, 2 passed in 2.91s ==========================

@@ -253,7 +253,7 @@ print(f"Imported {result['records_processed']} tasks")
 
 ## Multi-Engine Support
 
-Switch between compute engines based on your needs:
+Switch between compute engines based on your needs. See [Engine Selection](../core-features/engine-selection.md) for details.
 
 ```python
 # Start with pandas for small datasets

@@ -1,17 +1,23 @@
 """
-AI module for parquetframe.
+AI module for Retrieval-Augmented Generation (RAG).
 
-This module provides LLM-powered natural language to SQL conversion
-with self-correction capabilities and integration with DataContext.
+Provides permission-aware querying over EntityStore using LLMs.
 """
 
+# Keep existing LLM agent for backwards compatibility
 from .agent import LLMAgent, LLMError, QueryResult
-from .prompts import PromptTemplate, QueryPromptBuilder
+from .config import AIConfig
+from .models import OLLAMA_AVAILABLE, BaseLanguageModel, OllamaModel
+from .rag_pipeline import SimpleRagPipeline
 
 __all__ = [
+    "BaseLanguageModel",
+    "OllamaModel",
+    "OLLAMA_AVAILABLE",
+    "AIConfig",
+    "SimpleRagPipeline",
+    # Legacy exports
     "LLMAgent",
     "LLMError",
     "QueryResult",
-    "PromptTemplate",
-    "QueryPromptBuilder",
 ]

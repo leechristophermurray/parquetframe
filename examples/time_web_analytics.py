@@ -9,10 +9,17 @@ This example demonstrates:
 - Request rate limiting detection
 """
 
+import time
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+
+try:
+    from parquetframe._rustic import time_resample_sum
+except ImportError:
+    print("Warning: Rust backend not available. Skipping TIME module examples.")
+    exit(0)
 
 # Generate simulated web traffic data
 np.random.seed(42)
@@ -23,7 +30,7 @@ num_requests = 50000
 timestamps = []
 current_time = start_time
 
-for i in range(num_requests):
+for _i in range(num_requests):
     # Add realistic time gaps (busier during day)
     hour = current_time.hour
     if 9 <= hour <= 17:  # Business hours
@@ -64,9 +71,6 @@ print(
 )
 print(f"Unique users: {web_traffic['user_id'].nunique():,}")
 print()
-
-# Import ParquetFrame TIME operations
-from parquetframe._rustic import time_resample_sum
 
 print("📊 TRAFFIC PATTERNS")
 print("-" * 80)
@@ -204,8 +208,6 @@ print("⚡ TIME MODULE PERFORMANCE")
 print("-" * 80)
 
 # Benchmark TIME resampling
-import time
-
 start = time.time()
 for _ in range(100):
     _ = time_resample_sum(ts_ms.values, counts_array, 60 * 60 * 1000)

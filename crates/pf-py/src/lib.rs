@@ -13,6 +13,8 @@ mod time;
 mod workflow;
 mod fin;
 mod geo;
+mod mob;
+mod tetnus;
 
 use pyo3::prelude::*;
 
@@ -68,6 +70,11 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Financial analytics functions
     fin::register_fin_functions(m)?;
     geo::register_geo_functions(&m)?;
+    // Register MOB functions
+    mob::register_mob_functions(&m)?;
+
+    // Register TETNUS functions
+    tetnus::register_tetnus_functions(&m)?;
 
     #[pyfn(m)]
     #[pyo3(name = "run_workflow")]

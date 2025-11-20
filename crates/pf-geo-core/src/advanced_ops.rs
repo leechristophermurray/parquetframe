@@ -3,7 +3,9 @@
 /// Provides buffer, intersection, union, and difference operations.
 
 use crate::{Geometry, GeoError, Result};
-use geo::{Buffer, BooleanOps, Contains};
+use geo::{BooleanOps, Contains};
+// use geo::prelude::*;
+// use geo_buffer::Buffer; // Not available
 
 /// Create a buffer around a geometry.
 ///
@@ -11,17 +13,33 @@ use geo::{Buffer, BooleanOps, Contains};
 pub fn buffer(geom: &Geometry, distance: f64) -> Result<Geometry> {
     match geom {
         Geometry::Point(p) => {
-            // Simple circular buffer around point
-            let buffered = p.buffer(distance);
-            Ok(Geometry::Polygon(buffered))
+            // Simple circular buffer around point (approximate with 32 points)
+            // Create a circle using geo-types or manual calculation
+            // Since geo doesn't have a circle primitive that converts to polygon easily in 0.28 without features,
+            // we'll manually generate points.
+            let center = p.0;
+            let mut coords = Vec::with_capacity(33);
+            for i in 0..33 {
+                let angle = (i as f64) * 2.0 * std::f64::consts::PI / 32.0;
+                let x = center.x + distance * angle.cos();
+                let y = center.y + distance * angle.sin();
+                coords.push((x, y));
+            }
+            let exterior = geo::LineString::from(coords);
+            Ok(Geometry::Polygon(geo::Polygon::new(exterior, vec![])))
         }
-        Geometry::LineString(ls) => {
-            let buffered = ls.buffer(distance);
-            Ok(Geometry::Polygon(buffered))
+        Geometry::LineString(_ls) => {
+             Err(GeoError::GeometryError(
+                "Buffer for LineString not supported by current backend".to_string(),
+            ))
         }
         Geometry::Polygon(poly) => {
-            let buffered = poly.buffer(distance);
-            Ok(Geometry::Polygon(buffered))
+            // Use geo-buffer crate
+            // We need to handle potential version mismatch if types are not compatible.
+            // But geo-types should be compatible.
+            let buffered = geo_buffer::buffer_polygon(poly, distance);
+            // geo-buffer returns MultiPolygon
+            Ok(Geometry::MultiPolygon(buffered.0))
         }
         _ => Err(GeoError::GeometryError(
             "Buffer not yet implemented for this geometry type".to_string(),
@@ -34,19 +52,14 @@ pub fn intersection(geom1: &Geometry, geom2: &Geometry) -> Result<Option<Geometr
     match (geom1, geom2) {
         (Geometry::Polygon(p1), Geometry::Polygon(p2)) => {
             let result = p1.intersection(p2);
-            match result {
-                geo::Geometry::Polygon(poly) if !poly.exterior().0.is_empty() => {
-                    Ok(Some(Geometry::Polygon(poly)))
+            if !result.0.is_empty() {
+                if let Some(first) = result.0.first() {
+                    Ok(Some(Geometry::Polygon(first.clone())))
+                } else {
+                    Ok(None)
                 }
-                geo::Geometry::MultiPolygon(mp) if !mp.0.is_empty() => {
-                    // For now, just return first polygon
-                    if let Some(first) = mp.0.first() {
-                        Ok(Some(Geometry::Polygon(first.clone())))
-                    } else {
-                        Ok(None)
-                    }
-                }
-                _ => Ok(None),
+            } else {
+                Ok(None)
             }
         }
         _ => Err(GeoError::GeometryError(
@@ -60,14 +73,7 @@ pub fn union(geom1: &Geometry, geom2: &Geometry) -> Result<Geometry> {
     match (geom1, geom2) {
         (Geometry::Polygon(p1), Geometry::Polygon(p2)) => {
             let result = p1.union(p2);
-            match result {
-                geo::Geometry::Polygon(poly) => Ok(Geometry::Polygon(poly)),
-                geo::Geometry::MultiPolygon(mp) => {
-                    // For now, return as multi-polygon
-                    Ok(Geometry::MultiPolygon(mp.0))
-                }
-                _ => Err(GeoError::GeometryError("Unexpected union result".to_string())),
-            }
+            Ok(Geometry::MultiPolygon(result.0))
         }
         _ => Err(GeoError::GeometryError(
             "Union only supports Polygon geometries currently".to_string(),

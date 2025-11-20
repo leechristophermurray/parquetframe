@@ -113,7 +113,7 @@ This layer provides various entry points for users to interact with ParquetFrame
 The heart of ParquetFrame, written in Python, orchestrates operations and provides the unified API.
 
 *   **ParquetFrame Core (`parquetframe` package)**: The central DataFrame wrapper that abstracts away the complexities of different backends and acceleration layers. It provides a consistent API for data manipulation, transformation, and analysis.
-*   **Intelligent Backend Selection**: This crucial component dynamically assesses the workload, data size, and system resources to choose the most appropriate execution engine:
+    *   **Intelligent Backend Selection**: This crucial component dynamically assesses the workload, data size, and system resources to choose the most appropriate execution engine. See [Engine Selection](../core-features/engine-selection.md) for details.
     *   **Pandas**: Optimized for smaller, in-memory datasets.
     *   **Dask**: Ideal for large, out-of-core datasets and distributed computing, enabling parallel processing.
     *   **Polars**: A high-performance, Rust-native DataFrame library that offers significant speedups for many operations, especially on single-node, multi-core systems.
