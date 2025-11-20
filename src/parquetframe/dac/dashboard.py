@@ -2,14 +2,13 @@
 Core Dashboard classes.
 """
 
-from typing import List, Optional
 from .layout import Container
 from .renderer import HtmlRenderer
 
 
 class Page(Container):
     """A single page in the dashboard."""
-    
+
     def __init__(self, title: str = "Page", **kwargs):
         super().__init__(**kwargs)
         self.title = title
@@ -20,7 +19,7 @@ class Dashboard:
 
     def __init__(self, title: str = "Dashboard"):
         self.title = title
-        self.pages: List[Page] = []
+        self.pages: list[Page] = []
 
     def add_page(self, page: Page):
         self.pages.append(page)
@@ -32,7 +31,7 @@ class Dashboard:
         content = ""
         for page in self.pages:
             content += page.render()
-        
+
         renderer = HtmlRenderer(title=self.title)
         return renderer.render(content)
 

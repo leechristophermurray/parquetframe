@@ -5,8 +5,6 @@ These functions provide direct access to time-series operations
 without requiring a TimeSeriesDataFrame wrapper.
 """
 
-from typing import Any
-
 import pandas as pd
 
 
@@ -38,21 +36,23 @@ def resample(
     try:
         from parquetframe._rustic import resample_ts
     except ImportError:
-        raise ImportError("Rust backend not available. Install with: pip install parquetframe[rust]")
+        raise ImportError(
+            "Rust backend not available. Install with: pip install parquetframe[rust]"
+        )
 
     # Convert timestamps to nanoseconds
     timestamps = pd.to_datetime(df[time_col]).astype("int64").values.tolist()
-    
+
     # Resample all numeric columns
     result_data = {time_col: []}
-    
+
     for col in df.columns:
         if col == time_col:
             continue
         if pd.api.types.is_numeric_dtype(df[col]):
             values = df[col].astype("float64").values.tolist()
             new_ts, new_vals = resample_ts(timestamps, values, freq, agg)
-            
+
             if time_col not in result_data or not result_data[time_col]:
                 result_data[time_col] = new_ts
             result_data[col] = new_vals
@@ -60,7 +60,7 @@ def resample(
     # Convert back to DataFrame
     result = pd.DataFrame(result_data)
     result[time_col] = pd.to_datetime(result[time_col])
-    
+
     return result
 
 
@@ -86,10 +86,10 @@ def rolling_window(
     """
     try:
         from parquetframe._rustic import (
-            rolling_mean_ts,
-            rolling_std_ts,
-            rolling_min_ts,
             rolling_max_ts,
+            rolling_mean_ts,
+            rolling_min_ts,
+            rolling_std_ts,
         )
     except ImportError:
         raise ImportError("Rust backend not available")

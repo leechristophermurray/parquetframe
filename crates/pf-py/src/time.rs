@@ -50,7 +50,7 @@ fn resample_ts(
 #[pyfunction]
 fn rolling_mean_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
     use pf_time_core::rolling::rolling_mean;
-    
+
     rolling_mean(&values, window)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -59,7 +59,7 @@ fn rolling_mean_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
 #[pyfunction]
 fn rolling_std_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
     use pf_time_core::rolling::rolling_std;
-    
+
     rolling_std(&values, window)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -68,7 +68,7 @@ fn rolling_std_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
 #[pyfunction]
 fn rolling_min_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
     use pf_time_core::rolling::rolling_min;
-    
+
     rolling_min(&values, window)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -77,7 +77,7 @@ fn rolling_min_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
 #[pyfunction]
 fn rolling_max_ts(values: Vec<f64>, window: usize) -> PyResult<Vec<f64>> {
     use pf_time_core::rolling::rolling_max;
-    
+
     rolling_max(&values, window)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }

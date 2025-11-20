@@ -2,15 +2,16 @@
 Layout components for Dashboard as Code.
 """
 
-from typing import List, Optional, Union, Dict, Any
-from abc import ABC, abstractmethod
 import uuid
+from abc import ABC, abstractmethod
 
 
 class LayoutElement(ABC):
     """Base class for all layout elements."""
 
-    def __init__(self, css_class: Optional[str] = None, style: Optional[Dict[str, str]] = None):
+    def __init__(
+        self, css_class: str | None = None, style: dict[str, str] | None = None
+    ):
         self.id = str(uuid.uuid4())
         self.css_class = css_class or ""
         self.style = style or {}
@@ -29,7 +30,7 @@ class LayoutElement(ABC):
 class Container(LayoutElement):
     """A container that holds other elements."""
 
-    def __init__(self, children: Optional[List[LayoutElement]] = None, **kwargs):
+    def __init__(self, children: list[LayoutElement] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.children = children or []
 

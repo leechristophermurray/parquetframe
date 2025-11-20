@@ -21,27 +21,28 @@ fn geo_haversine_distance(
         .map_err(|e| PyValueError::new_err(format!("Distance calculation failed: {}", e)))
 }
 
-/// Create a buffer around a point (returns polygon coordinates).
-#[pyfunction]
-fn geo_buffer_point(
-    lon: f64,
-    lat: f64,
-    distance: f64,
-) -> PyResult<Vec<(f64, f64)>> {
-    use pf_geo_core::{advanced_ops, Geometry};
-
-    let point = Geometry::point(lon, lat);
-    let buffered = advanced_ops::buffer(&point, distance)
-        .map_err(|e| PyValueError::new_err(format!("Buffer failed: {}", e)))?;
-
-    // Extract coordinates from buffered polygon
-    match buffered {
-        Geometry::Polygon(poly) => {
-            Ok(poly.exterior().coords().map(|c| (c.x, c.y)).collect())
-        }
-        _ => Err(PyValueError::new_err("Expected polygon result")),
-    }
-}
+// TODO: Re-enable when advanced_ops Buffer API is fixed
+// /// Create a buffer around a point (returns polygon coordinates).
+// #[pyfunction]
+// fn geo_buffer_point(
+//     lon: f64,
+//     lat: f64,
+//     distance: f64,
+// ) -> PyResult<Vec<(f64, f64)>> {
+//     use pf_geo_core::{advanced_ops, Geometry};
+//
+//     let point = Geometry::point(lon, lat);
+//     let buffered = advanced_ops::buffer(&point, distance)
+//         .map_err(|e| PyValueError::new_err(format!("Buffer failed: {}", e)))?;
+//
+//     // Extract coordinates from buffered polygon
+//     match buffered {
+//         Geometry::Polygon(poly) => {
+//             Ok(poly.exterior().coords().map(|c| (c.x, c.y)).collect())
+//         }
+//         _ => Err(PyValueError::new_err("Expected polygon result")),
+//     }
+// }
 
 /// Check if a point is within a polygon.
 #[pyfunction]
@@ -123,7 +124,8 @@ pub fn register_geo_functions(parent_module: &Bound<'_, PyModule>) -> PyResult<(
     let geo_module = PyModule::new_bound(parent_module.py(), "geo")?;
 
     geo_module.add_function(wrap_pyfunction!(geo_haversine_distance, &geo_module)?)?;
-    geo_module.add_function(wrap_pyfunction!(geo_buffer_point, &geo_module)?)?;
+    // TODO: Re-enable when advanced_ops Buffer API is fixed
+    // geo_module.add_function(wrap_pyfunction!(geo_buffer_point, &geo_module)?)?;
     geo_module.add_function(wrap_pyfunction!(geo_point_in_polygon, &geo_module)?)?;
     geo_module.add_function(wrap_pyfunction!(geo_read_geojson, &geo_module)?)?;
     geo_module.add_function(wrap_pyfunction!(geo_write_geojson, &geo_module)?)?;

@@ -4,21 +4,22 @@ Giza YAML Parser for Dashboard as Code.
 Parses *.giza.yml files into Dashboard objects.
 """
 
-import yaml
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from typing import Any
+
 import pandas as pd
+import yaml
 
 from .dashboard import Dashboard, Page
-from .layout import Row, Column
-from .widgets import Metric, Chart, Table, Markdown
+from .layout import Column, Row
+from .widgets import Chart, Markdown, Metric, Table
 
 
 @dataclass
 class GizaSource:
     name: str
     table: str
-    time_column: Optional[str] = None
+    time_column: str | None = None
 
 
 @dataclass
@@ -26,28 +27,28 @@ class GizaMetric:
     name: str
     label: str
     sql: str
-    format: Optional[str] = None
+    format: str | None = None
 
 
 class GizaParser:
     """Parses Giza YAML files into Dashboard objects."""
 
-    def __init__(self, data_context: Dict[str, pd.DataFrame]):
+    def __init__(self, data_context: dict[str, pd.DataFrame]):
         """
         Args:
             data_context: Dictionary mapping source names to DataFrames.
         """
         self.data_context = data_context
-        self.sources: Dict[str, GizaSource] = {}
-        self.metrics: Dict[str, GizaMetric] = {}
+        self.sources: dict[str, GizaSource] = {}
+        self.metrics: dict[str, GizaMetric] = {}
 
     def parse_file(self, filepath: str) -> Dashboard:
         """Parse a Giza YAML file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             spec = yaml.safe_load(f)
         return self.parse(spec)
 
-    def parse(self, spec: Dict[str, Any]) -> Dashboard:
+    def parse(self, spec: dict[str, Any]) -> Dashboard:
         """Parse a Giza dictionary spec."""
         # Validate version
         if spec.get("version") != "giza/v1":
@@ -59,19 +60,17 @@ class GizaParser:
 
         # Create Dashboard
         dash_spec = spec.get("dashboard", {})
-        dashboard = Dashboard(
-            title=dash_spec.get("name", "Untitled Dashboard")
-        )
+        dashboard = Dashboard(title=dash_spec.get("name", "Untitled Dashboard"))
 
         # Create default page
         page = Page("Main")
-        
+
         # Parse charts and add to layout
         charts_spec = spec.get("charts", [])
         layout_spec = dash_spec.get("layout")
 
         if layout_spec:
-            # Custom layout not fully implemented in this MVP, 
+            # Custom layout not fully implemented in this MVP,
             # falling back to auto-layout (grid of 2 columns)
             pass
 
@@ -80,40 +79,38 @@ class GizaParser:
         for i, chart_spec in enumerate(charts_spec):
             widget = self._create_widget(chart_spec)
             current_row.append(Column(6, children=[widget]))
-            
+
             if len(current_row) == 2:
                 page.add(Row(current_row))
                 current_row = []
-        
+
         if current_row:
             page.add(Row(current_row))
 
         dashboard.add_page(page)
         return dashboard
 
-    def _parse_sources(self, sources: List[Dict[str, Any]]):
+    def _parse_sources(self, sources: list[dict[str, Any]]):
         for s in sources:
             self.sources[s["name"]] = GizaSource(
-                name=s["name"],
-                table=s["table"],
-                time_column=s.get("time_column")
+                name=s["name"], table=s["table"], time_column=s.get("time_column")
             )
 
-    def _parse_metrics(self, metrics: List[Dict[str, Any]]):
+    def _parse_metrics(self, metrics: list[dict[str, Any]]):
         for m in metrics:
             self.metrics[m["name"]] = GizaMetric(
                 name=m["name"],
                 label=m.get("label", m["name"]),
                 sql=m["sql"],
-                format=m.get("format")
+                format=m.get("format"),
             )
 
-    def _create_widget(self, spec: Dict[str, Any]) -> Any:
+    def _create_widget(self, spec: dict[str, Any]) -> Any:
         chart_type = spec["type"]
         name = spec["name"]
         source_name = spec["source"]
         metric_names = spec["metrics"]
-        
+
         # Get data
         df = self.data_context.get(source_name)
         if df is None:
@@ -121,14 +118,14 @@ class GizaParser:
 
         # Apply filters (Mock implementation - real SQL parsing is complex)
         # In a real implementation, we would use DataFusion or pandas query
-        
+
         # Create Widget based on type
         if chart_type == "kpi":
             # For KPI, take the first metric and aggregate
             metric_name = metric_names[0]
             metric = self.metrics.get(metric_name)
             label = metric.label if metric else metric_name
-            
+
             # Simple aggregation simulation (since we don't have full SQL engine here)
             # In production, this would execute the SQL expression
             value = 0
@@ -165,7 +162,7 @@ class GizaParser:
             # For MVP, we return a Chart widget with a description
             return Chart(
                 f"Chart: {name} ({chart_type}) - {', '.join(metric_names)}",
-                height="300px"
+                height="300px",
             )
 
         return Markdown(f"Unknown chart type: {chart_type}")

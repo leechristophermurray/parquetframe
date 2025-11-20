@@ -244,8 +244,69 @@ set_config(default_engine="pandas")  # Always use Pandas
 
 ---
 
+## Rust Acceleration Layer
+
+ParquetFrame automatically uses Rust fast-paths when available, providing 10-50x speedups for specific operations:
+
+### Rust Fast-Path Operations
+
+| Operation | Speedup | Auto-enabled |
+|-----------|---------|---------------|
+| Parquet metadata reading | 5-10x | ✓ |
+| Graph algorithms (BFS, PageRank) | 15-25x | ✓ |
+| Workflow execution (parallel DAG) | 10-15x | ✓ |
+| CSV reading (with schema inference) | 3-5x | ✓ |
+
+### Decision Flow
+
+```
+Operation Request
+│
+├─ Is Rust extension available?
+│  │
+│  ├─ YES → Check if operation supported by Rust
+│  │        │
+│  │        ├─ Supported → Use Rust fast-path
+│  │        └─ Not supported → Fall back to Python/engine
+│  │
+│  └─ NO → Use Python/selected engine
+│
+└─ Result returned
+```
+
+### Check Rust Availability
+
+```python
+from parquetframe import _rustic
+
+# Check if Rust backend is compiled and available
+if hasattr(_rustic, "rust_available"):
+    rust_available = _rustic.rust_available()
+    print(f"Rust acceleration: {rust_available}")
+
+# Check specific feature availability
+if hasattr(_rustic, "io_fastpaths_available"):
+    print(f"I/O fast-paths: {_rustic.io_fastpaths_available()}")
+```
+
+### Installation with Rust Support
+
+Rust acceleration is automatically included in wheel distributions:
+
+```bash
+# Install from PyPI (includes pre-compiled Rust extension)
+pip install parquetframe
+
+# For development, build locally with Rust
+pip install maturin
+maturin develop --release
+```
+
+---
+
 ## References
 
 - Implementation: [`src/parquetframe/core/heuristics.py`](file:///Users/temp/Documents/Projects/parquetframe/src/parquetframe/core/heuristics.py)
 - Configuration: [`src/parquetframe/config.py`](file:///Users/temp/Documents/Projects/parquetframe/src/parquetframe/config.py)
 - Engine base: [`src/parquetframe/core/base.py`](file:///Users/temp/Documents/Projects/parquetframe/src/parquetframe/core/base.py)
+- Rust Acceleration: [Rust Overview](../rust-acceleration/overview.md)

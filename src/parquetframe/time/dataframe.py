@@ -4,8 +4,6 @@ TimeSeriesDataFrame - Time-aware DataFrame extension.
 Provides convenient time-series operations on top of pandas DataFrames.
 """
 
-from typing import Any
-
 import pandas as pd
 
 from . import operations

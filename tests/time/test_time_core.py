@@ -5,15 +5,17 @@ Tests for TIME core - time-series operations.
 import pandas as pd
 import pytest
 
-from parquetframe.time import TimeSeriesDataFrame, resample, rolling_window, asof_join
+from parquetframe.time import TimeSeriesDataFrame, asof_join, resample, rolling_window
 
 
 def test_resample_mean():
     """Test resampling with mean aggregation."""
-    df = pd.DataFrame({
-        "timestamp": pd.date_range("2024-01-01", periods=10, freq="1s"),
-        "value": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=10, freq="1s"),
+            "value": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
+        }
+    )
 
     # Resample to 2-second intervals
     result = resample(df, "timestamp", "2s", "mean")
@@ -25,10 +27,12 @@ def test_resample_mean():
 
 def test_resample_sum():
     """Test resampling with sum aggregation."""
-    df = pd.DataFrame({
-        "timestamp": pd.date_range("2024-01-01", periods=6, freq="1s"),
-        "value": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=6, freq="1s"),
+            "value": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+        }
+    )
 
     result = resample(df, "timestamp", "3s", "sum")
 
@@ -64,21 +68,31 @@ def test_rolling_std():
 
 def test_asof_join_backward():
     """Test as-of join with backward strategy."""
-    left = pd.DataFrame({
-        "trade_time": pd.to_datetime(["2024-01-01 00:00:01", "2024-01-01 00:00:03"]),
-        "price": [100.0, 102.0],
-    })
+    left = pd.DataFrame(
+        {
+            "trade_time": pd.to_datetime(
+                ["2024-01-01 00:00:01", "2024-01-01 00:00:03"]
+            ),
+            "price": [100.0, 102.0],
+        }
+    )
 
-    right = pd.DataFrame({
-        "quote_time": pd.to_datetime([
-            "2024-01-01 00:00:00",
-            "2024-01-01 00:00:02",
-            "2024-01-01 00:00:04",
-        ]),
-        "bid": [99.0, 101.0, 103.0],
-    })
+    right = pd.DataFrame(
+        {
+            "quote_time": pd.to_datetime(
+                [
+                    "2024-01-01 00:00:00",
+                    "2024-01-01 00:00:02",
+                    "2024-01-01 00:00:04",
+                ]
+            ),
+            "bid": [99.0, 101.0, 103.0],
+        }
+    )
 
-    result = asof_join(left, right, "trade_time", "quote_time", "bid", strategy="backward")
+    result = asof_join(
+        left, right, "trade_time", "quote_time", "bid", strategy="backward"
+    )
 
     assert len(result) == 2
     assert result["bid"].iloc[0] == pytest.approx(99.0)  # trade@01 -> quote@00
@@ -87,10 +101,12 @@ def test_asof_join_backward():
 
 def test_timeseries_dataframe():
     """Test TimeSeriesDataFrame class."""
-    df = pd.DataFrame({
-        "timestamp": pd.date_range("2024-01-01", periods=10, freq="1s"),
-        "value": range(10),
-    })
+    df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2024-01-01", periods=10, freq="1s"),
+            "value": range(10),
+        }
+    )
 
     ts = TimeSeriesDataFrame(df, "timestamp")
 
@@ -107,15 +123,19 @@ def test_timeseries_dataframe():
 
 def test_timeseries_asof_join():
     """Test TimeSeriesDataFrame as-of join."""
-    trades = pd.DataFrame({
-        "trade_time": pd.date_range("2024-01-01", periods=5, freq="1s"),
-        "price": [100.0, 101.0, 102.0, 103.0, 104.0],
-    })
+    trades = pd.DataFrame(
+        {
+            "trade_time": pd.date_range("2024-01-01", periods=5, freq="1s"),
+            "price": [100.0, 101.0, 102.0, 103.0, 104.0],
+        }
+    )
 
-    quotes = pd.DataFrame({
-        "quote_time": pd.date_range("2024-01-01", periods=10, freq="500ms"),
-        "bid": range(10),
-    })
+    quotes = pd.DataFrame(
+        {
+            "quote_time": pd.date_range("2024-01-01", periods=10, freq="500ms"),
+            "bid": range(10),
+        }
+    )
 
     trades_ts = TimeSeriesDataFrame(trades, "trade_time")
     quotes_ts = TimeSeriesDataFrame(quotes, "quote_time")

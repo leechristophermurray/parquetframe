@@ -23,7 +23,7 @@ minutely = resample(df, "timestamp", "1min", agg="mean")
 print(len(minutely))  # 60 rows
 
 # Downsample to hourly
-hourly = resample(df, "timestamp", "1h", agg="sum") 
+hourly = resample(df, "timestamp", "1h", agg="sum")
 print(len(hourly))  # 1 row
 ```
 
@@ -53,7 +53,7 @@ Best for: Counts, volumes, cumulative metrics
 # First value in each bin
 opening = resample(df, "timestamp", "1d", agg="first")
 
-# Last value in each bin  
+# Last value in each bin
 closing = resample(df, "timestamp", "1d", agg="last")
 ```
 
