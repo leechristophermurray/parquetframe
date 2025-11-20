@@ -93,15 +93,74 @@ pub fn read_parquet_ipc<P: AsRef<Path>>(
 }
 
 /// Read a CSV file and return Arrow IPC stream bytes.
-/// Note: CSV fast-path temporarily disabled due to Arrow 57 API changes. Use Python path.
+/// Uses Arrow 57 CSV API with automatic schema inference.
 pub fn read_csv_ipc<P: AsRef<Path>>(
-    _path: P,
-    _delimiter: u8,
-    _has_header: bool,
-    _infer_schema: bool,
-    _batch_size: Option<usize>,
+    path: P,
+    delimiter: u8,
+    has_header: bool,
+    infer_schema: bool,
+    batch_size: Option<usize>,
 ) -> Result<Vec<u8>> {
-    Err(IoError::Other(
-        "CSV fast-path is temporarily unavailable on Arrow 57; falling back to Python reader is recommended".to_string(),
-    ))
+    use arrow::csv::{ReaderBuilder, reader::Format};
+    use std::io::BufReader;
+    use std::sync::Arc;
+
+    let path_ref = path.as_ref();
+    if !path_ref.exists() {
+        return Err(IoError::FileNotFound(path_ref.display().to_string()));
+    }
+
+    let file = File::open(path_ref)?;
+    let batch_sz = batch_size.unwrap_or(8192);
+
+    // Build CSV format
+    let format = Format::default()
+        .with_delimiter(delimiter)
+        .with_header(has_header);
+
+    // Infer schema if requested, otherwise use a simple string schema
+    let schema: SchemaRef = if infer_schema {
+        // Open file again for schema inference (small overhead)
+        let infer_file = File::open(path_ref)?;
+        let mut buf_reader = BufReader::new(infer_file);
+        // Use arrow's infer_schema_from_files or infer directly from format
+        let (inferred, _) = format.infer_schema(&mut buf_reader, Some(100))
+            .map_err(|e| IoError::Other(format!("Schema inference failed: {}", e)))?;
+        Arc::new(inferred)
+    } else {
+        // If not inferring, we still need a schema. Arrow 57 requires it.
+        // We'll do a quick inference anyway since we can't proceed without a schema.
+        let infer_file = File::open(path_ref)?;
+        let mut buf_reader = BufReader::new(infer_file);
+        let (inferred, _) = format.infer_schema(&mut buf_reader, Some(100))
+            .map_err(|e| IoError::Other(format!("Schema inference failed: {}", e)))?;
+        Arc::new(inferred)
+    };
+
+    // Build the reader with the schema
+    let reader = ReaderBuilder::new(schema.clone())
+        .with_format(format)
+        .with_batch_size(batch_sz)
+        .build(file)
+        .map_err(|e| IoError::Other(format!("CSV reader build failed: {}", e)))?;
+
+    // Collect batches
+    let mut batches = Vec::new();
+    for batch_result in reader {
+        let batch = batch_result.map_err(|e| IoError::Other(format!("CSV read error: {}", e)))?;
+        batches.push(batch);
+    }
+
+    // Serialize to Arrow IPC stream
+    let mut buffer = Vec::<u8>::new();
+    {
+        let mut writer = StreamWriter::try_new(&mut buffer, &schema)
+            .map_err(|e| IoError::Other(e.to_string()))?;
+        for b in batches {
+            writer.write(&b).map_err(|e| IoError::Other(e.to_string()))?;
+        }
+        writer.finish().map_err(|e| IoError::Other(e.to_string()))?;
+    }
+
+    Ok(buffer)
 }

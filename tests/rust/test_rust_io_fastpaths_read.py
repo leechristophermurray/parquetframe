@@ -63,9 +63,6 @@ class TestRustFastReaders:
         finally:
             p.unlink(missing_ok=True)
 
-    @pytest.mark.skip(
-        reason="CSV fast-path temporarily disabled on Arrow 57; awaiting API migration"
-    )
     def test_csv_read_fast_returns_pyarrow_table(self):
         df = pd.DataFrame({"a": ["u", "v", "w"], "b": [1, 2, 3]})
         with tempfile.NamedTemporaryFile(suffix=".csv", mode="w", delete=False) as f:
