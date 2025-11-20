@@ -12,6 +12,7 @@ mod io;
 mod time;
 mod workflow;
 mod fin;
+mod geo;
 
 use pyo3::prelude::*;
 
@@ -66,6 +67,7 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Financial analytics functions
     fin::register_fin_functions(m)?;
+    geo::register_geo_functions(&m)?;
 
     #[pyfn(m)]
     #[pyo3(name = "run_workflow")]
