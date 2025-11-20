@@ -159,4 +159,5 @@ You've built a basic permission system that supports:
 ## Next Steps
 
 - Explore [Entity Framework](../entity-framework/index.md) to attach these permissions to real data classes.
+- See [Relationship Management](../entity-framework/relationships.md) for details on the underlying relationship log.
 - See [Graph Processing](../graph-processing/index.md) for analyzing large permission graphs.

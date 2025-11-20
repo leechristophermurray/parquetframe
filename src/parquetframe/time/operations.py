@@ -35,10 +35,10 @@ def resample(
     """
     try:
         from parquetframe._rustic import resample_ts
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "Rust backend not available. Install with: pip install parquetframe[rust]"
-        )
+        ) from err
 
     # Convert timestamps to nanoseconds
     timestamps = pd.to_datetime(df[time_col]).astype("int64").values.tolist()
@@ -91,8 +91,8 @@ def rolling_window(
             rolling_min_ts,
             rolling_std_ts,
         )
-    except ImportError:
-        raise ImportError("Rust backend not available")
+    except ImportError as err:
+        raise ImportError("Rust backend not available") from err
 
     values = series.astype("float64").values.tolist()
 
@@ -149,8 +149,8 @@ def asof_join(
     """
     try:
         from parquetframe._rustic import asof_join_ts
-    except ImportError:
-        raise ImportError("Rust backend not available")
+    except ImportError as err:
+        raise ImportError("Rust backend not available") from err
 
     # Convert to nanoseconds
     left_times = pd.to_datetime(left[left_time_col]).astype("int64").values.tolist()

@@ -212,6 +212,45 @@ class DataFrameProxy:
 
         return self
 
+    def to_orc(
+        self,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> "DataFrameProxy":
+        """
+        Write DataFrame to ORC file.
+
+        Args:
+            path: Output file path
+            **kwargs: Additional arguments passed to pyarrow.orc.write_table
+
+        Returns:
+            Self for method chaining
+
+        Examples:
+            >>> df = pf2.read("data.csv")
+            >>> df.to_orc("output.orc")
+        """
+        try:
+            import pyarrow as pa
+            import pyarrow.orc as orc
+        except ImportError as err:
+            raise ImportError(
+                "pyarrow with ORC support required. Install with: pip install pyarrow"
+            ) from err
+
+        if self._data is None:
+            raise ValueError("Cannot write empty DataFrameProxy")
+
+        # Convert to pandas first (as common denominator)
+        # TODO: Optimize for engines that support Arrow directly
+        pandas_df = self._engine.to_pandas(self._data)
+        table = pa.Table.from_pandas(pandas_df)
+
+        orc.write_table(table, str(path), **kwargs)
+
+        return self
+
     def sql(
         self,
         query: str,

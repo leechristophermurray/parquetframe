@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyList;
 use numpy::{PyArray1, PyReadonlyArray1};
 use pf_fin_core::indicators;
-use arrow_array::{Float64Array, ArrayRef};
+use arrow_array::{Float64Array, ArrayRef, Array};
 use std::sync::Arc;
 
 /// Convert numpy array to Arrow Float64Array.
@@ -29,7 +29,7 @@ fn arrow_to_numpy<'py>(py: Python<'py>, arr: &ArrayRef) -> PyResult<Bound<'py, P
         }
     }
 
-    Ok(PyArray1::from_vec_bound(py, values))
+    Ok(PyArray1::from_vec(py, values))
 }
 
 /// Calculate Simple Moving Average.

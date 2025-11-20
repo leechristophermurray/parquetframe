@@ -76,7 +76,7 @@ class GizaParser:
 
         # Auto-layout: 2 charts per row
         current_row = []
-        for i, chart_spec in enumerate(charts_spec):
+        for _i, chart_spec in enumerate(charts_spec):
             widget = self._create_widget(chart_spec)
             current_row.append(Column(6, children=[widget]))
 

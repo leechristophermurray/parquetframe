@@ -9,10 +9,21 @@ This example demonstrates:
 - As-of joins for event correlation
 """
 
+import time
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
+
+try:
+    from parquetframe._rustic import (
+        time_resample_mean,
+        time_rolling_mean,
+        time_rolling_std,
+    )
+except ImportError:
+    print("Warning: Rust backend not available. Skipping TIME module examples.")
+    exit(0)
 
 # Generate simulated IoT sensor data (temperature, humidity, pressure)
 np.random.seed(42)
@@ -47,9 +58,6 @@ print(f"\nAnalyzing {len(timestamps)} sensor readings")
 print(f"Time range: {timestamps[0]} to {timestamps[-1]}")
 print("Sampling frequency: 1 minute")
 print()
-
-# Import ParquetFrame TIME operations
-from parquetframe._rustic import time_resample_mean, time_rolling_mean, time_rolling_std
 
 print("📊 RESAMPLING TO DIFFERENT INTERVALS")
 print("-" * 80)
@@ -153,8 +161,6 @@ print("⚡ PERFORMANCE METRICS")
 print("-" * 80)
 
 # Demonstrate TIME module performance vs pandas
-import time
-
 # TIME module resampling
 start = time.time()
 for _ in range(100):

@@ -25,5 +25,4 @@ pub type Result<T> = std::result::Result<T, GeoError>;
 // Re-export commonly used types
 pub use types::Geometry;
 pub use crs::CRS;
-// TODO: Fix advanced_ops Buffer API compatibility with geo crate
-// pub mod advanced_ops;
+pub mod advanced_ops;
