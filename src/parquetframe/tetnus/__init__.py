@@ -68,6 +68,11 @@ class Tensor:
             shape = shape[0]
         return Tensor(tetnus.randn(list(shape)))
 
+    @staticmethod
+    def linspace(start, stop, num=50):
+        """Create tensor with linearly spaced values."""
+        return Tensor(tetnus.linspace(float(start), float(stop), int(num)))
+
     @property
     def shape(self):
         """Tensor shape."""
@@ -109,6 +114,10 @@ class Tensor:
         """Compute gradients via backpropagation."""
         tetnus.backward(self._tensor)
 
+    def to_numpy(self):
+        """Convert to NumPy array."""
+        return self._tensor.to_numpy()
+
     # Operations
     def __matmul__(self, other):
         """Matrix multiplication: a @ b"""
@@ -134,6 +143,18 @@ class Tensor:
         """Element-wise division: a / b"""
         result = tetnus.div(self._tensor, other._tensor)
         return Tensor(result)
+
+    def add(self, other):
+        return self + other
+
+    def sub(self, other):
+        return self - other
+
+    def mul(self, other):
+        return self * other
+
+    def div(self, other):
+        return self / other
 
     def reshape(self, *shape):
         """Reshape tensor."""

@@ -175,3 +175,35 @@ class Sequential(Module):
 
     def __repr__(self):
         return "Sequential(\n  " + "\n  ".join(str(m) for m in self._modules) + "\n)"
+
+
+class MSELoss(Module):
+    """Mean Squared Error Loss."""
+
+    def __init__(self):
+        self._inner = _rust_tetnus.nn.MSELoss()
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        if not isinstance(input, Tensor) or not isinstance(target, Tensor):
+            raise TypeError("input and target must be Tensors")
+        out_rust = self._inner.forward(input._tensor, target._tensor)
+        return Tensor(out_rust)
+
+    def __repr__(self):
+        return "MSELoss()"
+
+
+class CrossEntropyLoss(Module):
+    """Cross Entropy Loss."""
+
+    def __init__(self):
+        self._inner = _rust_tetnus.nn.CrossEntropyLoss()
+
+    def forward(self, input: Tensor, target: Tensor) -> Tensor:
+        if not isinstance(input, Tensor) or not isinstance(target, Tensor):
+            raise TypeError("input and target must be Tensors")
+        out_rust = self._inner.forward(input._tensor, target._tensor)
+        return Tensor(out_rust)
+
+    def __repr__(self):
+        return "CrossEntropyLoss()"

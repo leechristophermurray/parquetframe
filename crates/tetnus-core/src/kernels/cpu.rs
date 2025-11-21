@@ -62,6 +62,24 @@ pub fn cpu_div(a: &[f32], b: &[f32], c: &mut [f32]) {
         });
 }
 
+/// Element-wise exponential: C = exp(A)
+pub fn cpu_exp(a: &[f32], c: &mut [f32]) {
+    c.par_iter_mut()
+        .zip(a.par_iter())
+        .for_each(|(c_val, a_val)| {
+            *c_val = a_val.exp();
+        });
+}
+
+/// Element-wise natural logarithm: C = ln(A)
+pub fn cpu_log(a: &[f32], c: &mut [f32]) {
+    c.par_iter_mut()
+        .zip(a.par_iter())
+        .for_each(|(c_val, a_val)| {
+            *c_val = a_val.ln();
+        });
+}
+
 /// Sum reduction
 pub fn cpu_sum(a: &[f32]) -> f32 {
     a.par_iter().sum()

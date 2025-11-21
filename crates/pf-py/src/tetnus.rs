@@ -373,6 +373,9 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     // Register NN submodule
     crate::tetnus_nn::register_nn_module(&m)?;
 
+    // Register Optim submodule
+    crate::tetnus_optim::register_optim_module(&m)?;
+
     parent.add_submodule(&m)?;
     Ok(())
 }

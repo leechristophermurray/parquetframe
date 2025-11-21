@@ -37,7 +37,7 @@ pub fn with_graph(result: Tensor, op: Arc<dyn Op>, inputs: Vec<Tensor>) -> Tenso
 }
 
 // Stub implementations - will be filled in next
-pub mod matmul;
 pub mod elementwise;
-pub mod view;
+pub mod matmul;
 pub mod reduce;
+pub mod view;
