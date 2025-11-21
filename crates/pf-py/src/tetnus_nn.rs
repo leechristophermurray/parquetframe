@@ -1,8 +1,128 @@
 //! Python bindings for TETNUS NN (Neural Network) module
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
-use tetnus_nn::{Linear, ReLU, Sequential, Module as _};
+use tetnus_nn::{Linear, ReLU, Sequential, Embedding, LayerNorm, NumericalProcessor, CategoricalProcessor, Module as _};
 use crate::tetnus::{PyTensor, tetnus_err_to_py};
+
+/// Embedding Layer
+#[pyclass(name = "Embedding")]
+#[derive(Clone)]
+pub struct PyEmbedding {
+    inner: Embedding,
+}
+
+#[pymethods]
+impl PyEmbedding {
+    #[new]
+    fn new(num_embeddings: usize, embedding_dim: usize) -> PyResult<Self> {
+        Embedding::new(num_embeddings, embedding_dim)
+            .map(|inner| PyEmbedding { inner })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn forward(&self, input: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn parameters(&self) -> Vec<PyTensor> {
+        self.inner.parameters()
+            .into_iter()
+            .map(|t| PyTensor { inner: t })
+            .collect()
+    }
+}
+
+/// Layer Normalization
+#[pyclass(name = "LayerNorm")]
+#[derive(Clone)]
+pub struct PyLayerNorm {
+    inner: LayerNorm,
+}
+
+#[pymethods]
+impl PyLayerNorm {
+    #[new]
+    fn new(normalized_shape: Vec<usize>, eps: Option<f32>) -> PyResult<Self> {
+        LayerNorm::new(normalized_shape, eps.unwrap_or(1e-5))
+            .map(|inner| PyLayerNorm { inner })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn forward(&self, input: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn parameters(&self) -> Vec<PyTensor> {
+        self.inner.parameters()
+            .into_iter()
+            .map(|t| PyTensor { inner: t })
+            .collect()
+    }
+}
+
+/// Numerical Processor
+#[pyclass(name = "NumericalProcessor")]
+#[derive(Clone)]
+pub struct PyNumericalProcessor {
+    inner: NumericalProcessor,
+}
+
+#[pymethods]
+impl PyNumericalProcessor {
+    #[new]
+    fn new() -> PyResult<Self> {
+        NumericalProcessor::new()
+            .map(|inner| PyNumericalProcessor { inner })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn forward(&self, input: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn parameters(&self) -> Vec<PyTensor> {
+        self.inner.parameters()
+            .into_iter()
+            .map(|t| PyTensor { inner: t })
+            .collect()
+    }
+}
+
+/// Categorical Processor
+#[pyclass(name = "CategoricalProcessor")]
+#[derive(Clone)]
+pub struct PyCategoricalProcessor {
+    inner: CategoricalProcessor,
+}
+
+#[pymethods]
+impl PyCategoricalProcessor {
+    #[new]
+    fn new(num_categories: usize, embedding_dim: usize) -> PyResult<Self> {
+        CategoricalProcessor::new(num_categories, embedding_dim)
+            .map(|inner| PyCategoricalProcessor { inner })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn forward(&self, input: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    fn parameters(&self) -> Vec<PyTensor> {
+        self.inner.parameters()
+            .into_iter()
+            .map(|t| PyTensor { inner: t })
+            .collect()
+    }
+}
 
 /// Linear layer (fully connected)
 #[pyclass(name = "Linear")]
@@ -78,6 +198,14 @@ impl PySequential {
             self.inner.add(Box::new(linear.inner));
         } else if let Ok(relu) = module.extract::<PyReLU>() {
             self.inner.add(Box::new(relu.inner));
+        } else if let Ok(emb) = module.extract::<PyEmbedding>() {
+            self.inner.add(Box::new(emb.inner));
+        } else if let Ok(norm) = module.extract::<PyLayerNorm>() {
+            self.inner.add(Box::new(norm.inner));
+        } else if let Ok(num) = module.extract::<PyNumericalProcessor>() {
+            self.inner.add(Box::new(num.inner));
+        } else if let Ok(cat) = module.extract::<PyCategoricalProcessor>() {
+            self.inner.add(Box::new(cat.inner));
         } else {
             return Err(PyValueError::new_err("Unsupported module type"));
         }
@@ -105,6 +233,10 @@ pub fn register_nn_module(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLinear>()?;
     m.add_class::<PyReLU>()?;
     m.add_class::<PySequential>()?;
+    m.add_class::<PyEmbedding>()?;
+    m.add_class::<PyLayerNorm>()?;
+    m.add_class::<PyNumericalProcessor>()?;
+    m.add_class::<PyCategoricalProcessor>()?;
 
     parent.add_submodule(&m)?;
     Ok(())

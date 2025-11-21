@@ -62,6 +62,90 @@ class ReLU(Module):
         return "ReLU()"
 
 
+class Embedding(Module):
+    """Lookup table for embeddings."""
+
+    def __init__(self, num_embeddings: int, embedding_dim: int):
+        self._inner = _rust_tetnus.nn.Embedding(num_embeddings, embedding_dim)
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def parameters(self):
+        return [Tensor(p) for p in self._inner.parameters()]
+
+    def __repr__(self):
+        return f"Embedding(num_embeddings={self.num_embeddings}, embedding_dim={self.embedding_dim})"
+
+
+class LayerNorm(Module):
+    """Applies Layer Normalization over a mini-batch of inputs."""
+
+    def __init__(self, normalized_shape: list[int], eps: float = 1e-5):
+        self._inner = _rust_tetnus.nn.LayerNorm(normalized_shape, eps)
+        self.normalized_shape = normalized_shape
+        self.eps = eps
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def parameters(self):
+        return [Tensor(p) for p in self._inner.parameters()]
+
+    def __repr__(self):
+        return f"LayerNorm(normalized_shape={self.normalized_shape}, eps={self.eps})"
+
+
+class NumericalProcessor(Module):
+    """Processor for numerical features (learnable normalization)."""
+
+    def __init__(self):
+        self._inner = _rust_tetnus.nn.NumericalProcessor()
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def parameters(self):
+        return [Tensor(p) for p in self._inner.parameters()]
+
+    def __repr__(self):
+        return "NumericalProcessor()"
+
+
+class CategoricalProcessor(Module):
+    """Processor for categorical features (embedding lookup)."""
+
+    def __init__(self, num_categories: int, embedding_dim: int):
+        self._inner = _rust_tetnus.nn.CategoricalProcessor(
+            num_categories, embedding_dim
+        )
+        self.num_categories = num_categories
+        self.embedding_dim = embedding_dim
+
+    def forward(self, input: Tensor) -> Tensor:
+        if not isinstance(input, Tensor):
+            raise TypeError("input must be a Tensor")
+        out_rust = self._inner.forward(input._tensor)
+        return Tensor(out_rust)
+
+    def parameters(self):
+        return [Tensor(p) for p in self._inner.parameters()]
+
+    def __repr__(self):
+        return f"CategoricalProcessor(num_categories={self.num_categories}, embedding_dim={self.embedding_dim})"
+
+
 class Sequential(Module):
     """A sequential container."""
 
@@ -73,9 +157,7 @@ class Sequential(Module):
 
     def add(self, module: Module):
         if not hasattr(module, "_inner"):
-            raise TypeError(
-                "Sequential currently only supports Rust-backed modules (Linear, ReLU)"
-            )
+            raise TypeError("Sequential currently only supports Rust-backed modules")
 
         # Add to Rust sequential
         # Note: this copies/clones the module into Rust Sequential
