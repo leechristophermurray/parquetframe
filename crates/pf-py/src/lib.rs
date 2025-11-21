@@ -16,6 +16,7 @@ mod geo;
 mod mob;
 mod tetnus;
 mod tetnus_nn;
+mod tetnus_optim;
 
 use pyo3::prelude::*;
 

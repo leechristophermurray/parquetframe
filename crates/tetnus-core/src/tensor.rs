@@ -15,7 +15,7 @@ pub enum Device {
 /// Internal tensor data (ref-counted, immutable)
 pub struct TensorInternal {
     /// Arrow buffer holding the data (zero-copy when from Arrow arrays)
-    pub data: Arc<Buffer>,
+    pub data: Arc<parking_lot::RwLock<Buffer>>,
 
     /// Shape of the tensor (e.g., [2, 3] for 2x3 matrix)
     pub shape: Vec<usize>,
@@ -62,7 +62,7 @@ impl Tensor {
         let strides = Self::compute_strides(&shape);
 
         Ok(Tensor(Arc::new(TensorInternal {
-            data: Arc::new(buffer),
+            data: Arc::new(parking_lot::RwLock::new(buffer)),
             shape,
             strides,
             offset: 0,
@@ -206,7 +206,8 @@ impl Tensor {
 
     /// Get tensor data as f32 slice
     pub fn data(&self) -> Vec<f32> {
-        let buffer = &self.0.data;
+        let buffer_guard = self.0.data.read();
+        let buffer = &*buffer_guard;
         let offset = self.0.offset;
         let numel = self.numel();
 
@@ -219,6 +220,30 @@ impl Tensor {
             result.push(value);
         }
         result
+    }
+
+    /// Update tensor data from a Vec<f32>
+    /// This is used by optimizers to update weights
+    pub fn set_data(&self, new_data: Vec<f32>) -> Result<()> {
+        Self::validate_shape(&new_data, &self.0.shape)?;
+
+        // Convert Vec<f32> to Arrow buffer
+        let byte_data: Vec<u8> = new_data
+            .iter()
+            .flat_map(|f| f.to_le_bytes())
+            .collect();
+        let buffer = Buffer::from(byte_data);
+
+        let mut data_guard = self.0.data.write();
+        *data_guard = buffer;
+
+        Ok(())
+    }
+
+    /// Clear gradient
+    pub fn zero_grad(&self) {
+        let mut grad = self.0.grad.lock();
+        *grad = None;
     }
 
     /// Enable gradient tracking

@@ -7,6 +7,8 @@ pub mod module;
 pub mod linear;
 pub mod activations;
 pub mod sequential;
+pub mod optim;
+pub mod loss;
 pub mod embedding;
 pub mod norm;
 pub mod preprocessing;

@@ -2,6 +2,7 @@
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use tetnus_nn::{Linear, ReLU, Sequential, Embedding, LayerNorm, NumericalProcessor, CategoricalProcessor, Module as _};
+use tetnus_nn::loss::{MSELoss, CrossEntropyLoss};
 use crate::tetnus::{PyTensor, tetnus_err_to_py};
 
 /// Embedding Layer
@@ -226,6 +227,46 @@ impl PySequential {
     }
 }
 
+/// Mean Squared Error Loss
+#[pyclass(name = "MSELoss")]
+pub struct PyMSELoss {
+    inner: MSELoss,
+}
+
+#[pymethods]
+impl PyMSELoss {
+    #[new]
+    fn new() -> Self {
+        PyMSELoss { inner: MSELoss::new() }
+    }
+
+    fn forward(&self, input: &PyTensor, target: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner, &target.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+}
+
+/// Cross Entropy Loss
+#[pyclass(name = "CrossEntropyLoss")]
+pub struct PyCrossEntropyLoss {
+    inner: CrossEntropyLoss,
+}
+
+#[pymethods]
+impl PyCrossEntropyLoss {
+    #[new]
+    fn new() -> Self {
+        PyCrossEntropyLoss { inner: CrossEntropyLoss::new() }
+    }
+
+    fn forward(&self, input: &PyTensor, target: &PyTensor) -> PyResult<PyTensor> {
+        self.inner.forward(&input.inner, &target.inner)
+            .map(|t| PyTensor { inner: t })
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+}
+
 /// Register NN functions and classes
 pub fn register_nn_module(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     let m = PyModule::new(parent.py(), "nn")?;
@@ -237,6 +278,8 @@ pub fn register_nn_module(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyLayerNorm>()?;
     m.add_class::<PyNumericalProcessor>()?;
     m.add_class::<PyCategoricalProcessor>()?;
+    m.add_class::<PyMSELoss>()?;
+    m.add_class::<PyCrossEntropyLoss>()?;
 
     parent.add_submodule(&m)?;
     Ok(())
