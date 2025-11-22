@@ -1,8 +1,6 @@
 use crate::sparse::SparseTensor;
 use tetnus_core::Tensor;
 use pf_graph_core::CsrGraph;
-use std::sync::Arc;
-use arrow::array::{Array, Float32Array};
 
 pub struct Graph {
     pub x: Tensor,           // Node features [N, F]

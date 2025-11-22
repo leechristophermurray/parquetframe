@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use datafusion::prelude::*;
 use crate::executors::{StepExecutor, ExecutionContext, ExecutionResult, ExecutionError};
-use std::io::Cursor;
 
 pub struct HttpExecutor;
 
