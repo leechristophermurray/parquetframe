@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arrow = "53.3.0"
+arrow = { workspace = true }
 pf-time-core = { path = "../pf-time-core" }
 thiserror = "2.0"
 chrono = "0.4"

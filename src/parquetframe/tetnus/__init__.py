@@ -273,4 +273,35 @@ __all__ = [
 ]
 
 # Expose submodules
+# Expose submodules
+# Expose graph module from Rust
+import sys
+
 from . import nn, numpy
+
+try:
+    graph = tetnus.graph
+    sys.modules["parquetframe.tetnus.graph"] = graph
+except AttributeError:
+    # Fallback or warning if graph module is not available
+    pass
+
+# Expose llm module from Rust
+try:
+    llm = tetnus.llm
+    sys.modules["parquetframe.tetnus.llm"] = llm
+except AttributeError:
+    # Fallback or warning if llm module is not available
+    pass
+
+# Expose edge module from Rust
+try:
+    edge = tetnus.edge
+    sys.modules["parquetframe.tetnus.edge"] = edge
+except AttributeError:
+    # Fallback or warning if edge module is not available
+    pass
+
+__all__.append("graph")
+__all__.append("llm")
+__all__.append("edge")

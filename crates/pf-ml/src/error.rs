@@ -14,4 +14,6 @@ pub enum MlError {
     ArrowError(#[from] arrow::error::ArrowError),
     #[error("DataFusion error: {0}")]
     DataFusionError(#[from] datafusion::error::DataFusionError),
+    #[error("DataFusion Arrow error: {0}")]
+    DataFusionArrowError(#[from] datafusion::arrow::error::ArrowError),
 }
