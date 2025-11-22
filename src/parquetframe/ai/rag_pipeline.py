@@ -238,3 +238,274 @@ class SimpleRagPipeline:
 
 
 __all__ = ["SimpleRagPipeline"]
+
+
+class VectorRagPipeline(SimpleRagPipeline):
+    """
+    Enhanced RAG pipeline with vector embeddings and semantic search.
+
+    This extends SimpleRagPipeline to add:
+    - Vector embeddings for semantic similarity
+    - Hybrid retrieval (keyword + vector search)
+    - Entity indexing capabilities
+    """
+
+    def __init__(
+        self,
+        config: AIConfig,
+        entity_store: Any,
+        vector_store: Any,
+        embedding_model: Any,
+    ):
+        """
+        Initialize vector-enabled RAG pipeline.
+
+        Args:
+            config: AIConfig with model and prompt configuration
+            entity_store: EntityStore instance for data retrieval
+            vector_store: Vector store for embeddings (e.g., SQLiteVectorStore)
+            embedding_model: Embedding model (e.g., TetnusEmbeddingModel)
+        """
+        super().__init__(config, entity_store)
+        self.vector_store = vector_store
+        self.embedding_model = embedding_model
+
+        logger.info(f"Initialized VectorRagPipeline with {embedding_model.model_name}")
+
+    def index_entities(self, entity_names: list[str] | None = None):
+        """
+        Index entities for vector search.
+
+        This method:
+        1. Retrieves all entities (bypassing permissions for indexing)
+        2. Converts to text
+        3. Generates embeddings
+        4. Stores in vector database
+
+        Args:
+            entity_names: List of entity names to index.
+                         If None, index all RAG-enabled entities.
+        """
+        if entity_names is None:
+            entity_names = list(self.config.rag_enabled_entities)
+
+        logger.info(f"Indexing {len(entity_names)} entity types...")
+
+        total_indexed = 0
+
+        for entity_name in entity_names:
+            if entity_name not in self.config.rag_enabled_entities:
+                logger.warning(f"Skipping {entity_name} - not in RAG-enabled entities")
+                continue
+
+            try:
+                # Get all entities (without permission filtering for indexing)
+                entities = self.entity_store.get_all_entities(entity_name)
+
+                if not entities:
+                    logger.warning(f"No {entity_name} entities found")
+                    continue
+
+                # Prepare batch for embedding
+                chunks = []
+                texts = []
+
+                for entity in entities:
+                    entity_id = entity.get("id", f"unknown-{len(chunks)}")
+                    text = self._entity_to_text(entity)
+
+                    chunk_id = f"{entity_name}:{entity_id}"
+                    chunks.append(
+                        {
+                            "chunk_id": chunk_id,
+                            "entity_name": entity_name,
+                            "entity_id": str(entity_id),
+                            "content": text,
+                        }
+                    )
+                    texts.append(text)
+
+                # Generate embeddings in batch
+                logger.info(f"Embedding {len(texts)} {entity_name}...")
+                embeddings = self.embedding_model.embed_batch(texts)
+
+                # Add vectors to chunks
+                for chunk, embedding in zip(chunks, embeddings, strict=False):
+                    chunk["vector"] = embedding
+
+                # Store in vector DB
+                self.vector_store.add_batch(chunks)
+                total_indexed += len(chunks)
+
+                logger.info(f"Indexed {len(chunks)} {entity_name} entities")
+
+            except Exception as e:
+                logger.error(f"Failed to index {entity_name}: {e}")
+
+        logger.info(f"Indexing complete. Total: {total_indexed} chunks indexed.")
+
+    def _entity_to_text(self, entity: dict[str, Any]) -> str:
+        """
+        Convert entity dict to text for embedding.
+
+        Args:
+            entity: Entity data dict
+
+        Returns:
+            Text representation
+        """
+        # Simple concatenation of all fields
+        parts = []
+        for key, value in entity.items():
+            if value is not None:
+                parts.append(f"{key}: {value}")
+
+        return " | ".join(parts)
+
+    def _retrieve_authorized_context(
+        self, intent: dict[str, Any], user_context: str
+    ) -> list[dict[str, Any]]:
+        """
+        Hybrid retrieval with vector search and permission filtering.
+
+        Combines:
+        1. Vector similarity search
+        2. Permission filtering
+        3. Keyword filtering from intent
+
+        Args:
+            intent: Parsed intent dict
+            user_context: User ID for permissions
+
+        Returns:
+            List of authorized entity chunks
+        """
+        # Extract query for vector search
+        # Use original query if available, otherwise reconstruct from keywords
+        query_text = intent.get("query_text", " ".join(intent.get("keywords", [])))
+
+        if not query_text:
+            # Fall back to keyword-based retrieval
+            logger.debug("No query text for vector search, using keyword retrieval")
+            return super()._retrieve_authorized_context(intent, user_context)
+
+        # Step 1: Vector search
+        logger.debug(f"Performing vector search for: {query_text}")
+        query_embedding = self.embedding_model.embed(query_text)
+
+        # Retrieve more candidates than needed for permission filtering
+        candidate_k = self.config.retrieval_k * 3
+
+        # Filter by entity if specified in intent
+        entity_filter = None
+        if len(intent.get("entities", [])) == 1:
+            entity_filter = intent["entities"][0]
+
+        candidates = self.vector_store.search(
+            query_vector=query_embedding,
+            top_k=candidate_k,
+            entity_filter=entity_filter,
+        )
+
+        # Step 2: Permission filtering
+        authorized_chunks = []
+
+        for chunk_id, score, content, metadata in candidates:
+            entity_name = metadata["entity_name"]
+            entity_id = metadata["entity_id"]
+
+            # Check permission
+            try:
+                # Format permission check
+                permission_obj = f"{entity_name}:{entity_id}"
+
+                # Use EntityStore's check method if available
+                if hasattr(self.entity_store, "check"):
+                    has_access = self.entity_store.check(
+                        user_context, "view", permission_obj
+                    )
+                else:
+                    # Fallback: assume access (for demo/testing)
+                    has_access = True
+                    logger.warning(
+                        "EntityStore has no check method - allowing all access"
+                    )
+
+                if has_access:
+                    authorized_chunks.append(
+                        {
+                            "chunk_id": chunk_id,
+                            "entity_name": entity_name,
+                            "entity_id": entity_id,
+                            "content": content,
+                            "score": score,
+                            "data": {
+                                "id": entity_id,
+                                "content": content,
+                            },
+                        }
+                    )
+
+                # Stop if we have enough
+                if len(authorized_chunks) >= self.config.retrieval_k:
+                    break
+
+            except Exception as e:
+                logger.warning(f"Permission check failed for {chunk_id}: {e}")
+
+        logger.info(
+            f"Vector search: {len(candidates)} candidates → "
+            f"{len(authorized_chunks)} authorized"
+        )
+
+        return authorized_chunks
+
+    def run_query(self, query: str, user_context: str) -> dict[str, Any]:
+        """
+        Run RAG query with vector search.
+
+        Extends parent method to:
+        - Store original query for vector search
+        - Include similarity scores in results
+
+        Args:
+            query: Natural language query
+            user_context: User ID for permission checks
+
+        Returns:
+            Dict with response_text, context_used, scores, etc.
+        """
+        logger.info(f"Running vector RAG query for user: {user_context}")
+
+        try:
+            # Parse intent and add original query
+            intent = self._parse_intent(query)
+            intent["query_text"] = query  # Add for vector search
+            logger.debug(f"Parsed intent: {intent}")
+
+            # Retrieve with vector search
+            context_chunks = self._retrieve_authorized_context(intent, user_context)
+            logger.debug(f"Retrieved {len(context_chunks)} context chunks")
+
+            # Generate response
+            response_text = self._generate_response(query, context_chunks)
+
+            return {
+                "response_text": response_text,
+                "context_used": context_chunks,
+                "intent": intent,
+                "user_context": user_context,
+                "search_method": "vector",
+            }
+
+        except Exception as e:
+            logger.error(f"Vector RAG query failed: {e}")
+            return {
+                "response_text": f"Error processing query: {str(e)}",
+                "context_used": [],
+                "intent": {},
+                "error": str(e),
+            }
+
+
+__all__ = ["SimpleRagPipeline", "VectorRagPipeline"]
