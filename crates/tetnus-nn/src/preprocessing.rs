@@ -1,5 +1,5 @@
 use crate::module::Module;
-use crate::{Result, TetnusNnError};
+use crate::Result;
 use tetnus_core::{Tensor, ops};
 use tetnus_core::ops::Op;
 use crate::norm::LayerNorm;

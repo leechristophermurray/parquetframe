@@ -2,8 +2,6 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
 use datafusion::prelude::*;
-use datafusion::logical_expr::LogicalPlanBuilder;
-use datafusion::dataframe::DataFrameWriteOptions;
 use crate::executors::{StepExecutor, ExecutionContext, ExecutionResult, ExecutionError};
 
 pub struct ParquetReadExecutor;

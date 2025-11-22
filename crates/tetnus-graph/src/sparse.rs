@@ -1,5 +1,4 @@
 use tetnus_core::Tensor;
-use std::sync::Arc;
 
 /// A sparse tensor in COO (Coordinate) format.
 /// Used for efficient storage of graph adjacency matrices.

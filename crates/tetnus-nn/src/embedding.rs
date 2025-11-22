@@ -1,7 +1,6 @@
 use crate::module::Module;
 use crate::{Result, TetnusNnError};
 use tetnus_core::{Tensor, ops};
-use tetnus_core::ops::Op;
 
 /// Embedding layer: Lookup table for categorical embeddings
 ///

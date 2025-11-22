@@ -2,6 +2,7 @@ pub mod datafusion;
 pub mod parquet;
 pub mod http;
 pub mod ml;
+pub mod tetnus;
 
 pub use self::datafusion::DataFusionSqlExecutor;
 
