@@ -1,0 +1,73 @@
+# Tetnus ML Training & Deployment Pipeline
+# Example workflow demonstrating tetnus ML integration
+
+name: sales_forecast_pipeline
+version: "1.0"
+
+steps:
+  # Step 1: Load training data
+  - name: load_training_data
+    type: parquet.read
+    config:
+      path: "data/sales_training.parquet"
+    output: training_data
+
+  # Step 2: Train TabularTransformer model
+  - name: train_model
+    type: tetnus.train
+    depends_on:
+      - load_training_data
+    config:
+      model_type: TabularTransformer
+      target_column: sales_forecast
+      hyperparameters:
+        hidden_size: 256
+        num_layers: 4
+        num_heads: 8
+        learning_rate: 0.001
+        epochs: 10
+        batch_size: 1024
+      output_path: "models/sales_v1.pth"
+      schema_output: "models/sales_v1.schema.json"
+    input: training_data
+    output: trained_model
+
+  # Step 3: Extract attention maps for interpretability
+  - name: feature_importance
+    type: tetnus.attention
+    depends_on:
+      - train_model
+    config:
+      model_path: "models/sales_v1.pth"
+      schema_path: "models/sales_v1.schema.json"
+      output_path: "reports/sales_v1_attention.json"
+    input: trained_model
+    output: attention_maps
+
+  # Step 4: Compile model for Edge TPU deployment
+  - name: compile_for_edge
+    type: tetnus.compile
+    depends_on:
+      - train_model
+    config:
+      target: google-coral
+      model_path: "models/sales_v1.pth"
+      calibration_data_path: "data/sales_training.parquet"
+      quantization:
+        method: ptq  # Post-Training Quantization
+        bits: 8
+      output_path: "deploy/sales_v1_edgetpu.tflite"
+    input: trained_model
+    output: edge_model
+
+  # Step 5: Run inference on test data
+  - name: test_predictions
+    type: tetnus.infer
+    depends_on:
+      - compile_for_edge
+    config:
+      model_path: "deploy/sales_v1_edgetpu.tflite"
+      input_data: "data/sales_test.parquet"
+      output_path: "results/predictions.parquet"
+    input: edge_model
+    output: predictions
