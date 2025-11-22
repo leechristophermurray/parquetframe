@@ -12,7 +12,8 @@ members = [
     "crates/pf-py",
     "crates/tetnus-nn",           # Phase 3: NN Layers, Optimizers, Data-Aware Models
     "crates/tetnus-graph",
-    "crates/tetnus-llm",        # Phase 4: GNNs
+    "crates/tetnus-llm",
+    "crates/tetnus-coral-driver",        # Phase 4: GNNs
 ]
 resolver = "2"
 
