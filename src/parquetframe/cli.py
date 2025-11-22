@@ -2753,3 +2753,29 @@ def _display_dataframe_as_table(df: Any, title: str = "DataFrame") -> None:
 
 if __name__ == "__main__":
     main()
+
+
+@main.command(name="repl")
+def repl_command():
+    """
+    Start Jupyter-like interactive REPL.
+
+    Provides an interactive shell with magic commands, rich display,
+    and execution history. Perfect for exploratory data analysis.
+
+    Examples:
+        pf repl
+        pf repl  # then: df = pf.read("data.parquet")
+        pf repl  # then: %sql SELECT * FROM df WHERE val > 100
+    """
+    try:
+        from .cli.repl import start_repl
+
+        start_repl()
+    except ImportError as e:
+        console.print(
+            "[bold red]Error:[/bold red] REPL requires additional dependencies."
+        )
+        console.print(f"Missing: {e.name}")
+        console.print("Install with: pip install parquetframe[interactive]")
+        sys.exit(1)
