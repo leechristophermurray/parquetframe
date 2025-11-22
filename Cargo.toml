@@ -9,7 +9,10 @@ members = [
     "crates/pf-geo-core",
     "crates/pf-mob-core",
     "crates/tetnus-core",
-    "crates/pf-py", "crates/tetnus-nn",
+    "crates/pf-py",
+    "crates/tetnus-nn",           # Phase 3: NN Layers, Optimizers, Data-Aware Models
+    "crates/tetnus-graph",
+    "crates/tetnus-llm",        # Phase 4: GNNs
 ]
 resolver = "2"
 
@@ -26,8 +29,8 @@ chrono = "0.4"
 rayon = "1.8"
 tokio = { version = "1.35", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
-arrow = "54.0"
-parquet = "54.0"
+arrow = "53.3.0"
+parquet = "53.3.0"
 crossbeam = "0.8"
 parking_lot = "0.12"
 thiserror = "1.0"

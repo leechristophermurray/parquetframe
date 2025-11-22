@@ -2,7 +2,6 @@
 Test NumPy-compatible mathematical operations.
 """
 
-import pytest
 import math
 
 

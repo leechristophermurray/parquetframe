@@ -17,6 +17,8 @@ mod mob;
 mod tetnus;
 mod tetnus_nn;
 mod tetnus_optim;
+mod tetnus_graph;
+mod tetnus_llm;
 
 use pyo3::prelude::*;
 
