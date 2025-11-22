@@ -382,6 +382,9 @@ pub fn register_tetnus_functions(parent: &Bound<'_, PyModule>) -> PyResult<()> {
     // Register LLM submodule
     crate::tetnus_llm::register_tetnus_llm_module(parent.py(), &m)?;
 
+    // Register Edge submodule
+    crate::tetnus_edge::register_tetnus_edge_module(parent.py(), &m)?;
+
     parent.add_submodule(&m)?;
     Ok(())
 }
