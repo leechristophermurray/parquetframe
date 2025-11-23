@@ -46,10 +46,12 @@ class AIConfig:
     # Prompt templates (defaults)
     system_prompt_template: str = DEFAULT_SYSTEM_PROMPT
     intent_prompt_template: str = DEFAULT_INTENT_PROMPT
-    
+
     # Enhanced prompt options
     use_enhanced_prompts: bool = False
-    prompt_style: str = "default"  # Options: default, analytical, conversational, code_gen
+    prompt_style: str = (
+        "default"  # Options: default, analytical, conversational, code_gen
+    )
     enable_multi_turn: bool = False
     conversation_history: list[dict] = field(default_factory=list)
 
@@ -97,15 +99,15 @@ class AIConfig:
     def get_intent_model(self) -> BaseLanguageModel:
         """Get the model used for intent parsing."""
         return self.get_model(self.default_intent_model)
-    
+
     def get_prompt_template(self, context_str: str, **kwargs) -> str:
         """
         Get appropriate prompt template based on configuration.
-        
+
         Args:
             context_str: The context string to inject
             **kwargs: Additional template variables
-            
+
         Returns:
             Formatted prompt string
         """
@@ -115,9 +117,9 @@ class AIConfig:
                 ANALYTICAL_RAG_PROMPT,
                 CODE_GEN_RAG_PROMPT,
                 MULTI_TURN_RAG_PROMPT,
-                PERMISSION_AWARE_PROMPT
+                PERMISSION_AWARE_PROMPT,
             )
-            
+
             if self.prompt_style == "analytical":
                 template = ANALYTICAL_RAG_PROMPT
             elif self.prompt_style == "code_gen":
@@ -132,27 +134,26 @@ class AIConfig:
                 template = ENHANCED_RAG_SYSTEM_PROMPT
         else:
             template = self.system_prompt_template
-        
+
         return template.format(context_str=context_str, **kwargs)
-    
+
     def _format_history(self) -> str:
         """Format conversation history for multi-turn prompts."""
         if not self.conversation_history:
             return "No previous conversation."
-        
+
         history_lines = []
         for turn in self.conversation_history[-5:]:  # Last 5 turns
             history_lines.append(f"User: {turn.get('user', '')}")
             history_lines.append(f"Assistant: {turn.get('assistant', '')}")
-        
+
         return "\n".join(history_lines)
-    
+
     def add_to_history(self, user_message: str, assistant_response: str):
         """Add a turn to conversation history."""
-        self.conversation_history.append({
-            "user": user_message,
-            "assistant": assistant_response
-        })
+        self.conversation_history.append(
+            {"user": user_message, "assistant": assistant_response}
+        )
         # Keep only last 10 turns
         if len(self.conversation_history) > 10:
             self.conversation_history = self.conversation_history[-10:]
