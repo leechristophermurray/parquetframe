@@ -3,6 +3,7 @@ TETNUS: Zero-Copy DataFrame-Native ML Framework
 
 Arrow-native tensor library with automatic differentiation.
 """
+
 # ruff: noqa: E402
 
 try:

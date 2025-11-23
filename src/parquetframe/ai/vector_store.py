@@ -45,7 +45,8 @@ class SQLiteVectorStore:
 
     def _setup_schema(self):
         """Create database schema for embeddings."""
-        self.conn.execute("""
+        self.conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS embeddings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 chunk_id TEXT UNIQUE NOT NULL,
@@ -56,19 +57,24 @@ class SQLiteVectorStore:
                 vector BLOB NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Index for entity lookups
-        self.conn.execute("""
+        self.conn.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_entity
             ON embeddings(entity_name, entity_id)
-        """)
+        """
+        )
 
         # Index for chunk lookups
-        self.conn.execute("""
+        self.conn.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_chunk
             ON embeddings(chunk_id)
-        """)
+        """
+        )
 
         self.conn.commit()
 

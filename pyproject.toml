@@ -92,6 +92,7 @@ bio = [
 ai = [
     "ollama>=0.1.7",  # For LLM integration
     "prompt-toolkit>=3.0.0",  # For interactive CLI
+    "datafusion>=33.0.0",  # For DataFusion SQL integration
 ]
 rust = []  # Marker for Rust-enabled builds
 all = [
