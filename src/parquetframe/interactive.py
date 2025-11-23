@@ -2,7 +2,8 @@
 Interactive CLI session for parquetframe.
 
 This module provides an interactive REPL interface that integrates DataContext
-for data source management and LLM for natural language queries.
+for data source management, LLM for natural language queries, Python execution,
+magic commands, RAG, and Zanzibar permissions.
 """
 
 from __future__ import annotations
@@ -116,6 +117,22 @@ class InteractiveSession:
                 logger.warning(f"AI functionality disabled: {e}")
                 self.ai_enabled = False
 
+        # Python execution context for variables and code
+        try:
+            from .cli.context import ExecutionContext
+
+            self.exec_context = ExecutionContext()
+            self.python_enabled = True
+            logger.info("Python execution enabled")
+        except ImportError:
+            self.exec_context = None
+            self.python_enabled = False
+            logger.warning("Python execution not available")
+
+        # RAG pipeline (lazy-loaded)
+        self.rag_pipeline = None
+        self.rag_enabled = False
+
         # Session state and history management
         self.history_manager = HistoryManager()
         self.session_id = self.history_manager.create_session(
@@ -125,7 +142,7 @@ class InteractiveSession:
         )
         self.query_history: list[dict[str, Any]] = []
 
-        # Setup command completions
+        # Setup command completions (both \ and % commands)
         meta_commands = [
             "\\help",
             "\\h",
@@ -144,6 +161,14 @@ class InteractiveSession:
             "\\quit",
             "\\q",
             "\\exit",
+            "%sql",
+            "%info",
+            "%schema",
+            "%whos",
+            "%clear",
+            "%rag",
+            "%permissions",
+            "%help",
         ]
 
         self.completer = WordCompleter(meta_commands, ignore_case=True)
@@ -192,15 +217,30 @@ class InteractiveSession:
                 if not user_input.strip():
                     continue
 
-                # Handle meta-commands vs SQL queries
-                if user_input.strip().startswith("\\"):
-                    should_continue = await self._handle_meta_command(
-                        user_input.strip()
-                    )
+                # Route to appropriate handler
+                stripped = user_input.strip()
+
+                if stripped.startswith("\\"):
+                    # Existing meta-commands (\list, \describe, \ai, etc.)
+                    should_continue = await self._handle_meta_command(stripped)
                     if not should_continue:
                         break
+
+                elif stripped.startswith("%"):
+                    # New magic commands (%sql, %info, %rag, etc.)
+                    await self._handle_magic_command(stripped)
+
+                elif self._is_sql_query(stripped):
+                    # SQL query
+                    await self._handle_query(stripped)
+
+                elif self.python_enabled:
+                    # Python code execution
+                    await self._handle_python_code(stripped)
+
                 else:
-                    await self._handle_query(user_input.strip())
+                    # Unknown - try as SQL
+                    await self._handle_query(stripped)
 
             except (EOFError, KeyboardInterrupt):
                 self.console.print("\n👋 Goodbye!")
@@ -814,6 +854,123 @@ class InteractiveSession:
         self.console.print(
             Panel(help_text, title="Help", border_style="blue", expand=False)
         )
+
+    def _is_sql_query(self, text: str) -> bool:
+        """Detect if input looks like SQL."""
+        sql_keywords = [
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "CREATE",
+            "DROP",
+            "ALTER",
+            "WITH",
+        ]
+        upper_text = text.upper().strip()
+        return any(upper_text.startswith(kw) for kw in sql_keywords)
+
+    async def _handle_python_code(self, code: str) -> None:
+        """Execute Python code."""
+        if not self.python_enabled:
+            self.console.print("❌ Python not available", style="red")
+            return
+
+        try:
+            import pandas as pd
+
+            import parquetframe as pf
+
+            namespace = {"pf": pf, "pd": pd, **self.exec_context.variables}
+
+            try:
+                result = eval(code, namespace)  # noqa: S307
+                if result is not None:
+                    if hasattr(result, "columns"):
+                        self._display_query_result(result, None)
+                    else:
+                        self.console.print(result)
+                    self.exec_context.set_variable("_", result)
+            except SyntaxError:
+                exec(code, namespace)  # noqa: S102
+                for name, value in namespace.items():
+                    if not name.startswith("_") and name not in ("pf", "pd"):
+                        self.exec_context.set_variable(name, value)
+        except Exception as e:
+            self.console.print(f"❌ {e}", style="red")
+
+    async def _handle_magic_command(self, command: str) -> None:
+        """Handle % magic commands."""
+        parts = command[1:].strip().split(maxsplit=1)
+        magic_name = parts[0]
+        args_str = parts[1] if len(parts) > 1 else ""
+
+        if magic_name == "sql":
+            await self._handle_query(args_str)
+        elif magic_name == "info":
+            self._show_var_info(args_str.split()[0] if args_str else "")
+        elif magic_name == "schema":
+            self._show_var_schema(args_str.split()[0] if args_str else "")
+        elif magic_name == "whos":
+            self._show_variables()
+        elif magic_name == "clear":
+            self.exec_context.clear()
+            self.console.print("✅ Variables cleared", style="green")
+        elif magic_name == "help":
+            self._show_magic_help()
+        else:
+            self.console.print(f"❌ Unknown magic: %{magic_name}", style="red")
+
+    def _show_var_info(self, var_name: str):
+        """Show variable info."""
+        if not var_name:
+            self.console.print("Usage: %info <variable>", style="yellow")
+            return
+        try:
+            df = self.exec_context.get_variable(var_name)
+            if hasattr(df, "columns"):
+                self.console.print(
+                    f"\n{var_name}: {len(df):,} rows, {len(df.columns)} cols"
+                )
+                for col, dtype in df.dtypes.items():
+                    self.console.print(f"  {col}: {dtype}", style="dim")
+        except Exception:
+            self.console.print("❌ Variable not found", style="red")
+
+    def _show_var_schema(self, var_name: str):
+        """Show variable schema."""
+        if not var_name:
+            self.console.print("Usage: %schema <variable>", style="yellow")
+            return
+        try:
+            df = self.exec_context.get_variable(var_name)
+            if hasattr(df, "columns"):
+                for col in df.columns:
+                    self.console.print(f"  {col}: {df[col].dtype}")
+        except Exception:
+            self.console.print("❌ Not found", style="red")
+
+    def _show_variables(self):
+        """Show all variables."""
+        vars = self.exec_context.list_variables()
+        if vars:
+            self.console.print("\nVariables:")
+            for name, type_name in vars.items():
+                self.console.print(f"  {name}: {type_name}")
+        else:
+            self.console.print("No variables", style="dim")
+
+    def _show_magic_help(self):
+        """Show magic help."""
+        self.console.print("""
+Magic Commands (%):
+  %sql <query>      SQL query
+  %info <var>       DataFrame info
+  %schema <var>     Show schema
+  %whos             List variables
+  %clear            Clear all
+  %help             This help
+""")
 
 
 async def start_interactive_session(
