@@ -64,7 +64,9 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
     tetnus ecosystem.
     """
 
-    def __init__(self, embedding_dim: int = 384, vocab_size: int = 30000, use_bpe: bool = True):
+    def __init__(
+        self, embedding_dim: int = 384, vocab_size: int = 30000, use_bpe: bool = True
+    ):
         """
         Initialize tetnus embedding model.
 
@@ -90,6 +92,7 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
         if use_bpe:
             # Use BPE tokenizer for better quality
             from .tokenizer import BPETokenizer
+
             self.tokenizer = BPETokenizer(vocab_size=vocab_size)
             logger.info("Using BPE tokenizer for embeddings")
         else:
@@ -115,7 +118,10 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
             if len(tokens) > max_length:
                 tokens = tokens[:max_length]
             else:
-                tokens.extend([self.tokenizer.vocab[self.tokenizer.pad_token]] * (max_length - len(tokens)))
+                tokens.extend(
+                    [self.tokenizer.vocab[self.tokenizer.pad_token]]
+                    * (max_length - len(tokens))
+                )
             return np.array(tokens, dtype=np.int32) % self._vocab_size
         else:
             # Character-level tokenization (legacy)
