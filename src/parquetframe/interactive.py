@@ -20,6 +20,7 @@ from .ai import LLMAgent, LLMError
 from .datacontext import DataContext, DataContextFactory
 from .exceptions import DependencyError, check_dependencies, format_dependency_status
 from .history import HistoryManager
+from .permissions.core import RelationTuple, TupleStore
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,22 @@ class InteractiveSession:
         )
         self.query_history: list[dict[str, Any]] = []
 
+        # Initialize Permissions Store
+        self.permission_store = TupleStore()
+        self.permissions_enabled = True
+
+        # Initialize DataFusion Context
+        self.datafusion_ctx = None
+        self.datafusion_enabled = False
+        try:
+            import datafusion
+
+            self.datafusion_ctx = datafusion.SessionContext()
+            self.datafusion_enabled = True
+            logger.info("DataFusion enabled")
+        except ImportError:
+            logger.warning("DataFusion not available")
+
         # Setup command completions (both \ and % commands)
         meta_commands = [
             "\\help",
@@ -169,6 +186,7 @@ class InteractiveSession:
             "%rag",
             "%permissions",
             "%help",
+            "%df",  # DataFusion magic
         ]
 
         self.completer = WordCompleter(meta_commands, ignore_case=True)
@@ -918,8 +936,148 @@ class InteractiveSession:
             self.console.print("✅ Variables cleared", style="green")
         elif magic_name == "help":
             self._show_magic_help()
+        elif magic_name == "df":
+            await self._handle_datafusion_query(args_str)
+        elif magic_name == "permissions":
+            self._handle_permissions_command(args_str)
+        elif magic_name == "rag":
+            await self._handle_rag_command(args_str)
         else:
             self.console.print(f"❌ Unknown magic: %{magic_name}", style="red")
+
+    async def _handle_datafusion_query(self, query: str) -> None:
+        """Handle DataFusion SQL query."""
+        if not self.datafusion_enabled:
+            self.console.print(
+                "❌ DataFusion not available. Install with: pip install datafusion",
+                style="red",
+            )
+            return
+
+        if not query:
+            self.console.print("Usage: %df <sql_query>", style="yellow")
+            return
+
+        try:
+            start_time = time.time()
+            # Register current tables if needed (simplified for now)
+            # In a real scenario, we'd map DataContext tables to DataFusion
+
+            df = self.datafusion_ctx.sql(query)
+            result = df.to_pandas()
+            execution_time = (time.time() - start_time) * 1000
+
+            self._display_query_result(result, execution_time)
+
+        except Exception as e:
+            self.console.print(f"❌ DataFusion Error: {e}", style="red")
+
+    def _handle_permissions_command(self, args: str) -> None:
+        """Handle permissions commands."""
+        parts = args.split()
+        if not parts:
+            self.console.print(
+                "Usage: %permissions <check|grant|revoke|list> ...", style="yellow"
+            )
+            return
+
+        cmd = parts[0].lower()
+
+        try:
+            if cmd == "check":
+                # %permissions check user:alice viewer doc:doc1
+                if len(parts) < 4:
+                    self.console.print(
+                        "Usage: %permissions check <subject> <relation> <object>",
+                        style="yellow",
+                    )
+                    return
+                subject, relation, obj = parts[1], parts[2], parts[3]
+                sub_ns, sub_id = subject.split(":")
+                obj_ns, obj_id = obj.split(":")
+
+                # Simple check (direct only for now as we don't have full graph expansion here yet)
+                tuple_obj = RelationTuple(obj_ns, obj_id, relation, sub_ns, sub_id)
+                exists = self.permission_store.has_tuple(tuple_obj)
+
+                if exists:
+                    self.console.print(
+                        f"✅ Permission GRANTED: {subject} is {relation} of {obj}",
+                        style="green",
+                    )
+                else:
+                    self.console.print(
+                        f"❌ Permission DENIED: {subject} is NOT {relation} of {obj}",
+                        style="red",
+                    )
+
+            elif cmd == "grant":
+                # %permissions grant user:alice viewer doc:doc1
+                if len(parts) < 4:
+                    self.console.print(
+                        "Usage: %permissions grant <subject> <relation> <object>",
+                        style="yellow",
+                    )
+                    return
+                subject, relation, obj = parts[1], parts[2], parts[3]
+                sub_ns, sub_id = subject.split(":")
+                obj_ns, obj_id = obj.split(":")
+
+                tuple_obj = RelationTuple(obj_ns, obj_id, relation, sub_ns, sub_id)
+                self.permission_store.add_tuple(tuple_obj)
+                self.console.print(
+                    f"✅ Granted: {subject} -> {relation} -> {obj}", style="green"
+                )
+
+            elif cmd == "revoke":
+                # %permissions revoke user:alice viewer doc:doc1
+                if len(parts) < 4:
+                    self.console.print(
+                        "Usage: %permissions revoke <subject> <relation> <object>",
+                        style="yellow",
+                    )
+                    return
+                subject, relation, obj = parts[1], parts[2], parts[3]
+                sub_ns, sub_id = subject.split(":")
+                obj_ns, obj_id = obj.split(":")
+
+                tuple_obj = RelationTuple(obj_ns, obj_id, relation, sub_ns, sub_id)
+                self.permission_store.remove_tuple(tuple_obj)
+                self.console.print(
+                    f"✅ Revoked: {subject} -> {relation} -> {obj}", style="green"
+                )
+
+            elif cmd == "list":
+                # %permissions list
+                if self.permission_store.is_empty():
+                    self.console.print("No permissions defined", style="dim")
+                else:
+                    table = Table(title="Permissions", show_header=True)
+                    table.add_column("Subject")
+                    table.add_column("Relation")
+                    table.add_column("Object")
+
+                    for t in self.permission_store:
+                        table.add_row(t.subject_ref, t.relation, t.object_ref)
+
+                    self.console.print(table)
+            else:
+                self.console.print(f"Unknown permission command: {cmd}", style="red")
+        except Exception as e:
+            self.console.print(f"❌ Permission Error: {e}", style="red")
+
+    async def _handle_rag_command(self, query: str) -> None:
+        """Handle RAG queries."""
+        if not query:
+            self.console.print("Usage: %rag <question>", style="yellow")
+            return
+
+        self.console.print(f"🔍 RAG Search: {query}", style="dim")
+        # Placeholder for actual RAG implementation
+        # In a real implementation, this would call the RAG pipeline
+        self.console.print(
+            "ℹ️ RAG functionality is currently a placeholder.", style="blue"
+        )
 
     def _show_var_info(self, var_name: str):
         """Show variable info."""
@@ -962,15 +1120,20 @@ class InteractiveSession:
 
     def _show_magic_help(self):
         """Show magic help."""
-        self.console.print("""
+        self.console.print(
+            """
 Magic Commands (%):
   %sql <query>      SQL query
+  %df <query>       DataFusion SQL query
+  %permissions      Manage permissions
+  %rag <query>      RAG search
   %info <var>       DataFrame info
   %schema <var>     Show schema
   %whos             List variables
   %clear            Clear all
   %help             This help
-""")
+"""
+        )
 
 
 async def start_interactive_session(

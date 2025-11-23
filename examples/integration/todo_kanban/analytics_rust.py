@@ -271,9 +271,9 @@ def analyze_task_clusters(tasks_df: pd.DataFrame) -> dict[str, Any]:
         "num_tasks": num_vertices,
         "largest_cluster_size": int(max_reachable),
         "largest_cluster_source": int(best_source),
-        "cluster_percentage": (max_reachable / num_vertices * 100)
-        if num_vertices > 0
-        else 0,
+        "cluster_percentage": (
+            (max_reachable / num_vertices * 100) if num_vertices > 0 else 0
+        ),
         "bfs_time_ms": elapsed,
     }
 
