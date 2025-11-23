@@ -64,13 +64,16 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
     tetnus ecosystem.
     """
 
-    def __init__(self, embedding_dim: int = 384, vocab_size: int = 30000):
+    def __init__(
+        self, embedding_dim: int = 384, vocab_size: int = 30000, use_bpe: bool = True
+    ):
         """
         Initialize tetnus embedding model.
 
         Args:
             embedding_dim: Dimension of embedding vectors
             vocab_size: Size of vocabulary for tokenization
+            use_bpe: Whether to use BPE tokenizer (recommended) vs character-level
         """
         try:
             from parquetframe.tetnus import Embedding
@@ -84,14 +87,22 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
         )
         self._dim = embedding_dim
         self._vocab_size = vocab_size
+        self._use_bpe = use_bpe
 
-        # Simple character-level tokenizer for MVP
-        # TODO: Use proper tokenizer (BPE, WordPiece, etc.)
-        self.char_to_idx = {chr(i): i for i in range(256)}
+        if use_bpe:
+            # Use BPE tokenizer for better quality
+            from .tokenizer import BPETokenizer
+
+            self.tokenizer = BPETokenizer(vocab_size=vocab_size)
+            logger.info("Using BPE tokenizer for embeddings")
+        else:
+            # Fall back to simple character-level tokenizer
+            self.char_to_idx = {chr(i): i for i in range(256)}
+            self.tokenizer = None
 
     def _tokenize(self, text: str, max_length: int = 512) -> np.ndarray:
         """
-        Simple character-level tokenization.
+        Tokenize text using BPE or character-level.
 
         Args:
             text: Text to tokenize
@@ -100,17 +111,25 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
         Returns:
             Array of token indices
         """
-        # Convert to lowercase and truncate
-        text = text.lower()[:max_length]
-
-        # Character-level encoding
-        tokens = [self.char_to_idx.get(c, 0) % self._vocab_size for c in text]
-
-        # Pad to max_length
-        if len(tokens) < max_length:
-            tokens.extend([0] * (max_length - len(tokens)))
-
-        return np.array(tokens, dtype=np.int32)
+        if self._use_bpe and self.tokenizer is not None:
+            # BPE tokenization
+            tokens = self.tokenizer.encode(text, add_special_tokens=False)
+            # Truncate or pad
+            if len(tokens) > max_length:
+                tokens = tokens[:max_length]
+            else:
+                tokens.extend(
+                    [self.tokenizer.vocab[self.tokenizer.pad_token]]
+                    * (max_length - len(tokens))
+                )
+            return np.array(tokens, dtype=np.int32) % self._vocab_size
+        else:
+            # Character-level tokenization (legacy)
+            text = text.lower()[:max_length]
+            tokens = [self.char_to_idx.get(c, 0) % self._vocab_size for c in text]
+            if len(tokens) < max_length:
+                tokens.extend([0] * (max_length - len(tokens)))
+            return np.array(tokens, dtype=np.int32)
 
     def embed(self, text: str) -> np.ndarray:
         """
