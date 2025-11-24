@@ -5,6 +5,7 @@ Provides semantic grounding and symbolic reasoning capabilities.
 """
 
 from .core import KnowlogyEngine
+from .library import list_libraries, load_library
 from .storage import Application, Concept, Formula
 
 # Global instance
@@ -34,4 +35,6 @@ __all__ = [
     "search",
     "get_formula",
     "get_context",
+    "load_library",
+    "list_libraries",
 ]

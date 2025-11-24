@@ -1,0 +1,248 @@
+{
+  "applications": [
+    {
+      "concept_id": "pf:stats:mean",
+      "description": "Summarizing and describing the main features of a dataset",
+      "id": "pf:app:desc_analysis",
+      "name": "Descriptive Data Analysis"
+    },
+    {
+      "concept_id": "pf:stats:ttest",
+      "description": "Statistical tests to make inferences about population parameters",
+      "id": "pf:app:hypothesis_testing",
+      "name": "Hypothesis Testing"
+    }
+  ],
+  "concepts": [
+    {
+      "aliases": [
+        "Average",
+        "Mean",
+        "Sample Mean",
+        "Expected Value"
+      ],
+      "description": "The sum of all values divided by the count of values. Also known as the average.",
+      "domain": "Statistics",
+      "id": "pf:stats:mean",
+      "name": "Arithmetic Mean"
+    },
+    {
+      "aliases": [
+        "Middle Value",
+        "50th Percentile"
+      ],
+      "description": "The middle value when data is ordered. For even counts, the average of the two middle values.",
+      "domain": "Statistics",
+      "id": "pf:stats:median",
+      "name": "Median"
+    },
+    {
+      "aliases": [
+        "Sample Variance",
+        "Population Variance"
+      ],
+      "description": "The average of squared deviations from the mean. Measures spread of data.",
+      "domain": "Statistics",
+      "id": "pf:stats:variance",
+      "name": "Variance"
+    },
+    {
+      "aliases": [
+        "Std Dev",
+        "SD",
+        "Sigma"
+      ],
+      "description": "The square root of variance. Measures dispersion in the same units as the data.",
+      "domain": "Statistics",
+      "id": "pf:stats:std_dev",
+      "name": "Standard Deviation"
+    },
+    {
+      "aliases": [
+        "Standard Score",
+        "Z-statistic"
+      ],
+      "description": "The number of standard deviations a value is from the mean. Standardizes values.",
+      "domain": "Statistics",
+      "id": "pf:stats:zscore",
+      "name": "Z-Score"
+    },
+    {
+      "aliases": [
+        "Data Range"
+      ],
+      "description": "The difference between the maximum and minimum values.",
+      "domain": "Statistics",
+      "id": "pf:stats:range",
+      "name": "Range"
+    },
+    {
+      "aliases": [
+        "IQR",
+        "Midspread"
+      ],
+      "description": "The difference between the 75th and 25th percentiles. Measures spread of middle 50% of data.",
+      "domain": "Statistics",
+      "id": "pf:stats:iqr",
+      "name": "Interquartile Range"
+    },
+    {
+      "aliases": [
+        "CV",
+        "Relative Standard Deviation"
+      ],
+      "description": "The ratio of standard deviation to mean, expressed as a percentage. Measures relative variability.",
+      "domain": "Statistics",
+      "id": "pf:stats:cv",
+      "name": "Coefficient of Variation"
+    },
+    {
+      "aliases": [
+        "Correlation Coefficient",
+        "r",
+        "Pearson's r"
+      ],
+      "description": "Measures the linear relationship between two variables. Ranges from -1 to 1.",
+      "domain": "Statistics",
+      "id": "pf:stats:correlation",
+      "name": "Pearson Correlation"
+    },
+    {
+      "aliases": [
+        "t-test",
+        "t-statistic"
+      ],
+      "description": "Tests whether sample mean differs significantly from population mean or another sample mean.",
+      "domain": "Statistics",
+      "id": "pf:stats:ttest",
+      "name": "Student's t-test"
+    },
+    {
+      "aliases": [
+        "Chi-Square",
+        "\u03c7\u00b2"
+      ],
+      "description": "Tests independence between categorical variables or goodness of fit.",
+      "domain": "Statistics",
+      "id": "pf:stats:chisq",
+      "name": "Chi-Squared Test"
+    }
+  ],
+  "description": "Core statistical concepts, formulas, and methods",
+  "formulas": [
+    {
+      "concept_id": "pf:stats:mean",
+      "id": "pf:formula:mean",
+      "latex": "\\bar{x} = \\frac{\\sum_{i=1}^{n} x_i}{n}",
+      "name": "Sample Mean",
+      "symbolic": "mean(x) = sum(x) / len(x)",
+      "variables": [
+        "x",
+        "n"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:variance",
+      "id": "pf:formula:variance",
+      "latex": "s^2 = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n-1}",
+      "name": "Sample Variance",
+      "symbolic": "variance(x) = sum((x - mean(x))^2) / (len(x) - 1)",
+      "variables": [
+        "x",
+        "n",
+        "\\bar{x}"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:std_dev",
+      "id": "pf:formula:std_dev",
+      "latex": "s = \\sqrt{s^2}",
+      "name": "Sample Standard Deviation",
+      "symbolic": "std(x) = sqrt(variance(x))",
+      "variables": [
+        "s"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:zscore",
+      "id": "pf:formula:zscore",
+      "latex": "z = \\frac{x - \\mu}{\\sigma}",
+      "name": "Z-Score Formula",
+      "symbolic": "z = (x - mean) / std",
+      "variables": [
+        "x",
+        "\\mu",
+        "\\sigma"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:range",
+      "id": "pf:formula:range",
+      "latex": "R = \\max(x) - \\min(x)",
+      "name": "Range Formula",
+      "symbolic": "range(x) = max(x) - min(x)",
+      "variables": [
+        "x"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:iqr",
+      "id": "pf:formula:iqr",
+      "latex": "IQR = Q_3 - Q_1",
+      "name": "IQR Formula",
+      "symbolic": "IQR = percentile(x, 75) - percentile(x, 25)",
+      "variables": [
+        "Q_1",
+        "Q_3"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:cv",
+      "id": "pf:formula:cv",
+      "latex": "CV = \\frac{s}{\\bar{x}} \\times 100\\%",
+      "name": "Coefficient of Variation",
+      "symbolic": "CV = (std(x) / mean(x)) * 100",
+      "variables": [
+        "s",
+        "\\bar{x}"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:correlation",
+      "id": "pf:formula:correlation",
+      "latex": "r = \\frac{\\sum (x_i - \\bar{x})(y_i - \\bar{y})}{\\sqrt{\\sum (x_i - \\bar{x})^2 \\sum (y_i - \\bar{y})^2}}",
+      "name": "Pearson Correlation Coefficient",
+      "symbolic": "r = cov(x, y) / (std(x) * std(y))",
+      "variables": [
+        "x",
+        "y"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:ttest",
+      "id": "pf:formula:ttest",
+      "latex": "t = \\frac{\\bar{x} - \\mu_0}{s / \\sqrt{n}}",
+      "name": "One-Sample t-statistic",
+      "symbolic": "t = (mean(x) - mu0) / (std(x) / sqrt(len(x)))",
+      "variables": [
+        "\\bar{x}",
+        "\\mu_0",
+        "s",
+        "n"
+      ]
+    },
+    {
+      "concept_id": "pf:stats:chisq",
+      "id": "pf:formula:chisq",
+      "latex": "\\chi^2 = \\sum \\frac{(O_i - E_i)^2}{E_i}",
+      "name": "Chi-Squared Statistic",
+      "symbolic": "chi2 = sum((observed - expected)^2 / expected)",
+      "variables": [
+        "O",
+        "E"
+      ]
+    }
+  ],
+  "library": "statistics",
+  "version": "1.0"
+}
