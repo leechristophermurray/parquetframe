@@ -14,7 +14,10 @@ class TestSQLEngine:
 
     def test_basic_query(self):
         """Test basic SELECT query."""
-        from parquetframe.sql import sql
+        try:
+            from parquetframe.sql import sql
+        except ImportError:
+            pytest.skip("SQL dependencies not installed")
 
         df = pd.DataFrame(
             {"id": [1, 2, 3], "name": ["Alice", "Bob", "Charlie"], "age": [25, 30, 35]}
@@ -26,7 +29,10 @@ class TestSQLEngine:
 
     def test_joins(self):
         """Test SQL JOIN operations."""
-        from parquetframe.sql import sql
+        try:
+            from parquetframe.sql import sql
+        except ImportError:
+            pytest.skip("SQL dependencies not installed")
 
         users = pd.DataFrame({"id": [1, 2, 3], "name": ["Alice", "Bob", "Charlie"]})
 
@@ -49,7 +55,10 @@ class TestSQLEngine:
 
     def test_aggregations(self):
         """Test SQL aggregations."""
-        from parquetframe.sql import sql
+        try:
+            from parquetframe.sql import sql
+        except ImportError:
+            pytest.skip("SQL dependencies not installed")
 
         sales = pd.DataFrame(
             {"product": ["A", "B", "A", "A"], "amount": [100, 150, 200, 50]}
@@ -70,8 +79,12 @@ class TestSQLEngine:
         assert product_a["total"] == 350
 
     def test_sql_context(self):
-        """Test SQLContext for multiple queries."""
-        from parquetframe.sql import SQLContext
+        """Test SQL context management."""
+        try:
+            from parquetframe.sql import sql
+            from parquetframe.sql import SQLContext
+        except ImportError:
+            pytest.skip("SQL dependencies not installed")
 
         ctx = SQLContext()
 
