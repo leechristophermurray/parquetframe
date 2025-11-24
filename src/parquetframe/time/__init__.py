@@ -7,9 +7,14 @@ High-performance time-series functionality powered by Rust.
 from .dataframe import TimeSeriesDataFrame
 from .operations import asof_join, resample, rolling_window
 
+# Import accessor to register it
+from .accessor import TimeSeriesAccessor, TSAccessor
+
 __all__ = [
     "TimeSeriesDataFrame",
     "resample",
     "rolling_window",
     "asof_join",
+    "TimeSeriesAccessor",
+    "TSAccessor",
 ]
