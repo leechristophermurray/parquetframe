@@ -5,7 +5,6 @@ Provides .geo accessor for geospatial operations on GeoDataFrames.
 """
 
 import pandas as pd
-from typing import Union, Optional
 
 
 class GeoAccessor:
@@ -162,8 +161,9 @@ class GeoAccessor:
 # Register accessor with geopandas
 try:
     import geopandas as gpd
+    import pandas as pd
 
-    @gpd.api.extensions.register_dataframe_accessor("geo")
+    @pd.api.extensions.register_dataframe_accessor("geo")
     class GeoDataFrameAccessor(GeoAccessor):
         """GeoDataFrame accessor for spatial operations."""
 

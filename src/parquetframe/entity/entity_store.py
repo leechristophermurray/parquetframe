@@ -5,6 +5,7 @@ Handles reading and writing entities using DataFrameProxy.
 """
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
 import pandas as pd

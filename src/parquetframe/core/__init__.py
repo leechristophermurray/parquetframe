@@ -1,6 +1,7 @@
 """Core package for ParquetFrame backend abstraction."""
 
 from .backend import BackendSelector
+from .base import Engine, EngineCapabilities
 from .execution import (
     ExecutionContext,
     ExecutionMode,
@@ -9,6 +10,7 @@ from .execution import (
     set_execution_config,
 )
 from .proxy import DataFrameProxy
+from .reader import read, read_avro, read_csv, read_json, read_orc, read_parquet
 from .rust_io import RustIO, read_with_backend
 
 __all__ = [
@@ -21,4 +23,11 @@ __all__ = [
     "DataFrameProxy",
     "RustIO",
     "read_with_backend",
+    "Engine",
+    "EngineCapabilities",
+    "read_csv",
+    "read_json",
+    "read_parquet",
+    "read_orc",
+    "read_avro",
 ]
