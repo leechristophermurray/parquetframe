@@ -27,6 +27,8 @@ class RelationshipQuery(Generic[T]):
         target_class: type[T],
         filter_func: Callable[[Any], list[T]],
         filters: dict[str, Any] | None = None,
+        source_instance: Any | None = None,
+        rel_name: str | None = None,
     ):
         """
         Initialize relationship query.
@@ -35,6 +37,8 @@ class RelationshipQuery(Generic[T]):
             target_class: Target entity class
             filter_func: Function that performs the actual query
             filters: Initial filter conditions
+            source_instance: Source entity instance (for adding relationships)
+            rel_name: Name of the relationship (for adding relationships)
         """
         self.target_class = target_class
         self.filter_func = filter_func
@@ -42,6 +46,35 @@ class RelationshipQuery(Generic[T]):
         self._order_field: str | None = None
         self._order_desc: bool = False
         self._limit: int | None = None
+        self._source_instance = source_instance
+        self._rel_name = rel_name
+
+    def add(self, target_entity: T, **props: Any) -> None:
+        """
+        Add a relationship to the target entity.
+
+        Args:
+            target_entity: The entity to relate to
+            **props: Properties for the relationship edge
+        """
+        if not self._source_instance or not self._rel_name:
+            raise ValueError(
+                "Cannot add relationship: source instance or relationship name missing"
+            )
+
+        # Get entity store for source
+        # We need to import here to avoid circular imports
+        from .entity_store import EntityStore
+        from .metadata import registry
+
+        source_metadata = registry.get_by_class(self._source_instance.__class__)
+        if not source_metadata:
+            raise ValueError("Source entity not registered")
+
+        store = EntityStore(source_metadata)
+        store.add_relationship(
+            self._source_instance, self._rel_name, target_entity, props
+        )
 
     def filter(self, **kwargs: Any) -> "RelationshipQuery[T]":
         """

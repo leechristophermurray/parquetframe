@@ -275,13 +275,21 @@ def rel(
                 # If kwargs provided, create query with initial filters and execute
                 if kwargs:
                     query = RelationshipQuery(
-                        target_metadata.cls, filter_func, filters=kwargs
+                        target_metadata.cls,
+                        filter_func,
+                        filters=kwargs,
+                        source_instance=self,
+                        rel_name=func.__name__,
                     )
                     return query.all()  # Execute immediately for backward compatibility
                 else:
                     # No filters, return query builder for chaining
                     return RelationshipQuery(
-                        target_metadata.cls, filter_func, filters={}
+                        target_metadata.cls,
+                        filter_func,
+                        filters={},
+                        source_instance=self,
+                        rel_name=func.__name__,
                     )
 
         # Store relationship info for registration

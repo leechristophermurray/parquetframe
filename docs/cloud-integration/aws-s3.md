@@ -1,58 +1,107 @@
-# AWS S3 Integration
+# Cloud S3 Integration
 
-ParquetFrame provides convenient helpers for reading and writing Parquet files directly to/from AWS S3.
+ParquetFrame provides seamless integration with AWS S3 and S3-compatible object stores (like MinIO).
 
-## Installation
+## Features
 
-To use S3 features, you need to install the optional dependencies:
+- **Multiple Authentication Patterns**: IAM roles, environment variables, AWS profiles, and explicit credentials.
+- **Backend Agnostic**: Works with pandas, Polars, and Dask backends.
+- **High Performance**: Uses Rust-accelerated I/O when available (via `object_store`).
+- **Automatic Fallback**: Gracefully falls back to `fsspec`/`s3fs` if Rust extensions are missing.
 
-```bash
-pip install "parquetframe[s3]"
-# OR directly
-pip install s3fs boto3
-```
-
-## Configuration
-
-ParquetFrame uses `s3fs` under the hood, which automatically picks up credentials from standard locations:
-- Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-- `~/.aws/credentials` file
-- IAM roles (if running on EC2/Lambda/EKS)
-
-## Usage
-
-### Reading from S3
+## Quick Start
 
 ```python
-from parquetframe.cloud import read_parquet_s3
+import parquetframe as pf
 
-# Read directly from S3
-df = read_parquet_s3("s3://my-bucket/data/file.parquet")
+# Read from S3 (uses default AWS credentials)
+df = pf.read_parquet_s3("s3://my-bucket/data.parquet")
 
-# With specific credentials (not recommended for production)
-df = read_parquet_s3(
-    "s3://my-bucket/data/file.parquet",
-    storage_options={
-        "key": "MY_KEY",
-        "secret": "MY_SECRET"
-    }
+# Write to S3
+pf.write_parquet_s3(df, "s3://my-bucket/output.parquet")
+```
+
+## Authentication
+
+### 1. IAM Roles (Recommended for AWS)
+
+If running on EC2, ECS, or Lambda, use the attached IAM role. No configuration needed.
+
+```python
+df = pf.read_parquet_s3("s3://bucket/data.parquet")
+```
+
+### 2. Environment Variables
+
+Set standard AWS environment variables:
+
+```bash
+export AWS_ACCESS_KEY_ID=AKIA...
+export AWS_SECRET_ACCESS_KEY=wJal...
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+Then use the API normally:
+
+```python
+df = pf.read_parquet_s3("s3://bucket/data.parquet")
+```
+
+### 3. AWS Profiles
+
+Use a named profile from `~/.aws/credentials`:
+
+```python
+df = pf.read_parquet_s3(
+    "s3://bucket/data.parquet",
+    aws_profile="production"
 )
 ```
 
-### Writing to S3
+### 4. Explicit Credentials
+
+Pass credentials directly (not recommended for production):
 
 ```python
-from parquetframe.cloud import write_parquet_s3
-import pandas as pd
-
-df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
-
-# Write to S3
-write_parquet_s3(df, "s3://my-bucket/data/output.parquet")
+df = pf.read_parquet_s3(
+    "s3://bucket/data.parquet",
+    aws_access_key_id="AKIA...",
+    aws_secret_access_key="wJal...",
+    region="us-west-2"
+)
 ```
 
-## Performance Tips
+## Backend Selection
 
-- **Partitioning**: For large datasets, write partitioned datasets using `partition_cols`.
-- **Compression**: Snappy is the default and recommended for S3.
-- **Batching**: When writing many small files, consider combining them first to reduce S3 PUT requests.
+You can specify the backend engine (pandas, Polars, Dask) explicitly or let ParquetFrame choose automatically.
+
+```python
+# Force Polars backend
+df = pf.read_parquet_s3(
+    "s3://bucket/large-data.parquet",
+    backend="polars"
+)
+
+# Force Dask for distributed processing
+df = pf.read_parquet_s3(
+    "s3://bucket/huge-data.parquet",
+    backend="dask"
+)
+```
+
+## S3-Compatible Stores (MinIO)
+
+To use MinIO or other S3-compatible stores, set the `AWS_ENDPOINT_URL` environment variable or use `S3Config` directly.
+
+```python
+from parquetframe.cloud import S3Config, S3Handler
+
+config = S3Config(
+    access_key_id="minioadmin",
+    secret_access_key="minioadmin",
+    endpoint_url="http://localhost:9000"
+)
+
+handler = S3Handler(config)
+df = handler.read_parquet("s3://my-bucket/data.parquet")
+```

@@ -7,9 +7,23 @@ Supports intelligent switching between:
 - Hybrid (Both combined)
 """
 
+import multiprocessing
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+
+# Import metrics
+from .metrics import MetricsCollector, get_metrics_collector
+
+try:
+    import ray
+except ImportError:
+    ray = None
+
+try:
+    from dask.distributed import Client
+except ImportError:
+    Client = None
 
 
 class ExecutionMode(Enum):
@@ -24,19 +38,21 @@ class ExecutionMode(Enum):
 @dataclass
 class ExecutionContext:
     """
-    Configuration for execution mode.
+    Context for execution configuration and resources.
 
-    Attributes:
-        mode: Execution mode (auto/local/distributed/hybrid)
-        rust_threads: Number of Rayon threads (0 = auto-detect)
-        distributed_backend: Backend for distributed execution
-        distributed_nodes: Number of distributed nodes to use
+    Holds configuration for parallel/distributed execution and metrics.
     """
 
     mode: ExecutionMode = ExecutionMode.AUTO
-    rust_threads: int = 0
-    distributed_backend: str = "ray"
+    rust_threads: int = 0  # 0 means auto-detect
+    distributed_backend: str = "ray"  # 'ray' or 'dask'
     distributed_nodes: int = 1
+    metrics: MetricsCollector = field(default_factory=get_metrics_collector)
+
+    def __post_init__(self):
+        if self.rust_threads == 0:
+            # Default to number of cores
+            self.rust_threads = multiprocessing.cpu_count()
 
     @classmethod
     def from_env(cls) -> "ExecutionContext":

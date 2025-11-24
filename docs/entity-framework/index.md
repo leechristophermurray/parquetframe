@@ -9,6 +9,27 @@ ParquetFrame's Entity Framework provides a powerful, decorator-based system for 
 - **💾 Smart Storage** - Parquet-based persistence with automatic schema management
 - **📊 GraphAr Integration** - Store entities as GraphAr-compliant graphs
 
+## Architecture
+
+```mermaid
+graph TD
+    UserCode[User Code] -->|@entity| Decorator[Decorator Logic]
+    UserCode -->|@rel| Decorator
+
+    Decorator -->|Registers| Registry[Entity Registry]
+
+    UserCode -->|save()| EntityStore[Entity Store]
+    UserCode -->|find()| EntityStore
+
+    EntityStore -->|Writes| Parquet[Parquet Files]
+    EntityStore -->|Updates| GraphAr[GraphAr Metadata]
+
+    subgraph Storage
+        Parquet
+        GraphAr
+    end
+```
+
 ## Quick Start
 
 > [!TIP]

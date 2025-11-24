@@ -282,9 +282,87 @@ class EntityStore:
         df = self._load_dataframe()
         return len(df)
 
-    def delete_all(self) -> None:
-        """Delete all entities."""
-        storage_file = self.metadata.storage_file
+    def add_relationship(
+        self,
+        source: Any,
+        rel_name: str,
+        target: Any,
+        props: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Log a relationship between two entities.
 
-        if storage_file.exists():
-            storage_file.unlink()
+        Args:
+            source: Source entity instance
+            rel_name: Name of the relationship
+            target: Target entity instance
+            props: Optional relationship properties
+        """
+        source_type = self.metadata.name
+        # We assume target is an entity instance, get its type name
+        target_type = target.__class__.__name__
+
+        # GraphAr convention: Source_REL_Target
+        rel_dir_name = f"{source_type}_{rel_name}_{target_type}"
+        rel_dir = self.metadata.storage_path.parent / rel_dir_name
+        rel_dir.mkdir(parents=True, exist_ok=True)
+
+        # Prepare data
+        src_pk = getattr(source, self.metadata.primary_key)
+
+        # Find target PK - assuming target has metadata or we can guess
+        # For now, look for 'id' or try to find registered metadata for target class
+        from .metadata import registry
+
+        target_metadata = registry.get_by_class(target.__class__)
+        if target_metadata:
+            dst_pk = getattr(target, target_metadata.primary_key)
+        else:
+            # Fallback: assume 'id' or same PK name as source
+            dst_pk = getattr(
+                target, "id", getattr(target, self.metadata.primary_key, None)
+            )
+
+        if src_pk is None or dst_pk is None:
+            raise ValueError("Entities must have primary keys to be related.")
+
+        data = {"src_id": src_pk, "dst_id": dst_pk}
+
+        if props:
+            data.update(props)
+
+        # Append to edge file (using simple append for now, similar to delta log concept)
+        # In a real GraphAr impl, this would be partitioned.
+        edge_file = rel_dir / "adj_list.parquet"
+
+        new_df = pd.DataFrame([data])
+
+        if edge_file.exists():
+            existing_df = pd.read_parquet(edge_file)
+            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
+            combined_df.to_parquet(edge_file)
+        else:
+            new_df.to_parquet(edge_file)
+
+        # Update/Create edge metadata
+        self._write_edge_metadata(rel_dir, source_type, rel_name, target_type)
+
+    def _write_edge_metadata(
+        self, rel_dir: Path, src_type: str, rel_name: str, dst_type: str
+    ) -> None:
+        """Write GraphAr edge metadata."""
+        metadata_file = rel_dir / "_metadata.yaml"
+
+        content = {
+            "name": rel_name,
+            "type": "EDGE",
+            "src_label": src_type,
+            "dst_label": dst_type,
+            "prefix": f"edges/{src_type}_{rel_name}_{dst_type}/",
+            "adj_lists": [
+                {"ordered": False, "prefix": "adj_list/", "file_type": "parquet"}
+            ],
+        }
+
+        with open(metadata_file, "w") as f:
+            yaml.dump(content, f, sort_keys=False)

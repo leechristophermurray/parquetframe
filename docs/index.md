@@ -59,18 +59,17 @@
 | BFS (1M nodes) | 1.8s | 105ms | **17.1x** |
 | Parquet metadata (1GB file) | 180ms | 22ms | **8.2x** |
 
-### Core Features
+### Key Features
 
-🎯 **Multi-Engine Core**: Automatic selection between pandas, Polars, and Dask
-
-📦 **Entity Framework**: Declarative ORM-like data modeling with `@entity`  and `@rel` decorators
-
+- **Multi-Engine Backend**: Seamlessly switch between **Pandas**, **Polars**, and **Dask**.
+- **Rust Acceleration**: Critical paths optimized with Rust (via PyO3) for maximum performance.
+- **Cloud Integration**: Unified API for **AWS S3**, **Google Cloud Storage**, and **Azure Blob Storage**.
+- **Entity Framework**: ORM-like data modeling with **GraphAr** persistence.
+- **Distributed Computing**: Scale out with **Ray** or **Dask** clusters.
+- **Monitoring**: Built-in metrics collection and visualization.
 🔐 **Zanzibar Permissions**: Production-grade ReBAC authorization
-
 📊 **Graph Processing**: Apache GraphAr with Rust-accelerated algorithms
-
 📋 **YAML Workflows**: Declarative pipeline orchestration
-
 🤖 **AI Integration**: Local LLM support for natural language queries
 
 ⚡ **Automatic Fallback**: Works without Rust, just slower
