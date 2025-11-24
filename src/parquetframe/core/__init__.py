@@ -2,6 +2,7 @@
 
 from .backend import BackendSelector
 from .base import Engine, EngineCapabilities
+from ..core_legacy import ParquetFrame
 from .execution import (
     ExecutionContext,
     ExecutionMode,
@@ -25,6 +26,8 @@ __all__ = [
     "read_with_backend",
     "Engine",
     "EngineCapabilities",
+    "ParquetFrame",
+    "read",
     "read_csv",
     "read_json",
     "read_parquet",
