@@ -18,17 +18,26 @@ logger = logging.getLogger(__name__)
 class SimpleRagPipeline:
     """Simplified RAG pipeline using keyword-based retrieval."""
 
-    def __init__(self, config: AIConfig, entity_store: Any):
+    def __init__(self, config: AIConfig, entity_store: Any, use_knowlogy: bool = False):
         """
         Initialize RAG pipeline.
 
         Args:
             config: AIConfig with model and prompt configuration
             entity_store: EntityStore instance for data retrieval
+            use_knowlogy: Whether to integrate Knowlogy knowledge graph
         """
         self.config = config
         self.entity_store = entity_store
         self.generation_model = config.get_model()
+        self.use_knowlogy = use_knowlogy
+
+        if use_knowlogy:
+            from .knowlogy_retriever import KnowlogyRetriever
+
+            self.knowlogy_retriever = KnowlogyRetriever()
+        else:
+            self.knowlogy_retriever = None
 
     def run_query(self, query: str, user_context: str) -> dict[str, Any]:
         """
@@ -50,6 +59,20 @@ class SimpleRagPipeline:
 
             # Step 2: Retrieve authorized context
             context_chunks = self._retrieve_authorized_context(intent, user_context)
+
+            # Step 2b: Add Knowlogy knowledge if enabled
+            if self.use_knowlogy and self.knowlogy_retriever:
+                knowledge_docs = self.knowlogy_retriever.retrieve(query, top_k=3)
+                # Add knowledge to context
+                for doc in knowledge_docs:
+                    context_chunks.append(
+                        {
+                            "content": doc.content,
+                            "metadata": doc.metadata,
+                            "source": "knowlogy",
+                        }
+                    )
+
             logger.debug(f"Retrieved {len(context_chunks)} context chunks")
 
             # Step 3: Augment and generate
@@ -60,6 +83,7 @@ class SimpleRagPipeline:
                 "context_used": context_chunks,
                 "intent": intent,
                 "user_context": user_context,
+                "knowlogy_enabled": self.use_knowlogy,
             }
 
         except Exception as e:
