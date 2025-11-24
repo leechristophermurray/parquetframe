@@ -2,6 +2,18 @@
 Test basic TETNUS tensor operations.
 """
 
+import pytest
+
+try:
+    from parquetframe._rustic import Tensor
+    import parquetframe.tetnus as pt
+    HAS_TENSOR = True
+except (ImportError, AttributeError):
+    HAS_TENSOR = False
+    pt = None
+
+pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
+
 
 def test_import():
     """Test that we can import tetnus."""

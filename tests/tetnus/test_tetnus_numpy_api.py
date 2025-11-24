@@ -1,7 +1,17 @@
 import unittest
 
-import parquetframe.tetnus.numpy as pfn
-from parquetframe.tetnus import Tensor
+import pytest
+
+try:
+    from parquetframe._rustic import Tensor
+    import parquetframe.tetnus.numpy as pfn
+    HAS_TENSOR = True
+except (ImportError, AttributeError):
+    HAS_TENSOR = False
+    pfn = None
+    Tensor = None
+
+pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
 
 
 class TestTetnusNumpyApi(unittest.TestCase):

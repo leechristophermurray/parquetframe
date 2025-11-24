@@ -1,6 +1,16 @@
 import math
 
-import parquetframe.tetnus as tt
+import pytest
+
+try:
+    from parquetframe._rustic import Tensor
+    import parquetframe.tetnus as tt
+    HAS_TENSOR = True
+except (ImportError, AttributeError):
+    HAS_TENSOR = False
+    tt = None
+
+pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
 
 
 def test_add_grad():

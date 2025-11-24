@@ -1,5 +1,16 @@
-import parquetframe.tetnus as tt
-from parquetframe.tetnus import nn
+import pytest
+
+try:
+    from parquetframe._rustic import Tensor
+    import parquetframe.tetnus as tt
+    from parquetframe.tetnus import nn
+    HAS_TENSOR = True
+except (ImportError, AttributeError):
+    HAS_TENSOR = False
+    tt = None
+    nn = None
+
+pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
 
 
 def test_embedding():
