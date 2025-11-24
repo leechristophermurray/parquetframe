@@ -14,9 +14,8 @@ class LibraryManager:
 
     AVAILABLE_LIBRARIES = {
         "statistics": "Core statistical concepts and formulas",
-        # Future libraries
-        # "physics": "Classical mechanics and physics",
-        # "finance": "Financial analysis and metrics",
+        "physics": "Classical physics concepts, laws, and formulas",
+        "finance": "Financial analysis concepts, metrics, and valuation formulas",
     }
 
     @classmethod
@@ -75,6 +74,12 @@ class LibraryManager:
         # Simple check: try searching for a known concept from the library
         if name == "statistics":
             results = search("mean")
+            return len(results) > 0
+        elif name == "physics":
+            results = search("Newton")
+            return len(results) > 0
+        elif name == "finance":
+            results = search("NPV")
             return len(results) > 0
 
         return False

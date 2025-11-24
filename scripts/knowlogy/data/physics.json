@@ -1,0 +1,126 @@
+{
+    "library": "physics",
+    "version": "1.0",
+    "description": "Classical physics concepts, laws, and formulas",
+    "concepts": [
+        {
+            "id": "pf:phys:newtons_second",
+            "name": "Newton's Second Law",
+            "description": "The acceleration of an object is directly proportional to the net force and inversely proportional to its mass.",
+            "domain": "Physics",
+            "aliases": [
+                "F=ma",
+                "Second Law of Motion"
+            ]
+        },
+        {
+            "id": "pf:phys:kinetic_energy",
+            "name": "Kinetic Energy",
+            "description": "Energy possessed by an object due to its motion.",
+            "domain": "Physics",
+            "aliases": [
+                "KE",
+                "Energy of Motion"
+            ]
+        },
+        {
+            "id": "pf:phys:potential_energy",
+            "name": "Gravitational Potential Energy",
+            "description": "Energy stored in an object due to its position in a gravitational field.",
+            "domain": "Physics",
+            "aliases": [
+                "PE",
+                "GPE"
+            ]
+        },
+        {
+            "id": "pf:phys:relativity",
+            "name": "Mass-Energy Equivalence",
+            "description": "Energy and mass are interchangeable; mass can be converted to energy and vice versa.",
+            "domain": "Physics",
+            "aliases": [
+                "E=mc²",
+                "Einstein's Equation"
+            ]
+        },
+        {
+            "id": "pf:phys:momentum",
+            "name": "Linear Momentum",
+            "description": "The product of an object's mass and velocity.",
+            "domain": "Physics",
+            "aliases": [
+                "Momentum",
+                "p"
+            ]
+        }
+    ],
+    "formulas": [
+        {
+            "id": "pf:formula:newtons_second",
+            "name": "Newton's Second Law Formula",
+            "latex": "F = ma",
+            "symbolic": "F = m * a",
+            "concept_id": "pf:phys:newtons_second",
+            "variables": [
+                "F",
+                "m",
+                "a"
+            ]
+        },
+        {
+            "id": "pf:formula:kinetic_energy",
+            "name": "Kinetic Energy Formula",
+            "latex": "KE = \\frac{1}{2}mv^2",
+            "symbolic": "KE = 0.5 * m * v^2",
+            "concept_id": "pf:phys:kinetic_energy",
+            "variables": [
+                "m",
+                "v"
+            ]
+        },
+        {
+            "id": "pf:formula:potential_energy",
+            "name": "Gravitational Potential Energy",
+            "latex": "PE = mgh",
+            "symbolic": "PE = m * g * h",
+            "concept_id": "pf:phys:potential_energy",
+            "variables": [
+                "m",
+                "g",
+                "h"
+            ]
+        },
+        {
+            "id": "pf:formula:relativity",
+            "name": "Mass-Energy Equivalence",
+            "latex": "E = mc^2",
+            "symbolic": "E = m * c^2",
+            "concept_id": "pf:phys:relativity",
+            "variables": [
+                "E",
+                "m",
+                "c"
+            ]
+        },
+        {
+            "id": "pf:formula:momentum",
+            "name": "Linear Momentum",
+            "latex": "p = mv",
+            "symbolic": "p = m * v",
+            "concept_id": "pf:phys:momentum",
+            "variables": [
+                "p",
+                "m",
+                "v"
+            ]
+        }
+    ],
+    "applications": [
+        {
+            "id": "pf:app:classical_mechanics",
+            "name": "Classical Mechanics",
+            "description": "Study of motion of macroscopic objects",
+            "concept_id": "pf:phys:newtons_second"
+        }
+    ]
+}
