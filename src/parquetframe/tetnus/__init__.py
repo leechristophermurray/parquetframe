@@ -1,17 +1,27 @@
 """
-TETNUS: Zero-Copy DataFrame-Native ML Framework
+Tetnus: DataFrame-Native ML Framework
 
-Arrow-native tensor library with automatic differentiation.
+A high-performance machine learning framework built on Arrow-native tensors
+with automatic differentiation.
 """
 
-# ruff: noqa: E402
+# Core tensor operations
+from parquetframe._rustic import Tensor
 
-try:
-    from parquetframe import _rustic
+# Neural network layers
+from . import nn
+from . import optim
 
-    tetnus = _rustic.tetnus
-except (ImportError, AttributeError) as e:
-    raise ImportError(f"Failed to import tetnus module from _rustic: {e}") from None
+# High-level API
+from .api import Model, dataframe_to_tensor
+
+__all__ = [
+    "Tensor",
+    "nn",
+    "optim",
+    "Model",
+    "dataframe_to_tensor",
+]
 
 
 class Tensor:
