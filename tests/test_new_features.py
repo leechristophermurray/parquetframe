@@ -8,16 +8,27 @@ import numpy as np
 import pandas as pd
 import pytest
 
+# Check for SQL dependencies at module level
+try:
+    import datafusion
 
+    HAS_SQL = True
+except ImportError:
+    try:
+        import duckdb
+
+        HAS_SQL = True
+    except ImportError:
+        HAS_SQL = False
+
+
+@pytest.mark.skipif(not HAS_SQL, reason="SQL dependencies not installed")
 class TestSQLEngine:
     """Test SQL query engine."""
 
     def test_basic_query(self):
         """Test basic SELECT query."""
-        try:
-            from parquetframe.sql import sql
-        except ImportError:
-            pytest.skip("SQL dependencies not installed")
+        from parquetframe.sql import sql
 
         df = pd.DataFrame(
             {"id": [1, 2, 3], "name": ["Alice", "Bob", "Charlie"], "age": [25, 30, 35]}
@@ -29,10 +40,7 @@ class TestSQLEngine:
 
     def test_joins(self):
         """Test SQL JOIN operations."""
-        try:
-            from parquetframe.sql import sql
-        except ImportError:
-            pytest.skip("SQL dependencies not installed")
+        from parquetframe.sql import sql
 
         users = pd.DataFrame({"id": [1, 2, 3], "name": ["Alice", "Bob", "Charlie"]})
 
@@ -55,10 +63,7 @@ class TestSQLEngine:
 
     def test_aggregations(self):
         """Test SQL aggregations."""
-        try:
-            from parquetframe.sql import sql
-        except ImportError:
-            pytest.skip("SQL dependencies not installed")
+        from parquetframe.sql import sql
 
         sales = pd.DataFrame(
             {"product": ["A", "B", "A", "A"], "amount": [100, 150, 200, 50]}
@@ -80,11 +85,7 @@ class TestSQLEngine:
 
     def test_sql_context(self):
         """Test SQL context management."""
-        try:
-            from parquetframe.sql import sql
-            from parquetframe.sql import SQLContext
-        except ImportError:
-            pytest.skip("SQL dependencies not installed")
+        from parquetframe.sql import SQLContext
 
         ctx = SQLContext()
 
@@ -101,6 +102,7 @@ class TestTimeSeriesAccessor:
 
     def test_resample(self):
         """Test time series resampling."""
+        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=100, freq="h")
         df = pd.DataFrame({"value": range(100)}, index=dates)
@@ -111,6 +113,7 @@ class TestTimeSeriesAccessor:
 
     def test_rolling(self):
         """Test rolling windows."""
+        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=100, freq="D")
         df = pd.DataFrame({"value": np.random.randn(100)}, index=dates)
@@ -121,6 +124,7 @@ class TestTimeSeriesAccessor:
 
     def test_interpolate(self):
         """Test interpolation."""
+        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
         values = list(range(10))
@@ -132,6 +136,7 @@ class TestTimeSeriesAccessor:
 
     def test_transformations(self):
         """Test time series transformations."""
+        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
         df = pd.DataFrame({"price": [100 + i for i in range(10)]}, index=dates)
@@ -150,6 +155,7 @@ class TestFinanceAccessor:
 
     def test_moving_averages(self):
         """Test SMA and EMA."""
+        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
 
@@ -162,6 +168,7 @@ class TestFinanceAccessor:
 
     def test_rsi(self):
         """Test RSI indicator."""
+        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         rsi = df.fin.rsi("close", 14)
@@ -171,7 +178,8 @@ class TestFinanceAccessor:
         assert (valid_rsi >= 0).all() and (valid_rsi <= 100).all()
 
     def test_macd(self):
-        """Test MACD indicator."""
+        """TestMACD indicator."""
+        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         macd = df.fin.macd("close")
@@ -182,6 +190,7 @@ class TestFinanceAccessor:
 
     def test_bollinger_bands(self):
         """Test Bollinger Bands."""
+        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         bb = df.fin.bollinger_bands("close")
@@ -198,6 +207,7 @@ class TestFinanceAccessor:
 
     def test_returns_volatility(self):
         """Test returns and volatility calculations."""
+        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
 
@@ -274,9 +284,11 @@ class TestCLI:
 class TestIntegration:
     """Integration tests combining multiple features."""
 
+    @pytest.mark.skipif(not HAS_SQL, reason="SQL dependencies not installed")
     def test_sql_with_time_series(self):
         """Test SQL queries on time series data."""
         from parquetframe.sql import sql
+        import parquetframe.time  # Register .ts accessor
 
         # Create time series
         dates = pd.date_range("2024-01-01", periods=100, freq="D")
@@ -297,9 +309,11 @@ class TestIntegration:
 
         assert len(daily_avg) < len(filtered)
 
+    @pytest.mark.skipif(not HAS_SQL, reason="SQL dependencies not installed")
     def test_finance_with_sql(self):
         """Test financial indicators with SQL."""
         from parquetframe.sql import sql
+        import parquetframe.finance  # Register .fin accessor
 
         # Create price data
         df = pd.DataFrame(
