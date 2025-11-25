@@ -77,8 +77,8 @@ All operations support automatic differentiation via PyO3 bindings.
 
 ```python
 class Model:
-    \"\"\"High-level model wrapper.\"\"\"
-    
+    """High-level model wrapper."""
+
     def __init__(self, layers: List)
     def fit(self, X, y, epochs=10, lr=0.01, verbose=True)
     def predict(self, X)

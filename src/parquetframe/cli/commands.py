@@ -18,22 +18,22 @@ except ImportError as e:
     print(f"Missing: {e.name}")
     sys.exit(1)
 
-from .core import ParquetFrame
-from .exceptions import (
+from ..core import ParquetFrame
+from ..exceptions import (
     check_dependencies,
     format_dependency_status,
     suggest_installation_commands,
 )
 
 try:
-    from .interactive import start_interactive_session
+    from ..interactive import start_interactive_session
 
     INTERACTIVE_AVAILABLE = True
 except ImportError:
     INTERACTIVE_AVAILABLE = False
 
 try:
-    from .benchmark import PerformanceBenchmark, run_comprehensive_benchmark
+    from ..benchmark import PerformanceBenchmark, run_comprehensive_benchmark
 
     BENCHMARK_AVAILABLE = True
 except ImportError:
@@ -42,43 +42,43 @@ except ImportError:
 try:
     import yaml
 
-    from .workflows import WorkflowEngine, WorkflowError, create_example_workflow
+    from ..workflows import WorkflowEngine, WorkflowError, create_example_workflow
 
     WORKFLOW_AVAILABLE = True
 except ImportError:
     WORKFLOW_AVAILABLE = False
 
 try:
-    from .sql import validate_sql_query
+    from ..sql import validate_sql_query
 
     SQL_AVAILABLE = True
 except ImportError:
     SQL_AVAILABLE = False
 
 try:
-    from .workflow_history import WorkflowHistoryManager
+    from ..workflow_history import WorkflowHistoryManager
 
     WORKFLOW_HISTORY_AVAILABLE = True
 except ImportError:
     WORKFLOW_HISTORY_AVAILABLE = False
 
 try:
-    from .workflow_visualization import WorkflowVisualizer
+    from ..workflow_visualization import WorkflowVisualizer
 
     WORKFLOW_VISUALIZATION_AVAILABLE = True
 except ImportError:
     WORKFLOW_VISUALIZATION_AVAILABLE = False
 
 try:
-    from .graph import read_graph
-    from .graph.io.graphar import GraphArError, GraphArValidationError
+    from ..graph import read_graph
+    from ..graph.io.graphar import GraphArError, GraphArValidationError
 
     GRAPH_AVAILABLE = True
 except ImportError:
     GRAPH_AVAILABLE = False
 
 try:
-    from .permissions import (
+    from ..permissions import (
         RelationTuple,
         StandardModels,
         TupleStore,
@@ -353,7 +353,7 @@ def info(filepath, format):
         console.print(f"\n[bold blue]File Information:[/bold blue] {filepath}")
 
         # Detect format from our core functionality
-        from .core import detect_format
+        from ..core import detect_format
 
         detected_format = detect_format(filepath, format)
 
@@ -365,7 +365,7 @@ def info(filepath, format):
             and file_path.suffix.lower() in (".parquet", ".pqt")
         ):
             try:
-                from .io.io_backend import get_parquet_info_fast
+                from ..io.io_backend import get_parquet_info_fast
 
                 fast_metadata = get_parquet_info_fast(file_path)
                 if fast_metadata:
@@ -502,7 +502,7 @@ def info(filepath, format):
 
             # Try to detect format from extension
             try:
-                from .core import detect_format
+                from ..core import detect_format
 
                 detected_format = detect_format(filepath, format)
                 info_table.add_row("Likely Format", detected_format.value.upper())
@@ -1227,7 +1227,7 @@ def workflow(
 
     # Handle list-steps option
     if list_steps:
-        from .workflows import STEP_REGISTRY
+        from ..workflows import STEP_REGISTRY
 
         console.print("\n[STEPS] [bold blue]Available Workflow Steps[/bold blue]")
 
@@ -1591,7 +1591,7 @@ def sql(query, main_file, join_files, output, interactive, explain, validate):
 
         # Show query execution plan if requested
         if explain:
-            from .sql import explain_query
+            from ..sql import explain_query
 
             other_dfs = {name: pf._df for name, pf in join_pfs.items()}
             plan = explain_query(main_pf._df, query, other_dfs)

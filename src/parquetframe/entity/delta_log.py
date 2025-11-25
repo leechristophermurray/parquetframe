@@ -26,8 +26,11 @@ Mathematical Justification:
 import json
 import os
 import time
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 try:
     import fcntl
@@ -45,7 +48,13 @@ except ImportError:
 
     if os.name == "nt":
         fcntl = FcntlMock()
-import pandas as pd
+
+
+def json_serializer(obj):
+    """Custom JSON serializer for datetime objects."""
+    if isinstance(obj, datetime | date):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} is not JSON serializable")
 
 
 class DeltaLog:
@@ -135,7 +144,7 @@ class DeltaLog:
 
                 # Append to WAL
                 with open(self.wal_path, "a") as wal:
-                    wal.write(json.dumps(record) + "\n")
+                    wal.write(json.dumps(record, default=json_serializer) + "\n")
                     wal.flush()
                     os.fsync(wal.fileno())  # Ensure durability
 

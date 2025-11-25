@@ -38,7 +38,7 @@ result = sql(
 ```python
 result = sql(
     """
-    SELECT 
+    SELECT
         category,
         COUNT(*) as count,
         SUM(amount) as total,
@@ -58,7 +58,7 @@ result = sql(
 ```python
 result = sql(
     """
-    SELECT 
+    SELECT
         c.name,
         o.order_id,
         o.amount
@@ -75,7 +75,7 @@ result = sql(
 ```python
 result = sql(
     """
-    SELECT 
+    SELECT
         p.product_name,
         COALESCE(i.quantity, 0) as stock
     FROM products p
@@ -138,7 +138,7 @@ result = sql(
 ```python
 result = sql(
     """
-    SELECT 
+    SELECT
         name,
         amount,
         ROW_NUMBER() OVER (ORDER BY amount DESC) as rank
