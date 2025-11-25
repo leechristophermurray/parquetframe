@@ -1,8 +1,8 @@
 """Core package for ParquetFrame backend abstraction."""
 
+from ..core_legacy import ParquetFrame
 from .backend import BackendSelector
 from .base import Engine, EngineCapabilities
-from ..core_legacy import ParquetFrame
 from .execution import (
     ExecutionContext,
     ExecutionMode,

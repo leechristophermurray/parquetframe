@@ -37,7 +37,7 @@ class GeoAccessor:
             raise ImportError(
                 "GeoSpatial operations require 'geopandas'. "
                 "Install with: pip install geopandas"
-            )
+            ) from ImportError
 
     def buffer(self, distance: float, **kwargs) -> pd.DataFrame:
         """

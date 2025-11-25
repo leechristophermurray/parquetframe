@@ -12,10 +12,10 @@ from .relationship import Relationship, RelationshipManager
 # Optional visualization support
 try:
     from .visualization import (
-        entities_to_networkx,
-        export_to_graphviz,
-        is_visualization_available,
-        visualize_with_pyvis,
+        entities_to_networkx as entities_to_networkx,
+        export_to_graphviz as export_to_graphviz,
+        is_visualization_available as is_visualization_available,
+        visualize_with_pyvis as visualize_with_pyvis,
     )
 
     _VISUALIZATION_IMPORTS = [

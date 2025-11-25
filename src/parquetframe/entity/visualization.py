@@ -262,7 +262,7 @@ def export_to_graphviz(
     except ImportError:
         raise ImportError(
             "pydot is required for Graphviz export. " "Install with: pip install pydot"
-        )
+        ) from ImportError
 
     output_path = Path(output_path)
     write_dot(graph, output_path)
