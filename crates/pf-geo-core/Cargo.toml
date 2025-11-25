@@ -12,7 +12,11 @@ geo = "0.28"
 geo-buffer = "0.2"
 geozero = { version = "0.13", features = ["with-wkb", "with-geojson"] }
 # Use system libproj installed via homebrew (note: underscore not hyphen)
-proj = { version = "0.27", features = ["pkg_config"] }
+proj = { version = "0.27", features = ["pkg_config"], optional = true }
+
+[features]
+default = []
+with-proj = ["proj"]
 
 # Arrow
 arrow.workspace = true

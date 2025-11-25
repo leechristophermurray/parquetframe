@@ -1,10 +1,12 @@
 /// Coordinate Reference System (CRS) management.
 ///
-/// Handles CRS transformations using the PROJ library.
+/// Handles CRS transformations. Uses PROJ library if "proj" feature is enabled.
 
 use crate::{GeoError, Result};
-use proj::Proj;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "proj")]
+use proj::Proj;
 
 /// Coordinate Reference System.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,10 +28,14 @@ impl CRS {
     /// let web_mercator = CRS::from_epsg(3857);
     /// ```
     pub fn from_epsg(code: u32) -> Result<Self> {
-        // Validate that we can create a Proj object
         let proj_str = format!("EPSG:{}", code);
-        Proj::new(&proj_str)
-            .map_err(|e| GeoError::CRSError(format!("Invalid EPSG code {}: {}", code, e)))?;
+
+        #[cfg(feature = "proj")]
+        {
+            // Validate that we can create a Proj object
+            Proj::new(&proj_str)
+                .map_err(|e| GeoError::CRSError(format!("Invalid EPSG code {}: {}", code, e)))?;
+        }
 
         Ok(CRS {
             epsg_code: Some(code),
@@ -41,9 +47,12 @@ impl CRS {
     pub fn from_proj_string(proj_string: impl Into<String>) -> Result<Self> {
         let proj_string = proj_string.into();
 
-        // Validate
-        Proj::new(&proj_string)
-            .map_err(|e| GeoError::CRSError(format!("Invalid PROJ string: {}", e)))?;
+        #[cfg(feature = "proj")]
+        {
+            // Validate
+            Proj::new(&proj_string)
+                .map_err(|e| GeoError::CRSError(format!("Invalid PROJ string: {}", e)))?;
+        }
 
         Ok(CRS {
             epsg_code: None,
@@ -73,21 +82,33 @@ impl CRS {
     ///
     /// Transformed (x, y) coordinates
     pub fn transform(&self, to_crs: &CRS, x: f64, y: f64) -> Result<(f64, f64)> {
-        let from_proj = self.proj_string.as_ref()
-            .ok_or_else(|| GeoError::CRSError("Source CRS has no PROJ string".to_string()))?;
+        #[cfg(feature = "proj")]
+        {
+            let from_proj = self.proj_string.as_ref()
+                .ok_or_else(|| GeoError::CRSError("Source CRS has no PROJ string".to_string()))?;
 
-        let to_proj = to_crs.proj_string.as_ref()
-            .ok_or_else(|| GeoError::CRSError("Target CRS has no PROJ string".to_string()))?;
+            let to_proj = to_crs.proj_string.as_ref()
+                .ok_or_else(|| GeoError::CRSError("Target CRS has no PROJ string".to_string()))?;
 
-        // Create transformation
-        let transformer = Proj::new_known_crs(from_proj, to_proj, None)
-            .map_err(|e| GeoError::ProjectionError(format!("Failed to create transformer: {}", e)))?;
+            // Create transformation
+            let transformer = Proj::new_known_crs(from_proj, to_proj, None)
+                .map_err(|e| GeoError::ProjectionError(format!("Failed to create transformer: {}", e)))?;
 
-        // Transform point
-        let (x_out, y_out) = transformer.convert((x, y))
-            .map_err(|e| GeoError::ProjectionError(format!("Transformation failed: {}", e)))?;
+            // Transform point
+            let (x_out, y_out) = transformer.convert((x, y))
+                .map_err(|e| GeoError::ProjectionError(format!("Transformation failed: {}", e)))?;
 
-        Ok((x_out, y_out))
+            Ok((x_out, y_out))
+        }
+
+        #[cfg(not(feature = "proj"))]
+        {
+            // If PROJ is disabled, return error or identity if same CRS
+            if self.proj_string == to_crs.proj_string {
+                return Ok((x, y));
+            }
+            Err(GeoError::ProjectionError("PROJ support is disabled. Enable 'proj' feature for transformations.".to_string()))
+        }
     }
 
     /// Common CRS: WGS 84 (EPSG:4326) - GPS coordinates
@@ -119,6 +140,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proj")]
     fn test_crs_transform() {
         let wgs84 = CRS::wgs84().unwrap();
         let web_merc = CRS::web_mercator().unwrap();

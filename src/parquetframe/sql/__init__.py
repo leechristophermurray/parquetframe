@@ -85,4 +85,25 @@ class SQLContext:
         self.engine.unregister(name)
 
 
-__all__ = ["sql", "SQLContext"]
+from .fluent import (
+    QueryContext,
+    QueryResult,
+    SQLBuilder,
+    build_join_query,
+    explain_query,
+    query_dataframes,
+    validate_sql_query,
+)
+
+__all__ = [
+    "sql",
+    "SQLContext",
+    "SQLEngine",
+    "QueryResult",
+    "SQLBuilder",
+    "QueryContext",
+    "explain_query",
+    "query_dataframes",
+    "validate_sql_query",
+    "build_join_query",
+]
