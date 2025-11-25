@@ -14,10 +14,6 @@ geozero = { version = "0.13", features = ["with-wkb", "with-geojson"] }
 # Use system libproj installed via homebrew (note: underscore not hyphen)
 proj = { version = "0.27", features = ["pkg_config"], optional = true }
 
-[features]
-default = []
-with-proj = ["proj"]
-
 # Arrow
 arrow.workspace = true
 
@@ -27,3 +23,7 @@ thiserror.workspace = true
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[features]
+default = []
+with-proj = ["proj"]
