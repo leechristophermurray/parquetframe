@@ -10,10 +10,12 @@ import pandas as pd
 
 from .engine import SQLEngine
 from .fluent import (
+    DUCKDB_AVAILABLE,
     QueryContext,
     QueryResult,
     SQLBuilder,
     build_join_query,
+    duckdb,
     explain_query,
     query_dataframes,
     validate_sql_query,
@@ -110,4 +112,6 @@ __all__ = [
     "build_join_query",
     "parameterize_query",
     "query_dataframes_from_files",
+    "DUCKDB_AVAILABLE",
+    "duckdb",
 ]
