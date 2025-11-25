@@ -10,6 +10,7 @@ from .execution import (
     get_execution_context,
     set_execution_config,
 )
+from .formats import FORMAT_HANDLERS, FileFormat, detect_format
 from .proxy import DataFrameProxy
 from .reader import read, read_avro, read_csv, read_json, read_orc, read_parquet
 from .rust_io import RustIO, read_with_backend
@@ -33,4 +34,7 @@ __all__ = [
     "read_parquet",
     "read_orc",
     "read_avro",
+    "FORMAT_HANDLERS",
+    "FileFormat",
+    "detect_format",
 ]

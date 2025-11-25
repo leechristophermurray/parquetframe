@@ -5,8 +5,20 @@ Provides simple SQL query interface for DataFrames.
 """
 
 from typing import Any
+
 import pandas as pd
+
 from .engine import SQLEngine
+from .fluent import (
+    QueryContext,
+    QueryResult,
+    SQLBuilder,
+    build_join_query,
+    explain_query,
+    query_dataframes,
+    validate_sql_query,
+)
+from .utilities import parameterize_query, query_dataframes_from_files
 
 
 def sql(query: str, **tables) -> pd.DataFrame:
@@ -85,16 +97,6 @@ class SQLContext:
         self.engine.unregister(name)
 
 
-from .fluent import (
-    QueryContext,
-    QueryResult,
-    SQLBuilder,
-    build_join_query,
-    explain_query,
-    query_dataframes,
-    validate_sql_query,
-)
-
 __all__ = [
     "sql",
     "SQLContext",
@@ -106,4 +108,6 @@ __all__ = [
     "query_dataframes",
     "validate_sql_query",
     "build_join_query",
+    "parameterize_query",
+    "query_dataframes_from_files",
 ]

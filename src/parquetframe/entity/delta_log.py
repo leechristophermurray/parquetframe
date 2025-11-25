@@ -23,13 +23,28 @@ Mathematical Justification:
     With WAL:   T_write ≈ k · S_record (scalable)
 """
 
-import fcntl
 import json
 import os
 import time
 from pathlib import Path
 from typing import Any
 
+try:
+    import fcntl
+except ImportError:
+    # Windows compatibility
+    fcntl = None
+
+    class FcntlMock:
+        LOCK_EX = 2
+        LOCK_UN = 8
+
+        @staticmethod
+        def flock(fd, op):
+            pass
+
+    if os.name == "nt":
+        fcntl = FcntlMock()
 import pandas as pd
 
 
@@ -245,7 +260,7 @@ class DeltaLog:
             try:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
                 # Clear WAL
-                with open(self.wal_path, "w") as wal:
+                with open(self.wal_path, "w") as _:
                     pass  # Truncate to empty
             finally:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)

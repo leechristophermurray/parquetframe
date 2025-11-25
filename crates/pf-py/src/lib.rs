@@ -35,6 +35,15 @@ fn rust_available() -> bool {
     true
 }
 
+/// Check if Rust workflow engine is available.
+///
+/// # Returns
+/// Always returns `true` when the Rust module is loaded.
+#[pyfunction]
+fn workflow_rust_available() -> bool {
+    true
+}
+
 /// Get the version of the Rust backend.
 ///
 /// # Returns
@@ -53,6 +62,7 @@ fn _rustic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Core detection functions
     m.add_function(wrap_pyfunction!(rust_available, m)?)?;
     m.add_function(wrap_pyfunction!(rust_version, m)?)?;
+    m.add_function(wrap_pyfunction!(workflow_rust_available, m)?)?;
 
     // Graph algorithm functions
     match graph::register_graph_functions(m) {

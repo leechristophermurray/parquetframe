@@ -5,9 +5,8 @@ Unit tests for S3 integration.
 import os
 from unittest.mock import MagicMock, patch
 
-from parquetframe.cloud import read_parquet_s3, write_parquet_s3
+from parquetframe.cloud import S3Handler, read_parquet_s3, write_parquet_s3
 from parquetframe.cloud.config import S3Config
-from parquetframe.cloud.s3 import S3Handler
 
 
 class TestS3Config:
