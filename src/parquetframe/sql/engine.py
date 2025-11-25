@@ -39,7 +39,7 @@ class SQLEngine:
                 raise ImportError(
                     "SQL engine requires either 'datafusion' or 'duckdb'. "
                     "Install with: pip install datafusion or pip install duckdb"
-                )
+                ) from ImportError
 
     def register_dataframe(self, name: str, df: Any) -> None:
         """

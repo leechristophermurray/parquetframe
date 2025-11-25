@@ -6,6 +6,8 @@ with automatic differentiation.
 """
 
 # Core tensor operations
+# Core tensor operations
+from parquetframe import _rustic as tetnus
 from parquetframe._rustic import Tensor
 
 # Neural network layers

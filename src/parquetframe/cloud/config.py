@@ -55,7 +55,7 @@ class S3Config:
         except ImportError:
             raise ImportError(
                 "boto3 required for AWS profiles. Install with: pip install boto3"
-            )
+            ) from None
 
         session = boto3.Session(profile_name=profile_name)
         credentials = session.get_credentials()

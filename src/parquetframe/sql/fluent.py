@@ -4,7 +4,7 @@ Fluent SQL API for ParquetFrame.
 Provides builder pattern and helper functions for SQL operations.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 
@@ -137,7 +137,7 @@ def build_join_query(
     right_table: str,
     on: str,
     join_type: str = "INNER",
-    columns: Optional[List[str]] = None,
+    columns: Optional[list[str]] = None,
 ) -> str:
     """Build a JOIN query string."""
     cols = "*" if not columns else ", ".join(columns)
