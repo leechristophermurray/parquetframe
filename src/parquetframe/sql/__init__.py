@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from .engine import SQLEngine
+from .engine import SQLEngine, query_dataframes
 from .fluent import (
     DUCKDB_AVAILABLE,
     QueryContext,
@@ -17,7 +17,6 @@ from .fluent import (
     build_join_query,
     duckdb,
     explain_query,
-    query_dataframes,
     validate_sql_query,
 )
 from .utilities import parameterize_query, query_dataframes_from_files
