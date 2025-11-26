@@ -25,11 +25,11 @@ import parquetframe as pf
 def format_time(milliseconds: float) -> str:
     """Format time in milliseconds to readable string."""
     if milliseconds < 1:
-        return f"{milliseconds*1000:.1f}μs"
+        return f"{milliseconds * 1000:.1f}μs"
     elif milliseconds < 1000:
         return f"{milliseconds:.0f}ms"
     else:
-        return f"{milliseconds/1000:.2f}s"
+        return f"{milliseconds / 1000:.2f}s"
 
 
 def format_speedup(speedup: float) -> str:

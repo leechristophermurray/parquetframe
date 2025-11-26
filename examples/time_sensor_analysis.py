@@ -36,7 +36,7 @@ downsampled = resample(sensor_data, time_column="timestamp", freq="5min", agg="m
 
 print(f"Original readings: {len(sensor_data):,} rows (at 1s intervals)")
 print(f"Downsampled: {len(downsampled):,} rows (at 5min intervals)")
-print(f"Storage reduction: {(1 - len(downsampled)/len(sensor_data)) * 100:.1f}%")
+print(f"Storage reduction: {(1 - len(downsampled) / len(sensor_data)) * 100:.1f}%")
 print("\nSample downsampled data:")
 print(downsampled.head())
 
@@ -65,7 +65,7 @@ anomalies = sensor_data[
 ]
 
 print(f"Anomalies detected: {len(anomalies)} out of {len(sensor_data):,} readings")
-print(f"Anomaly rate: {len(anomalies)/len(sensor_data)*100:.2f}%")
+print(f"Anomaly rate: {len(anomalies) / len(sensor_data) * 100:.2f}%")
 if len(anomalies) > 0:
     print("\nSample anomalies:")
     print(anomalies[["timestamp", "temperature", "sensor_id"]].head())
@@ -83,7 +83,7 @@ print(f"Smoothed {len(smoothed):,} data points")
 print(f"Original temperature std: {sensor_data['temperature'].std():.3f}")
 print(f"Smoothed temperature std: {smoothed['temperature'].std():.3f}")
 print(
-    f"Noise reduction: {(1 - smoothed['temperature'].std()/sensor_data['temperature'].std()) * 100:.1f}%"
+    f"Noise reduction: {(1 - smoothed['temperature'].std() / sensor_data['temperature'].std()) * 100:.1f}%"
 )
 
 # Example 4: Aggregate daily statistics

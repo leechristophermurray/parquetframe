@@ -261,7 +261,7 @@ def export_to_graphviz(
         from networkx.drawing.nx_pydot import write_dot
     except ImportError:
         raise ImportError(
-            "pydot is required for Graphviz export. " "Install with: pip install pydot"
+            "pydot is required for Graphviz export. Install with: pip install pydot"
         ) from ImportError
 
     output_path = Path(output_path)

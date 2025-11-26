@@ -243,7 +243,7 @@ def demo_enhanced_kanban():
     for i in range(10):
         priority = ["low", "medium", "high"][i % 3]
         task = app.create_task(
-            todo.list_id, alice.user_id, f"Task {i+1}", priority=priority
+            todo.list_id, alice.user_id, f"Task {i + 1}", priority=priority
         )
 
         # Move some to done
@@ -269,7 +269,7 @@ def demo_enhanced_kanban():
     print("\n" + "=" * 60)
     print("✅ Demo Complete!")
     print(f"Created {len(app.get_user_boards(alice.user_id))} board")
-    print(f"Task completion rate: {(6/10*100):.0f}%")
+    print(f"Task completion rate: {(6 / 10 * 100):.0f}%")
     print("=" * 60)
 
 

@@ -112,7 +112,7 @@ num_anomalies = sensor_data["is_anomaly"].sum()
 
 print(f"Window size:               {window_size} samples (1 hour)")
 print(f"Anomalies detected:        {num_anomalies}")
-print(f"Anomaly rate:              {num_anomalies/len(sensor_data)*100:.2f}%")
+print(f"Anomaly rate:              {num_anomalies / len(sensor_data) * 100:.2f}%")
 
 # Show sample anomalies
 print("\nDetected Temperature Anomalies:")

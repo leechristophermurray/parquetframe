@@ -80,7 +80,7 @@ class KnowlogyRetriever:
 
 {concept.description}
 
-Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
+Aliases: {", ".join(concept.aliases) if concept.aliases else "None"}
 """
 
     def _format_concept_with_formula(self, concept, formula) -> str:
@@ -94,9 +94,9 @@ Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
 
 **Symbolic:** {formula.symbolic}
 
-**Variables:** {', '.join(formula.variables) if formula.variables else 'None'}
+**Variables:** {", ".join(formula.variables) if formula.variables else "None"}
 
-Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
+Aliases: {", ".join(concept.aliases) if concept.aliases else "None"}
 """
 
 

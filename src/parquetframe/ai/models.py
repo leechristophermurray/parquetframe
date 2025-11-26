@@ -68,7 +68,7 @@ class OllamaModel(BaseLanguageModel):
 
         if not OLLAMA_AVAILABLE:
             raise ImportError(
-                "Ollama package not installed. " "Install with: pip install ollama"
+                "Ollama package not installed. Install with: pip install ollama"
             )
 
         self.client_args = {}
