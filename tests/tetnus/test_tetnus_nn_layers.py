@@ -6,8 +6,10 @@ if importlib.util.find_spec("parquetframe.tetnus") and importlib.util.find_spec(
     "parquetframe._rustic"
 ):
     import parquetframe.tetnus as tt  # noqa: F401
-    from parquetframe._rustic import Tensor  # noqa: F401
-    from parquetframe.tetnus import nn
+    from parquetframe.tetnus import (
+        Tensor,  # noqa: F401
+        nn,
+    )
 
     HAS_TENSOR = True
 else:
