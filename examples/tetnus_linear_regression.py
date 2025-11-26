@@ -41,7 +41,7 @@ def main():
 
     # Training loop
     print("\n4. Training linear model...")
-    learning_rate = 0.01
+    # learning_rate = 0.01
     num_epochs = 50
 
     for epoch in range(num_epochs):
@@ -50,14 +50,14 @@ def main():
 
         # Add bias (broadcasting)
         # For now, we'll manually expand bias to match shape
-        bias_expanded = tetnus.reshape(bias, [1])
+        # bias_expanded = tetnus.reshape(bias, [1])
 
         # Compute predictions for each sample
         # Since we don't have broadcasting yet, let's do simple approach
         # Just compute predictions
 
         # Compute loss: MSE = mean((y_pred - y)^2)
-        diff = tetnus.add(y_pred, tetnus.mul(y, tetnus.ones(y.shape)))  # Simplified
+        # diff = tetnus.add(y_pred, tetnus.mul(y, tetnus.ones(y.shape)))  # Simplified
 
         # For now, let's just show the core operations work
         # A full training loop would need:

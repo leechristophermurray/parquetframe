@@ -4,8 +4,8 @@ Time Series Examples
 Demonstrates time series operations using the .ts accessor.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def basic_resampling():

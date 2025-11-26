@@ -2,10 +2,9 @@
 Unit tests for backend selection logic.
 """
 
-import os
+from unittest.mock import patch
+
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from parquetframe.core.backend import BackendSelector
 

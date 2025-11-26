@@ -15,7 +15,7 @@ from parquetframe.knowlogy import KnowlogyEngine
 def load_physics_library():
     """Load the physics knowledge library."""
     data_path = Path(__file__).parent / "data" / "physics.json"
-    with open(data_path, "r") as f:
+    with open(data_path) as f:
         data = json.load(f)
 
     engine = KnowlogyEngine()
@@ -43,7 +43,7 @@ def load_physics_library():
         )
         print(f"  ✓ {formula['name']}")
 
-    print(f"\n✅ Physics library loaded!")
+    print("\n✅ Physics library loaded!")
 
 
 if __name__ == "__main__":

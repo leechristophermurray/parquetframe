@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -128,7 +129,5 @@ async def run_tests():
 
     print("All standalone tests passed!")
 
-
-import asyncio
 
 asyncio.run(run_tests())

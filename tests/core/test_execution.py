@@ -3,15 +3,14 @@ Unit tests for execution context and mode selection.
 """
 
 import os
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from parquetframe.core.execution import (
-    ExecutionMode,
     ExecutionContext,
+    ExecutionMode,
     ExecutionPlanner,
-    set_execution_config,
     get_execution_context,
+    set_execution_config,
 )
 
 

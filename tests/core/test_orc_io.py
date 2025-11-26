@@ -16,9 +16,11 @@ def sample_df():
 
 def test_orc_io_roundtrip(sample_df):
     """Test writing to ORC and reading back."""
-    try:
-        import pyarrow.orc
-    except ImportError:
+    import importlib.util
+
+    if importlib.util.find_spec("pyarrow.orc"):
+        import pyarrow.orc  # noqa: F401
+    else:
         pytest.skip("pyarrow.orc not available")
 
     with tempfile.NamedTemporaryFile(suffix=".orc", delete=False) as f:
@@ -45,9 +47,11 @@ def test_orc_io_roundtrip(sample_df):
 
 def test_orc_read_auto_detect(sample_df):
     """Test reading ORC with auto-detection (if implemented)."""
-    try:
-        import pyarrow.orc
-    except ImportError:
+    import importlib.util
+
+    if importlib.util.find_spec("pyarrow.orc"):
+        import pyarrow.orc  # noqa: F401
+    else:
         pytest.skip("pyarrow.orc not available")
 
     with tempfile.NamedTemporaryFile(suffix=".orc", delete=False) as f:

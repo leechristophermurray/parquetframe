@@ -17,11 +17,13 @@ from parquetframe.entity import entity, rel
 def test_networkx_export():
     """Test converting entities to NetworkX graph."""
     # Check if networkx is available
-    try:
-        import networkx as nx
+    import importlib.util
+
+    if importlib.util.find_spec("networkx"):
+        import networkx as nx  # noqa: F401
 
         from parquetframe.entity.visualization import entities_to_networkx
-    except ImportError:
+    else:
         pytest.skip("NetworkX not installed")
 
     temp_dir = Path(tempfile.mkdtemp())
@@ -82,15 +84,17 @@ def test_networkx_export():
 
 def test_pyvis_visualization():
     """Test creating PyVis interactive visualization."""
-    try:
-        import networkx as nx
-        from pyvis.network import Network
+    import importlib.util
+
+    if importlib.util.find_spec("networkx") and importlib.util.find_spec("pyvis"):
+        import networkx as nx  # noqa: F401
+        from pyvis.network import Network  # noqa: F401
 
         from parquetframe.entity.visualization import (
             entities_to_networkx,
             visualize_with_pyvis,
         )
-    except ImportError:
+    else:
         pytest.skip("NetworkX or PyVis not installed")
 
     temp_dir = Path(tempfile.mkdtemp())
@@ -139,14 +143,16 @@ def test_pyvis_visualization():
 
 def test_graphviz_export():
     """Test exporting to Graphviz DOT format."""
-    try:
-        import networkx as nx
+    import importlib.util
+
+    if importlib.util.find_spec("networkx"):
+        import networkx as nx  # noqa: F401
 
         from parquetframe.entity.visualization import (
             entities_to_networkx,
             export_to_graphviz,
         )
-    except ImportError:
+    else:
         pytest.skip("NetworkX not installed")
 
     temp_dir = Path(tempfile.mkdtemp())
@@ -204,11 +210,13 @@ def test_visualization_availability():
 
 def test_graph_with_multiple_entity_types():
     """Test graph with multiple entity types and relationships."""
-    try:
-        import networkx as nx
+    import importlib.util
+
+    if importlib.util.find_spec("networkx"):
+        import networkx as nx  # noqa: F401
 
         from parquetframe.entity.visualization import entities_to_networkx
-    except ImportError:
+    else:
         pytest.skip("NetworkX not installed")
 
     temp_dir = Path(tempfile.mkdtemp())
@@ -266,7 +274,7 @@ def test_graph_with_multiple_entity_types():
 
         # Verify entity types
         entity_types = set()
-        for node, data in G.nodes(data=True):
+        for _node, data in G.nodes(data=True):
             entity_types.add(data.get("entity_type"))
 
         assert "User" in entity_types

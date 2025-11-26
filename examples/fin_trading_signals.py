@@ -11,6 +11,17 @@ This example demonstrates:
 import numpy as np
 import pandas as pd
 
+# Calculate technical indicators using FIN module
+# Simple backtest simulation (using signal changes as trades)
+from parquetframe._rustic import (
+    fin_backtest,
+    fin_bollinger_bands,
+    fin_ema,
+    fin_macd,
+    fin_rsi,
+    fin_sma,
+)
+
 # Generate sample stock data
 np.random.seed(42)
 dates = pd.date_range(start="2023-01-01", end="2024-12-31", freq="D")
@@ -18,7 +29,7 @@ dates = pd.date_range(start="2023-01-01", end="2024-12-31", freq="D")
 # Simulate price data with trend
 base_price = 100
 prices = [base_price]
-for i in range(1, len(dates)):
+for _i in range(1, len(dates)):
     # Add trend + noise
     change = np.random.randn() * 2 + 0.05  # Slight upward bias
     prices.append(prices[-1] * (1 + change / 100))
@@ -40,14 +51,6 @@ print(
 )
 print()
 
-# Calculate technical indicators using FIN module
-from parquetframe._rustic import (
-    fin_bollinger_bands,
-    fin_ema,
-    fin_macd,
-    fin_rsi,
-    fin_sma,
-)
 
 prices_array = stock_data["price"].values
 
@@ -144,8 +147,6 @@ print()
 print("📈 BACKTEST RESULTS")
 print("-" * 80)
 
-# Simple backtest simulation (using signal changes as trades)
-from parquetframe._rustic import fin_backtest
 
 # Convert signals for backtest (0/1 for in/out of position)
 backtest_signals = stock_data["signal"].copy()

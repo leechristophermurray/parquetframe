@@ -11,7 +11,10 @@ from parquetframe.permissions.core import RelationTuple
 def mock_data_context():
     dc = MagicMock(spec=DataContext)
     dc.source_location = "/tmp/test"
-    dc.source_type.value = "parquet"
+    # Mock the source_type enum
+    mock_enum = MagicMock()
+    mock_enum.value = "parquet"
+    dc.source_type = mock_enum
     dc.get_table_names.return_value = ["table1"]
     return dc
 

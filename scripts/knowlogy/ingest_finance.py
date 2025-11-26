@@ -15,7 +15,7 @@ from parquetframe.knowlogy import KnowlogyEngine
 def load_finance_library():
     """Load the finance knowledge library."""
     data_path = Path(__file__).parent / "data" / "finance.json"
-    with open(data_path, "r") as f:
+    with open(data_path) as f:
         data = json.load(f)
 
     engine = KnowlogyEngine()
@@ -43,7 +43,7 @@ def load_finance_library():
         )
         print(f"  ✓ {formula['name']}")
 
-    print(f"\n✅ Finance library loaded!")
+    print("\n✅ Finance library loaded!")
 
 
 if __name__ == "__main__":

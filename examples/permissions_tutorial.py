@@ -20,8 +20,8 @@ def run_tutorial():
     store.add_tuple(RelationTuple("doc", "budget_2024", "editor", "user", "charlie"))
 
     # Check permissions (direct)
-    assert check(store, "user", "alice", "owner", "folder", "finance") == True
-    assert check(store, "user", "bob", "owner", "folder", "finance") == False
+    assert check(store, "user", "alice", "owner", "folder", "finance")
+    assert not check(store, "user", "bob", "owner", "folder", "finance")
 
     # Inheritance logic check
     def check_access(user, obj_ns, obj_id, relation):
@@ -33,7 +33,7 @@ def run_tutorial():
                 return True
         return False
 
-    assert check_access("alice", "doc", "budget_2024", "owner") == True
+    assert check_access("alice", "doc", "budget_2024", "owner")
 
     # List objects
     folders = list_objects(store, "viewer", "folder")

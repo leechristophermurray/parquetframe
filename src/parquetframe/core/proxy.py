@@ -101,7 +101,7 @@ class DataFrameProxy:
         """Detect backend type."""
         if isinstance(df, pd.DataFrame):
             return "pandas"
-        elif POLARS_AVAILABLE and isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+        elif POLARS_AVAILABLE and isinstance(df, pl.DataFrame | pl.LazyFrame):
             return "polars"
         elif DASK_AVAILABLE and isinstance(df, dd.DataFrame):
             return "dask"
@@ -110,12 +110,9 @@ class DataFrameProxy:
 
     def _check_rust_available(self) -> bool:
         """Check if Rust backend is available."""
-        try:
-            import parquetframe.pf_py
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("parquetframe.pf_py") is not None
 
     def _estimate_size_gb(self) -> float:
         """Estimate DataFrame size in GB."""
@@ -127,7 +124,7 @@ class DataFrameProxy:
             elif self._backend == "dask":
                 # Estimate from metadata
                 return self._native.memory_usage(deep=True).sum().compute() / 1e9
-        except:
+        except Exception:
             return 0.1  # Conservative fallback
 
     # =========================================================================

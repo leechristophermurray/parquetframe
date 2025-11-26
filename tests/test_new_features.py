@@ -4,22 +4,18 @@ Comprehensive tests for new ParquetFrame features.
 Tests SQL, Time Series, GeoSpatial, Financial, and CLI modules.
 """
 
+# Check for SQL dependencies at module level
+import importlib.util
+
 import numpy as np
 import pandas as pd
 import pytest
 
-# Check for SQL dependencies at module level
-try:
-    import datafusion
-
+HAS_SQL = False  # Initialize to False
+if importlib.util.find_spec("datafusion"):
     HAS_SQL = True
-except ImportError:
-    try:
-        import duckdb
-
-        HAS_SQL = True
-    except ImportError:
-        HAS_SQL = False
+elif importlib.util.find_spec("duckdb"):
+    HAS_SQL = True
 
 
 @pytest.mark.skipif(not HAS_SQL, reason="SQL dependencies not installed")
@@ -102,7 +98,6 @@ class TestTimeSeriesAccessor:
 
     def test_resample(self):
         """Test time series resampling."""
-        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=100, freq="h")
         df = pd.DataFrame({"value": range(100)}, index=dates)
@@ -113,7 +108,6 @@ class TestTimeSeriesAccessor:
 
     def test_rolling(self):
         """Test rolling windows."""
-        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=100, freq="D")
         df = pd.DataFrame({"value": np.random.randn(100)}, index=dates)
@@ -124,7 +118,6 @@ class TestTimeSeriesAccessor:
 
     def test_interpolate(self):
         """Test interpolation."""
-        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
         values = list(range(10))
@@ -136,7 +129,6 @@ class TestTimeSeriesAccessor:
 
     def test_transformations(self):
         """Test time series transformations."""
-        import parquetframe.time  # Register .ts accessor
 
         dates = pd.date_range("2024-01-01", periods=10, freq="D")
         df = pd.DataFrame({"price": [100 + i for i in range(10)]}, index=dates)
@@ -155,7 +147,6 @@ class TestFinanceAccessor:
 
     def test_moving_averages(self):
         """Test SMA and EMA."""
-        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
 
@@ -168,7 +159,6 @@ class TestFinanceAccessor:
 
     def test_rsi(self):
         """Test RSI indicator."""
-        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         rsi = df.fin.rsi("close", 14)
@@ -179,7 +169,6 @@ class TestFinanceAccessor:
 
     def test_macd(self):
         """TestMACD indicator."""
-        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         macd = df.fin.macd("close")
@@ -190,7 +179,6 @@ class TestFinanceAccessor:
 
     def test_bollinger_bands(self):
         """Test Bollinger Bands."""
-        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         bb = df.fin.bollinger_bands("close")
@@ -207,7 +195,6 @@ class TestFinanceAccessor:
 
     def test_returns_volatility(self):
         """Test returns and volatility calculations."""
-        import parquetframe.finance  # Register .fin accessor
 
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
 
@@ -229,7 +216,7 @@ class TestGeoSpatialAccessor:
             import geopandas as gpd
             from shapely.geometry import Point
 
-            import parquetframe.geo
+            import parquetframe.geo  # noqa: F401
 
             gdf = gpd.GeoDataFrame(
                 {"name": ["A", "B"], "geometry": [Point(0, 0), Point(1, 1)]}
@@ -247,7 +234,7 @@ class TestGeoSpatialAccessor:
             import geopandas as gpd
             from shapely.geometry import Point
 
-            import parquetframe.geo
+            import parquetframe.geo  # noqa: F401
 
             gdf = gpd.GeoDataFrame(
                 {"name": ["A", "B"], "geometry": [Point(0, 0), Point(1, 1)]},
@@ -288,7 +275,6 @@ class TestIntegration:
     def test_sql_with_time_series(self):
         """Test SQL queries on time series data."""
         from parquetframe.sql import sql
-        import parquetframe.time  # Register .ts accessor
 
         # Create time series
         dates = pd.date_range("2024-01-01", periods=100, freq="D")
@@ -313,7 +299,6 @@ class TestIntegration:
     def test_finance_with_sql(self):
         """Test financial indicators with SQL."""
         from parquetframe.sql import sql
-        import parquetframe.finance  # Register .fin accessor
 
         # Create price data
         df = pd.DataFrame(

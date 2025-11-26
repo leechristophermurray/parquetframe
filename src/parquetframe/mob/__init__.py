@@ -4,7 +4,6 @@ ParquetFrame Mobility Module
 Provides mobility analytics operations with Rust acceleration.
 """
 
-import numpy as np
 import pandas as pd
 
 from parquetframe._rustic import mob as _mob

@@ -358,7 +358,7 @@ def test_backward_compatibility():
 
         # Can also iterate directly
         count = 0
-        for item in user.items():
+        for _item in user.items():
             count += 1
         assert count == 2
 

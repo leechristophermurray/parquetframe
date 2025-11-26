@@ -4,7 +4,6 @@ GeoSpatial Operations Examples
 Demonstrates geospatial operations using the .geo accessor.
 """
 
-import pandas as pd
 import numpy as np
 
 
@@ -12,7 +11,7 @@ def basic_operations():
     """Basic geospatial operations."""
     try:
         import geopandas as gpd
-        from shapely.geometry import Point, Polygon
+        from shapely.geometry import Point  # Polygon
     except ImportError:
         print("⚠️  GeoPandas not installed.")
         print("Install with: pip install geopandas")
@@ -167,6 +166,7 @@ def spatial_analysis():
                 for x, y in zip(
                     np.random.uniform(-125, -95, n_points),
                     np.random.uniform(25, 45, n_points),
+                    strict=False,
                 )
             ],
         },
@@ -180,7 +180,7 @@ def spatial_analysis():
 
     # Filter points within ROI
     filtered = points[within_roi]
-    print(f"\nFiltered points:")
+    print("\nFiltered points:")
     print(filtered)
 
     # Calculate area and centroid of ROI
@@ -191,10 +191,16 @@ def spatial_analysis():
 
 def main():
     """Run all examples."""
-    try:
-        import geopandas as gpd
-    except ImportError:
+    import importlib.util
+
+    if importlib.util.find_spec("geopandas"):
+        import geopandas as gpd  # noqa: F401
+    else:
         print("=" * 60)
+        print("⚠️  GeoPandas not installed.")
+        print("Install with: pip install geopandas")
+        print("=" * 60)
+        return
         print("⚠️  GeoPandas not installed!")
         print("=" * 60)
         print("\nInstall with:")

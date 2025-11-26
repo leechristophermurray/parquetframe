@@ -13,8 +13,12 @@ print("=" * 60)
 # Test 1: Import MOB module
 print("\n1. Testing MOB module import...")
 try:
+    import importlib.util
+
     from parquetframe import _rustic
-    from parquetframe.mob import MobDataFrameAccessor
+
+    if importlib.util.find_spec("parquetframe.mob"):
+        from parquetframe.mob import MobDataFrameAccessor  # noqa: F401
 
     print("✓ MOB module imported successfully")
 except ImportError as e:

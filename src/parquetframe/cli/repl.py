@@ -4,16 +4,19 @@ Interactive REPL for ParquetFrame.
 Rich interactive shell with syntax highlighting and tab completion.
 """
 
-import sys
-
 
 def start_repl():
     """Start the enhanced ParquetFrame REPL."""
     try:
+        import importlib.util
+
         from rich.console import Console
-        from rich.panel import Panel
-        from rich.syntax import Syntax
         from rich.markdown import Markdown
+        from rich.panel import Panel
+
+        if importlib.util.find_spec("rich"):
+            from rich.syntax import Syntax  # noqa: F401
+
         import parquetframe as pf
     except ImportError:
         print("⚠️  Rich not installed.")
@@ -44,8 +47,8 @@ df = pf.read_parquet("data.parquet")
     )
 
     # Import commonly used libraries
-    import pandas as pd
     import numpy as np
+    import pandas as pd
 
     # Make available in REPL
     namespace = {"pf": pf, "pd": pd, "np": np, "console": console}
@@ -68,9 +71,11 @@ df = pf.read_parquet("data.parquet")
 def start_basic_repl():
     """Start basic REPL without rich features."""
     import code
-    import parquetframe as pf
-    import pandas as pd
+
     import numpy as np
+    import pandas as pd
+
+    import parquetframe as pf
 
     banner = """
 ╔══════════════════════════════════════╗

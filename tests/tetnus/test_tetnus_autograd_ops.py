@@ -1,16 +1,22 @@
+import importlib.util
 import math
 
 import pytest
 
-try:
-    from parquetframe._rustic import Tensor
-    import parquetframe.tetnus as tt
+if importlib.util.find_spec("parquetframe.tetnus") and importlib.util.find_spec(
+    "parquetframe._rustic"
+):
+    import parquetframe.tetnus as tt  # noqa: F401
+    from parquetframe._rustic import Tensor  # noqa: F401
+
     HAS_TENSOR = True
-except (ImportError, AttributeError):
+else:
     HAS_TENSOR = False
     tt = None
 
-pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
+pytestmark = pytest.mark.skipif(
+    not HAS_TENSOR, reason="Tensor not available in Rust module"
+)
 
 
 def test_add_grad():

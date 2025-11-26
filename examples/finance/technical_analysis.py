@@ -4,8 +4,8 @@ Financial Indicators Examples
 Demonstrates technical analysis using the .fin accessor.
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def generate_stock_data(days=252):
@@ -166,7 +166,7 @@ def risk_metrics():
     avg_volatility = prices["volatility"].mean()
     sharpe_ratio = (prices["returns"].mean() * 252) / avg_volatility
 
-    print(f"\n📊 Performance Summary:")
+    print("\n📊 Performance Summary:")
     print(f"Total return: {total_return:.2%}")
     print(f"Annualized volatility: {avg_volatility:.2%}")
     print(f"Sharpe ratio: {sharpe_ratio:.2f}")

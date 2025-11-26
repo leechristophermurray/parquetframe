@@ -5,7 +5,6 @@ Provides pandas-style .ts accessor for time series operations.
 """
 
 import pandas as pd
-from typing import Optional, Union
 
 
 class TimeSeriesAccessor:
@@ -39,9 +38,7 @@ class TimeSeriesAccessor:
                 "Use df.set_index('timestamp_column') first."
             )
 
-    def resample(
-        self, rule: str, agg: Union[str, list] = "mean", **kwargs
-    ) -> pd.DataFrame:
+    def resample(self, rule: str, agg: str | list = "mean", **kwargs) -> pd.DataFrame:
         """
         Resample time series to different frequency.
 
@@ -67,9 +64,7 @@ class TimeSeriesAccessor:
         else:
             return resampler.agg(agg)
 
-    def rolling(
-        self, window: Union[str, int], agg: str = "mean", **kwargs
-    ) -> pd.DataFrame:
+    def rolling(self, window: str | int, agg: str = "mean", **kwargs) -> pd.DataFrame:
         """
         Compute rolling window statistics.
 

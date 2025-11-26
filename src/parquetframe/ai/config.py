@@ -113,9 +113,9 @@ class AIConfig:
         """
         if self.use_enhanced_prompts:
             from .enhanced_prompts import (
-                ENHANCED_RAG_SYSTEM_PROMPT,
                 ANALYTICAL_RAG_PROMPT,
                 CODE_GEN_RAG_PROMPT,
+                ENHANCED_RAG_SYSTEM_PROMPT,
                 MULTI_TURN_RAG_PROMPT,
                 PERMISSION_AWARE_PROMPT,
             )

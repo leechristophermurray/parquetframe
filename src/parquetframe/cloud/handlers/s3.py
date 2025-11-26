@@ -25,9 +25,9 @@ class S3Handler(CloudHandler):
     def _check_rust_s3(self) -> bool:
         """Check if Rust S3 module is available."""
         try:
-            import parquetframe.pf_py
+            from parquetframe import _rustic
 
-            return hasattr(parquetframe.pf_py, "read_parquet_s3_rust")
+            return hasattr(_rustic, "read_parquet_s3_rust")
         except ImportError:
             return False
 
@@ -47,7 +47,7 @@ class S3Handler(CloudHandler):
 
     def _read_rust(self, s3_path: str, backend: str, **kwargs):
         """Use Rust S3 reader."""
-        from parquetframe.pf_py import read_parquet_s3_rust
+        from parquetframe._rustic import read_parquet_s3_rust
 
         arrow_table = read_parquet_s3_rust(
             s3_path,
@@ -102,7 +102,7 @@ class S3Handler(CloudHandler):
 
     def _write_rust(self, df, s3_path: str, **kwargs):
         """Use Rust S3 writer."""
-        from parquetframe.pf_py import write_parquet_s3_rust
+        from parquetframe._rustic import write_parquet_s3_rust
 
         if isinstance(df, pd.DataFrame):
             import pyarrow as pa

@@ -5,8 +5,8 @@ Retrieves concepts, formulas, and definitions from the Knowlogy knowledge graph
 to ground LLM responses with verifiable, formal knowledge.
 """
 
-from typing import List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Document:
     """A retrieved document with content and metadata."""
 
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     score: float = 1.0
 
 
@@ -33,7 +33,7 @@ class KnowlogyRetriever:
         """Initialize Knowlogy retriever."""
         pass
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[Document]:
+    def retrieve(self, query: str, top_k: int = 5) -> list[Document]:
         """
         Retrieve relevant knowledge from graph.
 

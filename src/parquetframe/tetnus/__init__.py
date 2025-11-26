@@ -11,8 +11,7 @@ from parquetframe import _rustic as tetnus
 from parquetframe._rustic import Tensor
 
 # Neural network layers
-from . import nn
-from . import optim
+from . import nn, optim
 
 # High-level API
 from .api import Model, dataframe_to_tensor
@@ -26,7 +25,8 @@ __all__ = [
 ]
 
 
-class Tensor:
+# Tensor class removed to avoid redefinition
+class _TensorPlaceholder:
     """
     High-level Tensor wrapper providing NumPy-like interface. Examples:
         >>> import parquetframe.tetnus as pt
@@ -288,9 +288,11 @@ __all__ = [
 # Expose submodules
 # Expose submodules
 # Expose graph module from Rust
-import sys
+# Expose submodules
+# Expose graph module from Rust
+import sys  # noqa: E402
 
-from . import nn, numpy
+from . import numpy  # noqa: E402
 
 try:
     graph = tetnus.graph
