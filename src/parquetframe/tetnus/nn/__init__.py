@@ -2,8 +2,14 @@
 Neural Network module for Tetnus.
 """
 
+from parquetframe import _rustic
+
 from .. import Tensor
-from .. import tetnus as _rust_tetnus
+
+try:
+    _rust_tetnus = _rustic.tetnus
+except AttributeError:
+    _rust_tetnus = None
 
 
 class Module:
