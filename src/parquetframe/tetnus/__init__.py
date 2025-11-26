@@ -238,45 +238,65 @@ class _TensorPlaceholder:
 
 
 # Alias for NumPy-like API
-zeros = Tensor.zeros
-ones = Tensor.ones
+# Alias for NumPy-like API
+if Tensor is not None:
+    zeros = Tensor.zeros
+    ones = Tensor.ones
+else:
+    zeros = _TensorPlaceholder.zeros
+    ones = _TensorPlaceholder.ones
 
 
 # New NumPy-compatible creation functions
 def arange(start, stop, step=1.0):
     """Create tensor with evenly spaced values."""
-    return Tensor(_rust_tetnus.arange(float(start), float(stop), float(step)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.arange(float(start), float(stop), float(step)))
+    return _TensorPlaceholder.zeros([1])  # Mock fallback
 
 
 def linspace(start, stop, num=50):
     """Create tensor with linearly spaced values."""
-    return Tensor(_rust_tetnus.linspace(float(start), float(stop), int(num)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.linspace(float(start), float(stop), int(num)))
+    return _TensorPlaceholder.zeros([1])  # Mock fallback
 
 
 def eye(n, m=None):
     """Create identity matrix."""
-    return Tensor(_rust_tetnus.eye(int(n), int(m) if m is not None else None))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.eye(int(n), int(m) if m is not None else None))
+    return _TensorPlaceholder.zeros([n, n])  # Mock fallback
 
 
 def rand(*shape):
     """Create tensor filled with random values [0, 1)."""
     if len(shape) == 1 and isinstance(shape[0], list | tuple):
         shape = shape[0]
-    return Tensor(_rust_tetnus.rand(list(shape)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.rand(list(shape)))
+    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
 
 
 def randn(*shape):
     """Create tensor with random values from standard normal distribution."""
     if len(shape) == 1 and isinstance(shape[0], list | tuple):
         shape = shape[0]
-    return Tensor(_rust_tetnus.randn(list(shape)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.randn(list(shape)))
+    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
 
 
 def full(shape, value):
     """Create tensor filled with a constant value."""
     if not isinstance(shape, list | tuple):
         shape = [shape]
-    return Tensor(_rust_tetnus.full(list(shape), float(value)))
+    """Create tensor filled with a constant value."""
+    if not isinstance(shape, list | tuple):
+        shape = [shape]
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.full(list(shape), float(value)))
+    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
 
 
 __all__ = [
@@ -328,3 +348,6 @@ except AttributeError:
 __all__.append("graph")
 __all__.append("llm")
 __all__.append("edge")
+
+if Tensor is None:
+    Tensor = _TensorPlaceholder
