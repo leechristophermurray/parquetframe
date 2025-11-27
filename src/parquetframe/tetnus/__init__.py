@@ -20,20 +20,6 @@ except AttributeError:
     _rust_tetnus = None
     _RustTensor = None
 
-# Neural network layers
-from . import nn, optim
-
-# High-level API
-from .api import Model, dataframe_to_tensor
-
-__all__ = [
-    "Tensor",
-    "nn",
-    "optim",
-    "Model",
-    "dataframe_to_tensor",
-]
-
 
 # Tensor class wrapper
 class Tensor:
@@ -361,6 +347,12 @@ def full(shape, value):
     return Tensor.zeros(list(shape))  # Mock fallback
 
 
+# Neural network layers
+from . import nn, optim  # noqa: E402
+
+# High-level API
+from .api import Model, dataframe_to_tensor  # noqa: E402
+
 __all__ = [
     "Tensor",
     "zeros",
@@ -373,6 +365,9 @@ __all__ = [
     "full",
     "numpy",
     "nn",
+    "optim",
+    "Model",
+    "dataframe_to_tensor",
 ]
 
 # Expose submodules
