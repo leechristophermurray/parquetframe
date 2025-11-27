@@ -33,7 +33,7 @@ class TestSQLUtilities:
     def test_parameterize_query_missing_param(self):
         """Test error handling for missing parameters."""
         query = "SELECT * FROM df WHERE age > {min_age}"
-        with pytest.raises(ValueError, match="Missing required parameter: min_age"):
+        with pytest.raises(ValueError, match="Missing required parameter: 'min_age'"):
             parameterize_query(query)
 
     def test_build_join_query_simple(self):

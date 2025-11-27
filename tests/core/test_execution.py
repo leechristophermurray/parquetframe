@@ -3,7 +3,7 @@ Unit tests for execution context and mode selection.
 """
 
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from parquetframe.core.execution import (
     ExecutionContext,
@@ -99,13 +99,13 @@ class TestExecutionContext:
 class TestExecutionPlanner:
     """Test ExecutionPlanner intelligent selection."""
 
-    @patch("parquetframe.core.execution.ExecutionPlanner.check_distributed_available")
-    def test_check_ray_available(self, mock_check):
+    def test_check_ray_available(self):
         """Test Ray cluster detection."""
-        with patch("parquetframe.core.execution.ray") as mock_ray:
-            mock_ray.is_initialized.return_value = True
-            mock_ray.nodes.return_value = [1, 2, 3, 4]  # 4 nodes
+        mock_ray = MagicMock()
+        mock_ray.is_initialized.return_value = True
+        mock_ray.nodes.return_value = [1, 2, 3, 4]  # 4 nodes
 
+        with patch.dict("sys.modules", {"ray": mock_ray}):
             available, num_nodes = ExecutionPlanner.check_distributed_available()
             assert available is True
             assert num_nodes == 4

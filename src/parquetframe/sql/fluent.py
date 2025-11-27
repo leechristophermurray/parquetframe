@@ -198,24 +198,24 @@ class SQLBuilder:
         self._where.append(condition)
         return self
 
-    def inner_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
+    def inner_join(self, table: Any, on: str, alias: str = None) -> "SQLBuilder":
         """Add INNER JOIN."""
-        self._joins.append(("INNER", table, on))
+        self._joins.append(("INNER", table, on, alias))
         return self
 
-    def left_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
+    def left_join(self, table: Any, on: str, alias: str = None) -> "SQLBuilder":
         """Add LEFT JOIN."""
-        self._joins.append(("LEFT", table, on))
+        self._joins.append(("LEFT", table, on, alias))
         return self
 
-    def right_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
+    def right_join(self, table: Any, on: str, alias: str = None) -> "SQLBuilder":
         """Add RIGHT JOIN."""
-        self._joins.append(("RIGHT", table, on))
+        self._joins.append(("RIGHT", table, on, alias))
         return self
 
-    def full_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
+    def full_join(self, table: Any, on: str, alias: str = None) -> "SQLBuilder":
         """Add FULL OUTER JOIN."""
-        self._joins.append(("FULL OUTER", table, on))
+        self._joins.append(("FULL OUTER", table, on, alias))
         return self
 
     def group_by(self, *columns: str) -> "SQLBuilder":
@@ -251,19 +251,40 @@ class SQLBuilder:
     def build(self) -> str:
         """Build SQL query string."""
         # Handle table name if it's a proxy object
-        table_name = str(self.table)
-        if hasattr(self.table, "engine_name"):  # Proxy object
-            # We assume it will be registered as 'df' during execute
-            if self.table == getattr(self, "_execution_table_obj", None):
-                table_name = "df"
-            else:
-                table_name = "df"
+        is_obj = (
+            hasattr(self.table, "engine_name")
+            or hasattr(self.table, "to_pandas")
+            or hasattr(self.table, "pandas_df")
+            or hasattr(self.table, "_df")
+        )
+        if is_obj:
+            table_name = "df"
+        else:
+            table_name = str(self.table)
 
         query = f"SELECT {', '.join(self._select)} FROM {table_name}"
 
         # Add joins
-        for join_type, table, condition in self._joins:
-            query += f" {join_type} JOIN {table} ON {condition}"
+        for join_type, table, condition, alias in self._joins:
+            # If table is an object, use alias or generate name
+            is_obj = (
+                hasattr(table, "engine_name")
+                or hasattr(table, "to_pandas")
+                or hasattr(table, "pandas_df")
+                or hasattr(table, "_df")
+            )
+            if is_obj:
+                if not alias:
+                    # Should have alias if it's an object, otherwise we can't reference it easily
+                    # But for now, let's assume user provided alias if needed
+                    alias = f"table_{id(table)}"
+                table_ref = alias
+            else:
+                table_ref = str(table)
+                if alias:
+                    table_ref += f" AS {alias}"
+
+            query += f" {join_type} JOIN {table_ref} ON {condition}"
 
         # Add WHERE
         if self._where:
@@ -295,6 +316,24 @@ class SQLBuilder:
         # Store object for build() context
         self._execution_table_obj = self.table
 
+        # Helper to register a table
+        def register_table(obj, name):
+            if hasattr(obj, "to_pandas"):
+                df = obj.to_pandas()
+                if hasattr(df, "native"):
+                    df = df.native
+            elif hasattr(obj, "pandas_df"):
+                df = obj.pandas_df
+            elif hasattr(obj, "_df"):
+                df = obj._df
+            else:
+                df = obj
+
+            if hasattr(df, "compute"):
+                df = df.compute()
+
+            self.engine.register_dataframe(name, df)
+
         # Check if self.table is a proxy/frame object
         is_frame_obj = (
             hasattr(self.table, "pandas_df")
@@ -303,27 +342,22 @@ class SQLBuilder:
         )
 
         if is_frame_obj:
-            # It's a frame object, register it
-            # Convert to pandas if needed (for now, as per existing implementation)
-            if hasattr(self.table, "to_pandas"):
-                df = self.table.to_pandas()
-                if hasattr(df, "native"):  # If to_pandas returned a proxy
-                    df = df.native
-            elif hasattr(self.table, "pandas_df"):
-                df = self.table.pandas_df
-            elif hasattr(self.table, "_df"):
-                df = self.table._df
-            else:
-                df = self.table
-
-            # Unwrap dask if needed
-            if hasattr(df, "compute"):
-                df = df.compute()
-
-            self.engine.register_dataframe(table_name, df)
+            register_table(self.table, table_name)
         else:
             # It's likely a string table name already registered
             table_name = str(self.table)
+
+        # Register joined tables
+        for _, table, _, alias in self._joins:
+            is_obj = (
+                hasattr(table, "pandas_df")
+                or hasattr(table, "native")
+                or hasattr(table, "_df")
+                or hasattr(table, "to_pandas")
+            )
+            if is_obj:
+                name = alias or f"table_{id(table)}"
+                register_table(table, name)
 
         # Build query
         sql = self.build()
@@ -357,9 +391,9 @@ class SQLBuilder:
             )
         else:
             df = self.engine.query(sql)
-            return QueryResult(
-                df, query=sql, row_count=len(df), column_count=len(df.columns)
-            )
+            from ..core.proxy import DataFrameProxy
+
+            return DataFrameProxy(df, engine="pandas")
 
 
 def explain_query(query: str, engine: SQLEngine | None = None) -> str:

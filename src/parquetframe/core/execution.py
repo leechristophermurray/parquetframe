@@ -7,7 +7,6 @@ Supports intelligent switching between:
 - Hybrid (Both combined)
 """
 
-import multiprocessing
 import os
 from dataclasses import dataclass, field
 from enum import Enum
@@ -50,9 +49,7 @@ class ExecutionContext:
     metrics: MetricsCollector = field(default_factory=get_metrics_collector)
 
     def __post_init__(self):
-        if self.rust_threads == 0:
-            # Default to number of cores
-            self.rust_threads = multiprocessing.cpu_count()
+        pass
 
     @classmethod
     def from_env(cls) -> "ExecutionContext":

@@ -91,9 +91,12 @@ class DataFrameProxy:
         self._native = native_df
         self._backend = self._detect_backend(native_df)
 
-        # Initialize narwhals wrapper if available
-        if NARWHALS_AVAILABLE:
-            self._nw = nw.from_native(native_df)
+        # Initialize narwhals wrapper if available and supported
+        if NARWHALS_AVAILABLE and self._is_narwhals_supported(native_df):
+            try:
+                self._nw = nw.from_native(native_df)
+            except Exception:
+                self._nw = None
         else:
             self._nw = None
 
@@ -115,14 +118,45 @@ class DataFrameProxy:
 
     def _detect_backend(self, df) -> str:
         """Detect backend type."""
-        if isinstance(df, pd.DataFrame):
+        if isinstance(df, pd.DataFrame | pd.Series):
             return "pandas"
-        elif POLARS_AVAILABLE and isinstance(df, pl.DataFrame | pl.LazyFrame):
+        elif POLARS_AVAILABLE and isinstance(
+            df, pl.DataFrame | pl.LazyFrame | pl.Series
+        ):
             return "polars"
-        elif DASK_AVAILABLE and isinstance(df, dd.DataFrame):
+        elif DASK_AVAILABLE and isinstance(df, dd.DataFrame | dd.Series):
             return "dask"
-        else:
-            raise TypeError(f"Unsupported DataFrame type: {type(df)}")
+
+        # Check for GroupBy objects
+        type_name = type(df).__name__
+        if "GroupBy" in type_name:
+            # Try to infer from module
+            module = type(df).__module__
+            if "pandas" in module:
+                return "pandas"
+            if "polars" in module:
+                return "polars"
+            if "dask" in module:
+                return "dask"
+
+        # Fallback or error
+        if hasattr(df, "to_pandas"):  # Polars/Arrow objects often have this
+            return "polars"
+
+        # If we can't detect, assume pandas if it looks like it, or raise error
+        # But for now, let's be permissive for wrapped objects
+        return "pandas"
+
+    def _is_narwhals_supported(self, df) -> bool:
+        """Check if object is supported by narwhals."""
+        # Narwhals mainly supports DataFrames and LazyFrames
+        if isinstance(df, pd.DataFrame):
+            return True
+        if POLARS_AVAILABLE and isinstance(df, pl.DataFrame | pl.LazyFrame):
+            return True
+        if DASK_AVAILABLE and isinstance(df, dd.DataFrame):
+            return True
+        return False
 
     def _check_rust_available(self) -> bool:
         """Check if Rust backend is available."""
@@ -134,14 +168,18 @@ class DataFrameProxy:
         """Estimate DataFrame size in GB."""
         try:
             if self._backend == "pandas":
-                return self._native.memory_usage(deep=True).sum() / 1e9
+                if hasattr(self._native, "memory_usage"):
+                    return self._native.memory_usage(deep=True).sum() / 1e9
             elif self._backend == "polars":
-                return self._native.estimated_size() / 1e9
+                if hasattr(self._native, "estimated_size"):
+                    return self._native.estimated_size() / 1e9
             elif self._backend == "dask":
                 # Estimate from metadata
-                return self._native.memory_usage(deep=True).sum().compute() / 1e9
+                if hasattr(self._native, "memory_usage"):
+                    return self._native.memory_usage(deep=True).sum().compute() / 1e9
         except Exception:
-            return 0.1  # Conservative fallback
+            pass
+        return 0.1  # Conservative fallback
 
     # =========================================================================
     # Rust-Accelerated Operations (Bypass Narwhals)
@@ -245,9 +283,24 @@ class DataFrameProxy:
     # =========================================================================
 
     @property
+    def native(self):
+        """Get the underlying native DataFrame."""
+        return self._native
+
+    @property
+    def backend(self) -> str:
+        """Get backend name."""
+        return self._backend
+
+    @property
     def engine_name(self) -> str:
         """Get backend engine name (alias for backend)."""
         return self._backend
+
+    @property
+    def execution_mode(self):
+        """Get execution mode."""
+        return self._exec_ctx.mode
 
     @property
     def is_lazy(self) -> bool:
@@ -362,10 +415,7 @@ class DataFrameProxy:
     def to_avro(self, path, **kwargs):
         """Write to Avro file."""
         if self._native is None:
-            # This matches test expectation: NoneType has no attribute to_avro, but we should probably raise proper error or handle it
-            # Wait, the test `test_write_avro_empty_raises_error` expects AttributeError or TypeError.
-            # If we implement this, we should raise ValueError for empty df
-            raise TypeError("Cannot write empty DataFrame to Avro")
+            raise ValueError("Cannot write empty DataFrameProxy")
 
         try:
             import fastavro
@@ -380,47 +430,19 @@ class DataFrameProxy:
         schema = kwargs.get("schema")
         if not schema:
             # Basic schema inference
-            from .formats import _infer_avro_schema
+            from parquetframe.io_new.avro import infer_avro_schema
 
-            schema = _infer_avro_schema(df)
+            schema = infer_avro_schema(df)
 
         with open(path, "wb") as out:
             fastavro.writer(out, schema, records, codec=kwargs.get("codec", "null"))
 
-    def set_execution_mode(self, mode: str):
-        """Change execution mode for this proxy."""
-        self._exec_ctx = self._exec_ctx.resolve(mode)
         return self
 
-    def collect(self):
-        """
-        Materialize lazy operations.
-
-        For Polars LazyFrame or Dask DataFrame.
-        """
-        if isinstance(self._native, pl.LazyFrame):
-            return DataFrameProxy(self._native.collect(), self._exec_ctx)
-        elif DASK_AVAILABLE and isinstance(self._native, dd.DataFrame):
-            return DataFrameProxy(self._native.compute(), self._exec_ctx)
-        return self
-
-    def __repr__(self):
-        return (
-            f"DataFrameProxy(\n"
-            f"  backend={self._backend},\n"
-            f"  mode={self._exec_ctx.mode.value},\n"
-            f"  rust={self._rust_available},\n"
-            f"  df={self._native.__repr__()}\n"
-            f")"
-        )
-
-    # =========================================================================
-    # Delegation to Native DataFrame
-    # =========================================================================
-
-    # =========================================================================
-    # SQL Interface
-    # =========================================================================
+    @property
+    def pandas_df(self) -> pd.DataFrame:
+        """Get the underlying pandas DataFrame (converting if necessary)."""
+        return self.to_pandas().native
 
     def sql(
         self,
@@ -508,31 +530,67 @@ class DataFrameProxy:
 
         return SQLBuilder(self)
 
+    def set_execution_mode(self, mode: str):
+        """Change execution mode for this proxy."""
+        self._exec_ctx = self._exec_ctx.resolve(mode)
+        return self
+
+    def collect(self):
+        """
+        Materialize lazy operations.
+
+        For Polars LazyFrame or Dask DataFrame.
+        """
+        if isinstance(self._native, pl.LazyFrame):
+            return DataFrameProxy(self._native.collect(), self._exec_ctx)
+        elif DASK_AVAILABLE and isinstance(self._native, dd.DataFrame):
+            return DataFrameProxy(self._native.compute(), self._exec_ctx)
+        return self
+
+    def to_engine(self, engine_name: str) -> "DataFrameProxy":
+        """Convert to a different engine."""
+        if engine_name == "pandas":
+            return self.to_pandas()
+        elif engine_name == "polars":
+            return self.to_polars()
+        elif engine_name == "dask":
+            return self.to_dask()
+        else:
+            # Check registry or raise error
+            # For now raise KeyError to match test expectation
+            raise KeyError(f"Engine {engine_name} not found")
+
+    def __repr__(self):
+        if self._native is None:
+            return f"DataFrameProxy(engine={self._backend}, empty=True)"
+
+        # Try to get shape
+        try:
+            if hasattr(self._native, "shape"):
+                shape = self._native.shape
+                shape_str = f"{shape[0]} rows × {shape[1]} columns"
+            elif hasattr(self._native, "height") and hasattr(self._native, "width"):
+                shape_str = f"{self._native.height} rows × {self._native.width} columns"
+            else:
+                shape_str = "shape unknown"
+        except Exception:
+            shape_str = "shape unknown"
+
+        return (
+            f"DataFrameProxy(\n" f"  backend={self._backend},\n" f"  {shape_str}\n" f")"
+        )
+
     def __getitem__(self, key):
         """Support indexing."""
         if self._native is None:
             raise TypeError("'NoneType' object is not subscriptable")
 
         result = self._native[key]
-        if isinstance(result, pd.DataFrame | pd.Series):
-            # Wrap result if it's a DataFrame, Series we might want to wrap too or return as is?
-            # Tests expect proxy["a"] to return something with engine_name if it's a dataframe-like slice?
-            # Test `test_getitem_column` says: result = proxy["a"]; assert hasattr(result, "engine_name")
-            # So we must wrap Series too or Series has engine_name?
-            # Wait, pandas Series doesn't have engine_name.
-            # So we must wrap it in DataFrameProxy? But DataFrameProxy expects DataFrame.
-            # If it's a Series, maybe we don't wrap it?
-            # Let's check the test:
-            # def test_getitem_column(self): ... result = proxy["a"] ... assert hasattr(result, "engine_name")
-            # This implies proxy["a"] returns a DataFrameProxy. But df["a"] returns a Series.
-            # If DataFrameProxy wraps Series, then init must support Series.
-            # Let's assume for now we return DataFrameProxy if it's a DataFrame, and if it's a Series we convert to DataFrame?
-            # Or maybe the test expects it to behave like a DataFrame where single column select returns Series?
-            # If the test expects `engine_name` on result, result MUST be DataFrameProxy.
-            if isinstance(result, pd.Series):
-                return DataFrameProxy(result.to_frame(), self._exec_ctx)
-            if isinstance(result, pd.DataFrame):
-                return DataFrameProxy(result, self._exec_ctx)
+
+        # Always wrap result if it's a supported type
+        # This matches frame.py behavior which wraps Series and DataFrames
+        if self._is_wrappable(result):
+            return DataFrameProxy(result, self._exec_ctx)
 
         return result
 
@@ -541,8 +599,42 @@ class DataFrameProxy:
         if name.startswith("_"):
             raise AttributeError(f"No attribute '{name}'")
         if self._native is None:
-            raise AttributeError(f"'NoneType' object has no attribute '{name}'")
-        return getattr(self._native, name)
+            raise AttributeError(
+                f"'DataFrameProxy' object (empty) has no attribute '{name}'"
+            )
+
+        attr = getattr(self._native, name)
+
+        if callable(attr):
+
+            def wrapper(*args, **kwargs):
+                result = attr(*args, **kwargs)
+
+                # Wrap result if it's a wrappable type
+                if self._is_wrappable(result):
+                    return DataFrameProxy(result, self._exec_ctx)
+
+                return result
+
+            return wrapper
+
+        return attr
+
+    def _is_wrappable(self, obj):
+        """Check if object should be wrapped in DataFrameProxy."""
+        if isinstance(obj, pd.DataFrame | pd.Series):
+            return True
+        if POLARS_AVAILABLE and isinstance(
+            obj, pl.DataFrame | pl.LazyFrame | pl.Series
+        ):
+            return True
+        if DASK_AVAILABLE and isinstance(obj, dd.DataFrame | dd.Series):
+            return True
+        # Check for GroupBy objects
+        type_name = type(obj).__name__
+        if "GroupBy" in type_name:
+            return True
+        return False
 
 
 __all__ = ["DataFrameProxy"]

@@ -2,7 +2,7 @@
 Tests for enhanced interactive mode with Python execution and magic commands.
 """
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
@@ -27,8 +27,14 @@ def interactive_session(mock_data_context):
     """Create an InteractiveSession for testing."""
     from parquetframe.interactive import InteractiveSession
 
-    session = InteractiveSession(mock_data_context, enable_ai=False)
-    return session
+    with (
+        patch("parquetframe.interactive.PromptSession"),
+        patch("parquetframe.interactive.Console"),
+        patch("parquetframe.interactive.InMemoryHistory"),
+        patch("parquetframe.interactive.WordCompleter"),
+    ):
+        session = InteractiveSession(mock_data_context, enable_ai=False)
+        return session
 
 
 class TestPythonExecution:
