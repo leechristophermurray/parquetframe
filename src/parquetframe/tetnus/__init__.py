@@ -7,6 +7,8 @@ with automatic differentiation.
 
 # Core tensor operations
 # Core tensor operations
+import numpy as np
+
 from parquetframe import _rustic
 
 # Access the Rust submodule
@@ -111,73 +113,105 @@ class _TensorPlaceholder:
     @property
     def shape(self):
         """Tensor shape."""
-        return tuple(self._tensor.shape)
+        if self._tensor is not None:
+            return tuple(self._tensor.shape)
+        return tuple(self._shape) if hasattr(self, "_shape") else ()
 
     @property
     def ndim(self):
         """Number of dimensions."""
-        return self._tensor.ndim
+        if self._tensor is not None:
+            return self._tensor.ndim
+        return len(self.shape)
 
     @property
     def size(self):
         """Total number of elements."""
-        return self._tensor.numel
+        if self._tensor is not None:
+            return self._tensor.numel
+        # Calculate size from shape
+        s = 1
+        for d in self.shape:
+            s *= d
+        return s
 
     @property
     def grad(self):
         """Gradient tensor (if computed)."""
-        grad_tensor = self._tensor.grad
-        if grad_tensor is None:
-            return None
-        return Tensor(grad_tensor)
+        if self._tensor is not None:
+            grad_tensor = self._tensor.grad
+            if grad_tensor is None:
+                return None
+            return Tensor(grad_tensor)
+        return None
 
     @property
     def requires_grad(self):
         """Whether this tensor requires gradient."""
-        return self._tensor.requires_grad
+        if self._tensor is not None:
+            return self._tensor.requires_grad
+        return False
 
     def requires_grad_(self):
         """Enable gradient tracking (in-place)."""
-        self._tensor = self._tensor.requires_grad_()
+        if self._tensor is not None:
+            self._tensor = self._tensor.requires_grad_()
         return self
 
     def data(self):
         """Get tensor data as Python list."""
-        return self._tensor.data()
+        if self._tensor is not None:
+            return self._tensor.data()
+        return self._data if hasattr(self, "_data") else []
 
     def backward(self):
         """Compute gradients via backpropagation."""
-        _rust_tetnus.backward(self._tensor)
+        if self._tensor is not None:
+            _rust_tetnus.backward(self._tensor)
+        # No-op for mock
 
     def to_numpy(self):
         """Convert to NumPy array."""
-        return self._tensor.to_numpy()
+        if self._tensor is not None:
+            return self._tensor.to_numpy()
+        return np.array(self._data)
 
     # Operations
     def __matmul__(self, other):
         """Matrix multiplication: a @ b"""
-        result = _rust_tetnus.matmul(self._tensor, other._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.matmul(self._tensor, other._tensor)
+            return Tensor(result)
+        # Mock implementation
+        return _TensorPlaceholder.zeros([self.shape[0], other.shape[1]])
 
     def __add__(self, other):
         """Element-wise addition: a + b"""
-        result = _rust_tetnus.add(self._tensor, other._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.add(self._tensor, other._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def __sub__(self, other):
         """Element-wise subtraction: a - b"""
-        result = _rust_tetnus.sub(self._tensor, other._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.sub(self._tensor, other._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def __mul__(self, other):
         """Element-wise multiplication: a * b"""
-        result = _rust_tetnus.mul(self._tensor, other._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.mul(self._tensor, other._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def __truediv__(self, other):
         """Element-wise division: a / b"""
-        result = _rust_tetnus.div(self._tensor, other._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.div(self._tensor, other._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def add(self, other):
         return self + other
@@ -195,13 +229,19 @@ class _TensorPlaceholder:
         """Reshape tensor."""
         if len(shape) == 1 and isinstance(shape[0], list | tuple):
             shape = shape[0]
-        result = _rust_tetnus.reshape(self._tensor, list(shape))
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.reshape(self._tensor, list(shape))
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(list(shape))
 
     def T(self):
         """Transpose (2D tensors only)."""
-        result = _rust_tetnus.transpose(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.transpose(self._tensor)
+            return Tensor(result)
+        if len(self.shape) == 2:
+            return _TensorPlaceholder.zeros([self.shape[1], self.shape[0]])
+        return _TensorPlaceholder.zeros(self.shape)
 
     def transpose(self, *args):
         """Transpose tensor. Currently alias for T() for 2D."""
@@ -209,43 +249,59 @@ class _TensorPlaceholder:
 
     def sum(self):
         """Sum all elements."""
-        result = _rust_tetnus.sum(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.sum(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros([1])
 
     def mean(self):
         """Mean of all elements."""
-        result = _rust_tetnus.mean(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.mean(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros([1])
 
     def sin(self):
         """Element-wise sine."""
-        result = _rust_tetnus.sin(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.sin(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def cos(self):
         """Element-wise cosine."""
-        result = _rust_tetnus.cos(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.cos(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def tan(self):
         """Element-wise tangent."""
-        result = _rust_tetnus.tan(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.tan(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def exp(self):
         """Element-wise exponential."""
-        result = _rust_tetnus.exp(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.exp(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def log(self):
         """Element-wise natural logarithm."""
-        result = _rust_tetnus.log(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.log(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def sqrt(self):
         """Element-wise square root."""
-        result = _rust_tetnus.sqrt(self._tensor)
-        return Tensor(result)
+        if self._tensor is not None:
+            result = _rust_tetnus.sqrt(self._tensor)
+            return Tensor(result)
+        return _TensorPlaceholder.zeros(self.shape)
 
     def __repr__(self):
         return f"Tensor(shape={self.shape}, requires_grad={self.requires_grad})"

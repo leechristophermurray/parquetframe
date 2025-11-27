@@ -16,7 +16,16 @@ from parquetframe.ai import (
     TetnusEmbeddingModel,
 )
 
+try:
+    import importlib.util
 
+    if importlib.util.find_spec("parquetframe._rustic.tetnus.Embedding"):
+        TETNUS_AVAILABLE = True
+except ImportError:
+    TETNUS_AVAILABLE = False
+
+
+@pytest.mark.skipif(not TETNUS_AVAILABLE, reason="Tetnus module not available")
 class TestTetnusEmbeddingModel:
     """Test tetnus embedding model."""
 

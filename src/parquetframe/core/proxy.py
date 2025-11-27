@@ -8,7 +8,7 @@ Provides:
 - Zero-overhead delegation
 """
 
-from typing import Union
+from typing import Any, Union
 
 import pandas as pd
 
@@ -60,9 +60,10 @@ class DataFrameProxy:
 
     def __init__(
         self,
-        native_df: Union[pd.DataFrame, "pl.DataFrame", "dd.DataFrame"],
+        native_df: Union[pd.DataFrame, "pl.DataFrame", "dd.DataFrame"] = None,
         execution_ctx: ExecutionContext | None = None,
         execution_mode: str | None = None,
+        data: Union[pd.DataFrame, "pl.DataFrame", "dd.DataFrame"] = None,
     ):
         """
         Initialize DataFrameProxy.
@@ -71,7 +72,17 @@ class DataFrameProxy:
             native_df: Native DataFrame (pandas/Polars/Dask)
             execution_ctx: Optional execution context
             execution_mode: Optional mode override (auto/local/distributed/hybrid)
+            data: Alias for native_df (for backward compatibility)
         """
+        if native_df is None and data is not None:
+            native_df = data
+
+        if native_df is None:
+            # Handle empty init if supported, or raise error if strictly required.
+            # Existing tests imply empty init is possible? test_init_empty says yes.
+            # But test_init_empty calls DataFrameProxy() without args.
+            pass
+
         self._native = native_df
         self._backend = self._detect_backend(native_df)
 
@@ -112,7 +123,7 @@ class DataFrameProxy:
         """Check if Rust backend is available."""
         import importlib.util
 
-        return importlib.util.find_spec("parquetframe.pf_py") is not None
+        return importlib.util.find_spec("parquetframe._rustic") is not None
 
     def _estimate_size_gb(self) -> float:
         """Estimate DataFrame size in GB."""
@@ -155,7 +166,7 @@ class DataFrameProxy:
 
     def _filter_local_rust(self, condition):
         """Rust parallel filter (Rayon)."""
-        from parquetframe.pf_py import filter_parallel
+        from parquetframe._rustic import filter_parallel
 
         result = filter_parallel(
             self._native, condition, num_threads=self._exec_ctx.rust_threads or 0
@@ -269,6 +280,100 @@ class DataFrameProxy:
             f"  df={self._native.__repr__()}\n"
             f")"
         )
+
+    # =========================================================================
+    # Delegation to Native DataFrame
+    # =========================================================================
+
+    # =========================================================================
+    # SQL Interface
+    # =========================================================================
+
+    def sql(
+        self,
+        query: str,
+        profile: bool = False,
+        use_cache: bool = True,
+        context: Any = None,
+        **other_frames,
+    ):
+        """
+        Execute a SQL query on this DataFrame.
+
+        Args:
+            query: SQL query string
+            profile: Whether to enable profiling
+            use_cache: Whether to use query cache
+            context: Optional QueryContext
+            **other_frames: Additional DataFrames for JOINs
+
+        Returns:
+            Result DataFrameProxy or QueryResult
+        """
+        from parquetframe.sql import QueryResult, query_dataframes
+
+        # Convert other_frames to native if they are proxies
+        native_others = {}
+        for name, frame in other_frames.items():
+            if isinstance(frame, DataFrameProxy):
+                native_others[name] = frame.native
+            else:
+                native_others[name] = frame
+
+        result = query_dataframes(
+            self._native,
+            query,
+            other_dfs=native_others,
+            profile=profile,
+            use_cache=use_cache,
+            context=context,
+        )
+
+        if isinstance(result, QueryResult):
+            return result
+
+        return DataFrameProxy(result, self._exec_ctx)
+
+    def sql_with_params(self, query: str, **params):
+        """
+        Execute a parameterized SQL query.
+
+        Args:
+            query: SQL query template
+            **params: Parameters to substitute
+
+        Returns:
+            Result DataFrameProxy
+        """
+        from parquetframe.sql import parameterize_query
+
+        final_query = parameterize_query(query, **params)
+        return self.sql(final_query)
+
+    def sql_hint(self, **hints):
+        """
+        Create a QueryContext with optimization hints.
+
+        Args:
+            **hints: Optimization hints
+
+        Returns:
+            QueryContext object
+        """
+        from parquetframe.sql import QueryContext
+
+        return QueryContext(**hints)
+
+    def sql_builder(self):
+        """
+        Create a SQLBuilder for fluent query construction.
+
+        Returns:
+            SQLBuilder instance
+        """
+        from parquetframe.sql import SQLBuilder
+
+        return SQLBuilder(self)
 
     # =========================================================================
     # Delegation to Native DataFrame

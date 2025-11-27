@@ -280,7 +280,8 @@ class TestSQLBuilder:
         pf = pqf.ParquetFrame(sample_data["users"])
 
         result = (
-            pf.select("name", "age", "salary")
+            pf.sql_builder()
+            .select("name", "age", "salary")
             .where("age > 25")
             .hint(memory_limit="1GB", enable_parallel=False)
             .order_by("salary DESC")
@@ -296,7 +297,8 @@ class TestSQLBuilder:
         pf = pqf.ParquetFrame(sample_data["users"])
 
         result = (
-            pf.select("city", "COUNT(*) as user_count", "AVG(salary) as avg_salary")
+            pf.sql_builder()
+            .select("city", "COUNT(*) as user_count", "AVG(salary) as avg_salary")
             .group_by("city")
             .having("user_count >= 1")
             .order_by("avg_salary DESC")
