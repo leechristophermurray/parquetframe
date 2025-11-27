@@ -393,15 +393,74 @@ def validate_sql_query(query: str) -> bool:
 
 
 def build_join_query(
-    left_table: str,
-    right_table: str,
-    on: str,
-    join_type: str = "INNER",
-    columns: list[str] | None = None,
+    main_table: str = "df",
+    select_cols: list[str] | None = None,
+    joins: list[dict] | None = None,
+    where_conditions: list[str] | None = None,
+    group_by: list[str] | None = None,
+    having_conditions: list[str] | None = None,
+    order_by: list[str] | None = None,
+    limit: int | None = None,
 ) -> str:
-    """Build a JOIN query string."""
-    cols = "*" if not columns else ", ".join(columns)
-    return f"SELECT {cols} FROM {left_table} {join_type} JOIN {right_table} ON {on}"
+    """
+    Build a SQL query with JOIN operations using a structured approach.
+
+    Args:
+        main_table: Name of the main table (default "df")
+        select_cols: List of columns to select
+        joins: List of join dictionaries with 'table', 'condition', 'type' keys
+        where_conditions: List of WHERE conditions
+        group_by: List of GROUP BY columns
+        having_conditions: List of HAVING conditions
+        order_by: List of ORDER BY clauses
+        limit: LIMIT value
+
+    Returns:
+        Complete SQL query string
+
+    Examples:
+        >>> joins = [{'table': 'users', 'condition': 'df.user_id = users.id', 'type': 'LEFT'}]
+        >>> build_join_query(select_cols=['df.name', 'users.email'], joins=joins)
+        "SELECT df.name, users.email FROM df LEFT JOIN users ON df.user_id = users.id"
+    """
+    parts = []
+
+    # SELECT
+    select_clause = "*" if not select_cols else ", ".join(select_cols)
+    parts.append(f"SELECT {select_clause}")
+
+    # FROM
+    parts.append(f"FROM {main_table}")
+
+    # JOINs
+    if joins:
+        for join in joins:
+            join_type = join.get("type", "INNER").upper()
+            if not join_type.endswith("JOIN"):
+                join_type = f"{join_type} JOIN"
+            parts.append(f"{join_type} {join['table']} ON {join['condition']}")
+
+    # WHERE
+    if where_conditions:
+        parts.append(f"WHERE {' AND '.join(where_conditions)}")
+
+    # GROUP BY
+    if group_by:
+        parts.append(f"GROUP BY {', '.join(group_by)}")
+
+    # HAVING
+    if having_conditions:
+        parts.append(f"HAVING {' AND '.join(having_conditions)}")
+
+    # ORDER BY
+    if order_by:
+        parts.append(f"ORDER BY {', '.join(order_by)}")
+
+    # LIMIT
+    if limit is not None:
+        parts.append(f"LIMIT {limit}")
+
+    return " ".join(parts)
 
 
 __all__ = [

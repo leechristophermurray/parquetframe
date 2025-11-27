@@ -14,11 +14,11 @@ from parquetframe import _rustic
 # Access the Rust submodule
 try:
     _rust_tetnus = _rustic.tetnus
-    Tensor = _rust_tetnus.Tensor
+    _RustTensor = _rust_tetnus.Tensor
 except AttributeError:
     # Fallback for when extension is not compiled/available (e.g. during linting)
     _rust_tetnus = None
-    Tensor = None
+    _RustTensor = None
 
 # Neural network layers
 from . import nn, optim
@@ -35,8 +35,8 @@ __all__ = [
 ]
 
 
-# Tensor class removed to avoid redefinition
-class _TensorPlaceholder:
+# Tensor class wrapper
+class Tensor:
     """
     High-level Tensor wrapper providing NumPy-like interface. Examples:
         >>> import parquetframe.tetnus as pt
@@ -85,10 +85,6 @@ class _TensorPlaceholder:
         """Create tensor filled with zeros."""
         if _rust_tetnus is not None:
             return Tensor(_rust_tetnus.zeros(shape))
-        return _TensorPlaceholder.zeros(
-            shape
-        )  # Recursive call? No, wait. This is static method.
-        # We need to return a dummy tensor.
         return Tensor([0.0] * (shape[0] if shape else 1))  # Mock implementation
 
     @staticmethod
@@ -183,35 +179,35 @@ class _TensorPlaceholder:
             result = _rust_tetnus.matmul(self._tensor, other._tensor)
             return Tensor(result)
         # Mock implementation
-        return _TensorPlaceholder.zeros([self.shape[0], other.shape[1]])
+        return Tensor.zeros([self.shape[0], other.shape[1]])
 
     def __add__(self, other):
         """Element-wise addition: a + b"""
         if self._tensor is not None:
             result = _rust_tetnus.add(self._tensor, other._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def __sub__(self, other):
         """Element-wise subtraction: a - b"""
         if self._tensor is not None:
             result = _rust_tetnus.sub(self._tensor, other._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def __mul__(self, other):
         """Element-wise multiplication: a * b"""
         if self._tensor is not None:
             result = _rust_tetnus.mul(self._tensor, other._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def __truediv__(self, other):
         """Element-wise division: a / b"""
         if self._tensor is not None:
             result = _rust_tetnus.div(self._tensor, other._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def add(self, other):
         return self + other
@@ -232,7 +228,7 @@ class _TensorPlaceholder:
         if self._tensor is not None:
             result = _rust_tetnus.reshape(self._tensor, list(shape))
             return Tensor(result)
-        return _TensorPlaceholder.zeros(list(shape))
+        return Tensor.zeros(list(shape))
 
     def T(self):
         """Transpose (2D tensors only)."""
@@ -240,8 +236,8 @@ class _TensorPlaceholder:
             result = _rust_tetnus.transpose(self._tensor)
             return Tensor(result)
         if len(self.shape) == 2:
-            return _TensorPlaceholder.zeros([self.shape[1], self.shape[0]])
-        return _TensorPlaceholder.zeros(self.shape)
+            return Tensor.zeros([self.shape[1], self.shape[0]])
+        return Tensor.zeros(self.shape)
 
     def transpose(self, *args):
         """Transpose tensor. Currently alias for T() for 2D."""
@@ -252,56 +248,56 @@ class _TensorPlaceholder:
         if self._tensor is not None:
             result = _rust_tetnus.sum(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros([1])
+        return Tensor.zeros([1])
 
     def mean(self):
         """Mean of all elements."""
         if self._tensor is not None:
             result = _rust_tetnus.mean(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros([1])
+        return Tensor.zeros([1])
 
     def sin(self):
         """Element-wise sine."""
         if self._tensor is not None:
             result = _rust_tetnus.sin(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def cos(self):
         """Element-wise cosine."""
         if self._tensor is not None:
             result = _rust_tetnus.cos(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def tan(self):
         """Element-wise tangent."""
         if self._tensor is not None:
             result = _rust_tetnus.tan(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def exp(self):
         """Element-wise exponential."""
         if self._tensor is not None:
             result = _rust_tetnus.exp(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def log(self):
         """Element-wise natural logarithm."""
         if self._tensor is not None:
             result = _rust_tetnus.log(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def sqrt(self):
         """Element-wise square root."""
         if self._tensor is not None:
             result = _rust_tetnus.sqrt(self._tensor)
             return Tensor(result)
-        return _TensorPlaceholder.zeros(self.shape)
+        return Tensor.zeros(self.shape)
 
     def __repr__(self):
         return f"Tensor(shape={self.shape}, requires_grad={self.requires_grad})"
@@ -309,11 +305,11 @@ class _TensorPlaceholder:
 
 # Alias for NumPy-like API
 if _rust_tetnus is not None:
-    zeros = _rust_tetnus.zeros
-    ones = _rust_tetnus.ones
+    zeros = Tensor.zeros
+    ones = Tensor.ones
 else:
-    zeros = _TensorPlaceholder.zeros
-    ones = _TensorPlaceholder.ones
+    zeros = Tensor.zeros
+    ones = Tensor.ones
 
 
 # New NumPy-compatible creation functions
@@ -321,21 +317,21 @@ def arange(start, stop, step=1.0):
     """Create tensor with evenly spaced values."""
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.arange(float(start), float(stop), float(step)))
-    return _TensorPlaceholder.zeros([1])  # Mock fallback
+    return Tensor.zeros([1])  # Mock fallback
 
 
 def linspace(start, stop, num=50):
     """Create tensor with linearly spaced values."""
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.linspace(float(start), float(stop), int(num)))
-    return _TensorPlaceholder.zeros([1])  # Mock fallback
+    return Tensor.zeros([1])  # Mock fallback
 
 
 def eye(n, m=None):
     """Create identity matrix."""
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.eye(int(n), int(m) if m is not None else None))
-    return _TensorPlaceholder.zeros([n, n])  # Mock fallback
+    return Tensor.zeros([n, n])  # Mock fallback
 
 
 def rand(*shape):
@@ -344,7 +340,7 @@ def rand(*shape):
         shape = shape[0]
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.rand(list(shape)))
-    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
+    return Tensor.zeros(list(shape))  # Mock fallback
 
 
 def randn(*shape):
@@ -353,19 +349,16 @@ def randn(*shape):
         shape = shape[0]
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.randn(list(shape)))
-    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
+    return Tensor.zeros(list(shape))  # Mock fallback
 
 
 def full(shape, value):
     """Create tensor filled with a constant value."""
     if not isinstance(shape, list | tuple):
         shape = [shape]
-    """Create tensor filled with a constant value."""
-    if not isinstance(shape, list | tuple):
-        shape = [shape]
     if _rust_tetnus is not None:
         return Tensor(_rust_tetnus.full(list(shape), float(value)))
-    return _TensorPlaceholder.zeros(list(shape))  # Mock fallback
+    return Tensor.zeros(list(shape))  # Mock fallback
 
 
 __all__ = [
@@ -419,4 +412,4 @@ __all__.append("llm")
 __all__.append("edge")
 
 if Tensor is None:
-    Tensor = _TensorPlaceholder
+    pass

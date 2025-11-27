@@ -64,6 +64,7 @@ class DataFrameProxy:
         execution_ctx: ExecutionContext | None = None,
         execution_mode: str | None = None,
         data: Union[pd.DataFrame, "pl.DataFrame", "dd.DataFrame"] = None,
+        engine: str | None = None,
     ):
         """
         Initialize DataFrameProxy.
@@ -73,15 +74,19 @@ class DataFrameProxy:
             execution_ctx: Optional execution context
             execution_mode: Optional mode override (auto/local/distributed/hybrid)
             data: Alias for native_df (for backward compatibility)
+            engine: Optional engine name (pandas/polars/dask)
         """
         if native_df is None and data is not None:
             native_df = data
 
         if native_df is None:
-            # Handle empty init if supported, or raise error if strictly required.
-            # Existing tests imply empty init is possible? test_init_empty says yes.
-            # But test_init_empty calls DataFrameProxy() without args.
-            pass
+            # Handle empty init
+            self._native = None
+            self._backend = engine if engine else "pandas"  # Default to pandas if empty
+            self._nw = None
+            self._exec_ctx = execution_ctx or ExecutionContext.auto_detect(0, 1)
+            self._rust_available = self._check_rust_available()
+            return
 
         self._native = native_df
         self._backend = self._detect_backend(native_df)

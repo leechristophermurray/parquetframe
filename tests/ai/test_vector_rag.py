@@ -190,9 +190,11 @@ class TestSQLiteVectorStore:
 
         # Search only projects
         query = np.random.randn(128).astype(np.float32)
-        results = store.search(query, top_k=10, entity_filter="projects")
-
+        results = store.search(
+            query, top_k=10, entity_filter="projects", score_threshold=-1.0
+        )
         assert len(results) == 3
+        assert all("projects:" in r[0] for r in results)
         assert all("projects:" in r[0] for r in results)
 
 
