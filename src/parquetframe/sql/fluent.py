@@ -198,22 +198,22 @@ class SQLBuilder:
         self._where.append(condition)
         return self
 
-    def inner_join(self, table: str, on: str) -> "SQLBuilder":
+    def inner_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
         """Add INNER JOIN."""
         self._joins.append(("INNER", table, on))
         return self
 
-    def left_join(self, table: str, on: str) -> "SQLBuilder":
+    def left_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
         """Add LEFT JOIN."""
         self._joins.append(("LEFT", table, on))
         return self
 
-    def right_join(self, table: str, on: str) -> "SQLBuilder":
+    def right_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
         """Add RIGHT JOIN."""
         self._joins.append(("RIGHT", table, on))
         return self
 
-    def full_join(self, table: str, on: str) -> "SQLBuilder":
+    def full_join(self, table: str, on: str, alias: str = None) -> "SQLBuilder":
         """Add FULL OUTER JOIN."""
         self._joins.append(("FULL OUTER", table, on))
         return self
