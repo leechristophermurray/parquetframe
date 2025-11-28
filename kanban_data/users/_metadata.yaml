@@ -1,8 +1,0 @@
-name: User
-version: 0.1.0
-format: graphar
-vertices:
-- label: User
-  prefix: vertices/User/
-  count: 1442
-edges: []

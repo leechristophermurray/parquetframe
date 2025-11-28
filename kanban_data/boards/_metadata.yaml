@@ -1,8 +1,0 @@
-name: Board
-version: 0.1.0
-format: graphar
-vertices:
-- label: Board
-  prefix: vertices/Board/
-  count: 476
-edges: []
