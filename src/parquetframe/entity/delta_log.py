@@ -194,9 +194,17 @@ class DeltaLog:
             if op == "UPSERT":
                 # Remove existing row if present
                 result_df = result_df[result_df[self.primary_key] != pk_value]
-                # Append new row
-                new_row = pd.DataFrame([data])
-                result_df = pd.concat([result_df, new_row], ignore_index=True)
+                # Append new row without triggering concat warnings on empty frames
+                if result_df.empty:
+                    # Create a new frame with the same columns
+                    # Ensure all expected columns exist in the row
+                    row_dict = {col: data.get(col, pd.NA) for col in result_df.columns}
+                    result_df = pd.DataFrame([row_dict])
+                else:
+                    new_row = pd.DataFrame([data])
+                    # Align columns to existing frame to avoid dtype inference issues
+                    new_row = new_row.reindex(columns=result_df.columns)
+                    result_df = pd.concat([result_df, new_row], ignore_index=True)
 
             elif op == "DELETE":
                 # Remove row

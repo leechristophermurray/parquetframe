@@ -169,6 +169,15 @@ class EntityStore:
         # Trigger compaction if needed (background-worthy)
         if self.delta_log.should_compact():
             self._compact()
+        else:
+            # Still write metadata even without compaction
+            # Load current dataframe state and write metadata
+            df = self._load_dataframe()
+            self._write_graphar_metadata(df)
+            # Ensure legacy storage file exists for compatibility (e.g., Document.parquet)
+            storage_file = self.metadata.storage_file
+            if not storage_file.exists():
+                self._save_dataframe(df)
 
     def _compact(self) -> None:
         """Compact delta log into base parquet file."""

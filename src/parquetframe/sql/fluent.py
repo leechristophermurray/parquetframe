@@ -21,6 +21,9 @@ except ImportError:
     duckdb = None
     DUCKDB_AVAILABLE = False
 
+# Global query cache for SQLBuilder
+_query_cache: dict[str, Any] = {}
+
 
 @dataclass
 class QueryResult:
@@ -84,9 +87,9 @@ class QueryResult:
     @property
     def dataframe(self):
         """The result data as a ParquetFrame."""
-        from ..core.frame import DataFrameProxy
+        from ..legacy import ParquetFrame
 
-        return DataFrameProxy(data=self.data, engine="pandas")
+        return ParquetFrame(self.data)
 
     @property
     def memory_usage_mb(self) -> float:
@@ -187,6 +190,8 @@ class SQLBuilder:
         self._limit = None
         self._context = None
         self._profile = False
+        self._cache = False
+        self._cache_store: dict[str, Any] = {}
 
     def select(self, *columns: str) -> "SQLBuilder":
         """Select columns."""
@@ -228,9 +233,30 @@ class SQLBuilder:
         self._having.append(condition)
         return self
 
-    def order_by(self, *columns: str) -> "SQLBuilder":
-        """Add ORDER BY clause."""
-        self._order_by = list(columns)
+    def order_by(self, *args: str) -> "SQLBuilder":
+        """Add ORDER BY clause.
+
+        Args can be:
+        - Single column: order_by("name")
+        - Column with direction: order_by("name", "DESC")
+        - Multiple columns: order_by("name", "DESC", "age", "ASC")
+        - Expression: order_by("name DESC", "age ASC")
+        """
+        # Process args to handle (column, direction) pairs
+        order_clauses = []
+        i = 0
+        while i < len(args):
+            col = args[i]
+            # Check if next arg is a direction (ASC/DESC)
+            if i + 1 < len(args) and args[i + 1].upper() in ("ASC", "DESC"):
+                direction = args[i + 1].upper()
+                order_clauses.append(f"{col} {direction}")
+                i += 2
+            else:
+                # Single column (or already contains direction)
+                order_clauses.append(col)
+                i += 1
+        self._order_by = order_clauses
         return self
 
     def limit(self, n: int) -> "SQLBuilder":
@@ -246,6 +272,33 @@ class SQLBuilder:
     def profile(self, enable: bool = True) -> "SQLBuilder":
         """Enable query profiling."""
         self._profile = enable
+        return self
+
+    def cache(self, enable: bool = True) -> "SQLBuilder":
+        """Enable query result caching."""
+        self._cache = enable
+        return self
+
+    def join(
+        self,
+        table: Any,
+        on: str,
+        join_type: str = "INNER",
+        alias: str | None = None,
+    ) -> "SQLBuilder":
+        """Add a JOIN clause.
+
+        Args:
+            table: Table to join (DataFrame, ParquetFrame, or table name)
+            on: Join condition (e.g., "df.id = other.id")
+            join_type: Type of join - INNER, LEFT, RIGHT, FULL
+            alias: Optional alias for the joined table (defaults to 'other')
+        """
+        join_type_upper = join_type.upper()
+        if join_type_upper == "FULL":
+            join_type_upper = "FULL OUTER"
+        actual_alias = alias or "other"
+        self._joins.append((join_type_upper, table, on, actual_alias))
         return self
 
     def build(self) -> str:
@@ -308,13 +361,19 @@ class SQLBuilder:
 
         return query
 
-    def execute(self) -> QueryResult:
-        """Execute query and return result with optional profiling."""
+    def execute(self) -> Any:
+        """Execute query and return result with optional profiling and caching."""
+        import hashlib
+
         # Handle DataFrameProxy/ParquetFrame input
         table_name = "df"
 
         # Store object for build() context
         self._execution_table_obj = self.table
+
+        # Remember the input type for proper return type
+        input_type = type(self.table).__name__
+        is_parquet_frame = input_type == "ParquetFrame"
 
         # Helper to register a table
         def register_table(obj, name):
@@ -332,7 +391,12 @@ class SQLBuilder:
             if hasattr(df, "compute"):
                 df = df.compute()
 
-            self.engine.register_dataframe(name, df)
+            # Ensure we have a pandas DataFrame
+            if isinstance(df, pd.DataFrame):
+                self.engine.register_dataframe(name, df)
+            else:
+                print("Already a pandas DataFrame.")
+                self.engine.register_dataframe(name, df)
 
         # Check if self.table is a proxy/frame object
         is_frame_obj = (
@@ -362,6 +426,30 @@ class SQLBuilder:
         # Build query
         sql = self.build()
 
+        # Create cache key if caching enabled
+        cache_key = None
+        if self._cache:
+            cache_key = hashlib.md5(sql.encode()).hexdigest()
+            if cache_key in _query_cache:
+                cached_result = _query_cache[cache_key]
+                if self._profile:
+                    return QueryResult(
+                        cached_result.copy(),
+                        execution_time=0.0,
+                        query=sql,
+                        row_count=len(cached_result),
+                        column_count=len(cached_result.columns),
+                        from_cache=True,
+                    )
+                else:
+                    if is_parquet_frame:
+                        from ..legacy import ParquetFrame
+
+                        return ParquetFrame(cached_result.copy())
+                    from ..core.proxy import DataFrameProxy
+
+                    return DataFrameProxy(cached_result.copy(), engine="pandas")
+
         # Apply context/hints if set
         if self._context and DUCKDB_AVAILABLE:
             import warnings
@@ -377,20 +465,31 @@ class SQLBuilder:
                         stacklevel=2,
                     )
 
-        # Execute with profiling if enabled
+        # Execute query
+        start_time = time.time()
+        df = self.engine.query(sql)
+        execution_time = time.time() - start_time
+
+        # Store in cache if caching enabled
+        if self._cache and cache_key:
+            _query_cache[cache_key] = df.copy()
+
+        # Return with profiling if enabled
         if self._profile:
-            start_time = time.time()
-            df = self.engine.query(sql)
-            execution_time = time.time() - start_time
             return QueryResult(
                 df,
                 execution_time=execution_time,
                 query=sql,
                 row_count=len(df),
                 column_count=len(df.columns),
+                from_cache=False,
             )
         else:
-            df = self.engine.query(sql)
+            # Return ParquetFrame if input was ParquetFrame, else DataFrameProxy
+            if is_parquet_frame:
+                from ..legacy import ParquetFrame
+
+                return ParquetFrame(df)
             from ..core.proxy import DataFrameProxy
 
             return DataFrameProxy(df, engine="pandas")

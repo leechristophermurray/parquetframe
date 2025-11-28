@@ -11,6 +11,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
+# Import accessors to register them with pandas
+import parquetframe.finance  # noqa: F401 - registers .fin accessor
+import parquetframe.time  # noqa: F401 - registers .ts accessor
+
 HAS_SQL = False  # Initialize to False
 if importlib.util.find_spec("datafusion"):
     HAS_SQL = True

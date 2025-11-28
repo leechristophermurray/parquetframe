@@ -259,24 +259,51 @@ class DataFrameProxy:
         return DataFrameProxy(result.to_native(), self._exec_ctx)
 
     def select(self, *cols):
-        """Column selection via narwhals."""
-        if not NARWHALS_AVAILABLE:
-            # Fallback to direct backend
-            if self._backend == "pandas":
-                return DataFrameProxy(self._native[list(cols)], self._exec_ctx)
-            else:
-                raise RuntimeError("Narwhals required for Polars/Dask select")
+        """
+        Start fluent SQL query with SELECT.
 
-        result = self._nw.select(*cols)
-        return DataFrameProxy(result.to_native(), self._exec_ctx)
+        This returns a SQLBuilder for method chaining.
+        For direct column selection without SQL, use df[['col1', 'col2']] syntax.
+        """
+        from parquetframe.sql import SQLBuilder
+
+        return SQLBuilder(self).select(*cols)
+
+    def where(self, condition: str):
+        """
+        Start fluent SQL query with WHERE condition.
+
+        Args:
+            condition: SQL WHERE condition string
+
+        Returns:
+            SQLBuilder for method chaining
+        """
+        from parquetframe.sql import SQLBuilder
+
+        return SQLBuilder(self).where(condition)
 
     def group_by(self, *cols):
-        """Group by operation via narwhals."""
-        if not NARWHALS_AVAILABLE:
-            raise RuntimeError("Narwhals not available")
+        """
+        Start fluent SQL query with GROUP BY.
 
-        # Return narwhals GroupBy (can wrap in future)
-        return self._nw.group_by(*cols)
+        Returns:
+            SQLBuilder for method chaining
+        """
+        from parquetframe.sql import SQLBuilder
+
+        return SQLBuilder(self).group_by(*cols)
+
+    def order_by(self, *args):
+        """
+        Start fluent SQL query with ORDER BY.
+
+        Returns:
+            SQLBuilder for method chaining
+        """
+        from parquetframe.sql import SQLBuilder
+
+        return SQLBuilder(self).order_by(*args)
 
     # =========================================================================
     # Properties and Utilities

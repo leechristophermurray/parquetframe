@@ -96,9 +96,14 @@ class RustWorkflowEngine:
         Returns:
             True if the Rust workflow engine can be used.
         """
-        if not RUST_WORKFLOW_AVAILABLE:
+        if not RUST_WORKFLOW_AVAILABLE or _rustic is None:
             return False
-        return _rustic.workflow_rust_available()
+        # Try to call workflow_rust_available if it exists, else fallback to rust_available
+        checker = getattr(_rustic, "workflow_rust_available", None)
+        if checker is not None:
+            return checker()
+        # Fallback: if rust is available but no specific workflow check, assume available
+        return getattr(_rustic, "rust_available", lambda: False)()
 
     def execute_step(
         self,
