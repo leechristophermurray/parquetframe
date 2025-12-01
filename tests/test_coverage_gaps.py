@@ -163,7 +163,10 @@ class TestInteractiveCLIEdgeCases:
         with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
             data_context = MagicMock(spec=DataContext)
             data_context.source_location = "/tmp"
-            data_context.source_type.value = "test"
+            # Use MagicMock for source_type to support .value attribute
+            source_type_mock = MagicMock()
+            source_type_mock.value = "test"
+            data_context.source_type = source_type_mock
 
             session = InteractiveSession(data_context, enable_ai=False)
             session.console = MagicMock()
@@ -183,7 +186,10 @@ class TestInteractiveCLIEdgeCases:
         with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
             data_context = MagicMock(spec=DataContext)
             data_context.source_location = "/tmp"
-            data_context.source_type.value = "test"
+            # Use MagicMock for source_type to support .value attribute
+            source_type_mock = MagicMock()
+            source_type_mock.value = "test"
+            data_context.source_type = source_type_mock
 
             session = InteractiveSession(data_context, enable_ai=False)
             session.console = MagicMock()

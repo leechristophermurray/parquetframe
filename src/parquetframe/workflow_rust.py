@@ -98,6 +98,9 @@ class RustWorkflowEngine:
         """
         if not RUST_WORKFLOW_AVAILABLE or _rustic is None:
             return False
+        # Check if execute_workflow function exists in _rustic
+        if not hasattr(_rustic, "execute_workflow"):
+            return False
         # Try to call workflow_rust_available if it exists, else fallback to rust_available
         checker = getattr(_rustic, "workflow_rust_available", None)
         if checker is not None:

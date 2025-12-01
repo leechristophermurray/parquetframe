@@ -612,11 +612,23 @@ class DataFrameProxy:
         if self._native is None:
             raise TypeError("'NoneType' object is not subscriptable")
 
+        # If key is a string (column access), return the native Series
+        # This enables comparison operations like proxy["age"] > 30
+        if isinstance(key, str):
+            return self._native[key]
+
+        # If key is a DataFrameProxy (boolean mask), extract native
+        if isinstance(key, DataFrameProxy):
+            key = key._native
+
         result = self._native[key]
 
-        # Always wrap result if it's a supported type
-        # This matches frame.py behavior which wraps Series and DataFrames
-        if self._is_wrappable(result):
+        # Wrap DataFrames in DataFrameProxy
+        if isinstance(result, pd.DataFrame):
+            return DataFrameProxy(result, self._exec_ctx)
+        if POLARS_AVAILABLE and isinstance(result, pl.DataFrame | pl.LazyFrame):
+            return DataFrameProxy(result, self._exec_ctx)
+        if DASK_AVAILABLE and isinstance(result, dd.DataFrame):
             return DataFrameProxy(result, self._exec_ctx)
 
         return result

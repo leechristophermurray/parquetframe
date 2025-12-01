@@ -41,9 +41,12 @@ def infer_avro_schema(
     fields = []
 
     for column_name, dtype in df.dtypes.items():
+        has_nulls = df[column_name].isnull().any()
         avro_field = {
             "name": str(column_name),
-            "type": _pandas_dtype_to_avro_type(dtype, df[column_name].isnull().any()),
+            "type": _pandas_dtype_to_avro_type(
+                dtype, has_nulls, df[column_name] if has_nulls else None
+            ),
         }
         fields.append(avro_field)
 
@@ -52,15 +55,35 @@ def infer_avro_schema(
     return schema
 
 
-def _pandas_dtype_to_avro_type(dtype: Any, has_nulls: bool = False) -> str | list[str]:
+def _pandas_dtype_to_avro_type(
+    dtype: Any, has_nulls: bool = False, series: pd.Series | None = None
+) -> str | list[str]:
     """Convert pandas dtype to Avro type."""
     dtype_str = str(dtype)
 
     # Basic type mapping
-    if dtype_str.startswith("int"):
+    if dtype_str.startswith("int") or dtype_str.startswith(
+        "Int"
+    ):  # Include nullable Int64
         avro_type = "long"
     elif dtype_str.startswith("float"):
-        avro_type = "double"
+        # Check if this might be an int column converted to float due to nulls
+        # (pandas converts int to float64 when there are null values)
+        if has_nulls and series is not None:
+            non_null = series.dropna()
+            if len(non_null) > 0:
+                # Check if all non-null values are whole numbers
+                try:
+                    if (non_null == non_null.astype(int)).all():
+                        avro_type = "long"
+                    else:
+                        avro_type = "double"
+                except (ValueError, TypeError):
+                    avro_type = "double"
+            else:
+                avro_type = "double"
+        else:
+            avro_type = "double"
     elif dtype_str.startswith("bool"):
         avro_type = "boolean"
     elif dtype_str.startswith("datetime"):

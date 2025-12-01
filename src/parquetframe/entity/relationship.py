@@ -46,9 +46,26 @@ class RelationshipManager:
     ) -> bool:
         """Validate that a foreign key value exists in the target entity."""
         if self._entity_store is None:
-            # Cannot validate without entity store, assume valid or warn?
-            # Returning True for now to match existing behavior
+            # Cannot validate without entity store, fail open
             return True
 
-        # TODO: Implement actual validation using self._entity_store
-        return True
+        try:
+            target_df = self._entity_store.get_entity(target_entity)
+
+            if target_df is None or len(target_df) == 0:
+                # Empty target entity - foreign key is invalid
+                return False
+
+            # Check if value exists in 'id' column first, then any column
+            if "id" in target_df.columns:
+                return foreign_key_value in target_df["id"].values
+
+            # Fall back to checking all columns
+            for col in target_df.columns:
+                if foreign_key_value in target_df[col].values:
+                    return True
+
+            return False
+        except Exception:
+            # On errors, fail open for compatibility
+            return True

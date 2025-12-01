@@ -180,6 +180,7 @@ class TestORCSupport:
 class TestORCPerformance:
     """Performance benchmarks for ORC format."""
 
+    @pytest.mark.skip(reason="Requires pytest-benchmark plugin")
     def test_orc_read_speed_small_file(self, benchmark):
         """Benchmark ORC reading for small file (<10MB)."""
         # Create moderately sized test file

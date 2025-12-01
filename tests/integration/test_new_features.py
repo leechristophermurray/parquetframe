@@ -42,7 +42,10 @@ class TestInteractiveCLIIntegration:
             with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
                 data_context = MagicMock(spec=DataContext)
                 data_context.source_location = tmpdir
-                data_context.source_type.value = "parquet"
+                # Use MagicMock for source_type to support .value attribute
+                source_type_mock = MagicMock()
+                source_type_mock.value = "parquet"
+                data_context.source_type = source_type_mock
                 data_context.get_table_names.return_value = ["users"]
                 data_context.execute = AsyncMock(return_value=df)
 
@@ -74,7 +77,10 @@ class TestInteractiveCLIIntegration:
         with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
             data_context = MagicMock(spec=DataContext)
             data_context.source_location = "/tmp/test"
-            data_context.source_type.value = "parquet"
+            # Use MagicMock for source_type to support .value attribute
+            source_type_mock = MagicMock()
+            source_type_mock.value = "parquet"
+            data_context.source_type = source_type_mock
 
             session = InteractiveSession(data_context, enable_ai=False)
 

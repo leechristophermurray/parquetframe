@@ -320,5 +320,22 @@ class DeltaLog:
 
         return stats
 
+    def clear(self) -> None:
+        """
+        Clear the delta log (WAL).
+
+        This removes all pending operations without compacting them.
+        Use with caution as it discards uncommitted changes.
+        """
+        with open(self.lock_path, "w") as lock_file:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                # Clear WAL if it exists
+                if self.wal_path.exists():
+                    with open(self.wal_path, "w") as _:
+                        pass  # Truncate to empty
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
 
 __all__ = ["DeltaLog"]

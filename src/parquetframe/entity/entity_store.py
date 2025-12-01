@@ -292,6 +292,35 @@ class EntityStore:
         df = self._load_dataframe()
         return len(df)
 
+    def delete_all(self) -> int:
+        """
+        Delete all entities.
+
+        Returns:
+            Number of entities deleted
+        """
+        df = self._load_dataframe()
+        count = len(df)
+
+        # Clear delta log
+        self.delta_log.clear()
+
+        # Remove all files in storage path
+        storage_path = self.metadata.storage_path
+        if storage_path.exists():
+            for file in storage_path.iterdir():
+                if file.is_file():
+                    file.unlink()
+
+        # Recreate empty base file
+        empty_df = pd.DataFrame(
+            columns=[self.metadata.primary_key]
+            + [f.name for f in self.metadata.cls.__dataclass_fields__.values()]
+        )
+        self._save_dataframe(empty_df)
+
+        return count
+
     def add_relationship(
         self,
         source: Any,

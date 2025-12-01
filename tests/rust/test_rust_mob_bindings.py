@@ -178,7 +178,8 @@ class TestMobAccessor:
         """Test that mob accessor can be imported and used."""
         import pandas as pd
 
-        # Import the accessor
+        # Import the accessor to register it with pandas
+        import parquetframe.mob  # noqa: F401
 
         # Create a simple DataFrame
         df = pd.DataFrame(
@@ -194,6 +195,9 @@ class TestMobAccessor:
     def test_mob_geofence_within_accessor(self):
         """Test geofencing with accessor."""
         import pandas as pd
+
+        # Import the accessor to register it with pandas
+        import parquetframe.mob  # noqa: F401
 
         fence = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0), (0.0, 0.0)]
 
@@ -212,6 +216,9 @@ class TestMobAccessor:
     def test_mob_route_reconstruction_accessor(self):
         """Test route reconstruction with accessor."""
         import pandas as pd
+
+        # Import the accessor to register it with pandas
+        import parquetframe.mob  # noqa: F401
 
         df = pd.DataFrame(
             {

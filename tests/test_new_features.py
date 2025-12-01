@@ -159,7 +159,9 @@ class TestFinanceAccessor:
 
         assert len(sma) == len(df)
         assert len(ema) == len(df)
-        assert not sma.isna().all()
+        # sma returns a DataFrame with the new column added
+        sma_col = sma["close_sma_20"]
+        assert not sma_col.isna().all()
 
     def test_rsi(self):
         """Test RSI indicator."""
@@ -167,8 +169,9 @@ class TestFinanceAccessor:
         df = pd.DataFrame({"close": np.random.randn(100).cumsum() + 100})
         rsi = df.fin.rsi("close", 14)
 
-        # RSI should be between 0 and 100
-        valid_rsi = rsi[~rsi.isna()]
+        # RSI returns a DataFrame with the RSI column added
+        rsi_col = rsi["close_rsi_14"]
+        valid_rsi = rsi_col[~rsi_col.isna()]
         assert (valid_rsi >= 0).all() and (valid_rsi <= 100).all()
 
     def test_macd(self):
@@ -315,8 +318,9 @@ class TestIntegration:
         # Filter with SQL
         aapl = sql("SELECT * FROM df WHERE ticker = 'AAPL'", df=df)
 
-        # Calculate RSI
-        aapl["RSI"] = aapl.fin.rsi("close", 14)
+        # Calculate RSI - rsi returns a DataFrame, need to extract column
+        rsi_df = aapl.fin.rsi("close", 14)
+        aapl["RSI"] = rsi_df["close_rsi_14"]
 
         assert "RSI" in aapl.columns
 

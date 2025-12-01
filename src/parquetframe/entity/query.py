@@ -221,6 +221,19 @@ class RelationshipQuery(Generic[T]):
         """Return count of results."""
         return self.count()
 
+    def __getitem__(self, index):
+        """Support indexing to access query results."""
+        results = self.all()
+        return results[index]
+
+    def __eq__(self, other):
+        """Support equality comparison with lists."""
+        if isinstance(other, list):
+            return self.all() == other
+        if isinstance(other, RelationshipQuery):
+            return self.all() == other.all()
+        return NotImplemented
+
     def __repr__(self):
         """String representation of query."""
         parts = [f"<RelationshipQuery({self.target_class.__name__})"]
