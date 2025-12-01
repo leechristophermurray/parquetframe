@@ -174,8 +174,9 @@ class TestDataFrameProxyDelegation:
 
         result = proxy["a"]
 
-        # Should return wrapped Series
-        assert hasattr(result, "engine_name")
+        # Should return native pandas Series for comparison operations
+        assert isinstance(result, pd.Series)
+        pd.testing.assert_series_equal(result, df["a"])
 
     def test_getitem_multiple_columns(self):
         """Test multiple column access."""

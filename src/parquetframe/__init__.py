@@ -116,7 +116,28 @@ def create_empty(engine: str = "pandas", **kwargs: Any) -> DataFrameProxy:
     import pandas as pd
 
     empty_pandas = pd.DataFrame()
-    return DataFrameProxy(data=empty_pandas, engine=engine, **kwargs)
+
+    # Convert to appropriate engine type
+    if engine == "dask":
+        try:
+            import dask.dataframe as dd
+
+            empty_dask = dd.from_pandas(empty_pandas, npartitions=1)
+            return DataFrameProxy(data=empty_dask, **kwargs)
+        except ImportError:
+            # Fall back to pandas if dask not available
+            pass
+    elif engine == "polars":
+        try:
+            import polars as pl
+
+            empty_polars = pl.DataFrame()
+            return DataFrameProxy(data=empty_polars, **kwargs)
+        except ImportError:
+            # Fall back to pandas if polars not available
+            pass
+
+    return DataFrameProxy(data=empty_pandas, **kwargs)
 
 
 # Convenience function for backward-compatible reading

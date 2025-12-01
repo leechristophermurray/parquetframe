@@ -19,9 +19,11 @@ class TestLibraryManager:
         assert "statistics" in libs
         assert isinstance(libs["statistics"], str)
 
+    @patch("parquetframe.knowlogy.library.Path.exists")
     @patch("parquetframe.knowlogy.library.subprocess.run")
-    def test_load_library_success(self, mock_run):
+    def test_load_library_success(self, mock_run, mock_exists):
         """Test successful library load."""
+        mock_exists.return_value = True  # Pretend script exists
         mock_run.return_value = MagicMock(returncode=0, stdout="Loaded!")
 
         result = LibraryManager.load_library("statistics")

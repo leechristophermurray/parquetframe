@@ -312,11 +312,12 @@ class EntityStore:
                 if file.is_file():
                     file.unlink()
 
-        # Recreate empty base file
-        empty_df = pd.DataFrame(
-            columns=[self.metadata.primary_key]
-            + [f.name for f in self.metadata.cls.__dataclass_fields__.values()]
-        )
+        # Recreate empty base file - get unique columns from dataclass fields
+        # (primary_key is already a field, so we don't need to add it separately)
+        field_names = [f.name for f in self.metadata.cls.__dataclass_fields__.values()]
+        # Remove duplicates while preserving order
+        unique_columns = list(dict.fromkeys(field_names))
+        empty_df = pd.DataFrame(columns=unique_columns)
         self._save_dataframe(empty_df)
 
         return count

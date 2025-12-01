@@ -30,13 +30,19 @@ class KnowlogyEngine:
         query = query.lower()
 
         # Naive search for MVP (will be replaced by vector search later)
-        # This uses the Entity Framework's find_all with a filter
-        return Concept.find_all(
-            filter_func=lambda c: (
-                query in c.name.lower()
-                or any(query in alias.lower() for alias in c.aliases)
-            )
-        )
+        # Get all concepts and filter in Python
+        all_concepts = Concept.find_all()
+
+        # Filter matching concepts
+        matching = []
+        for c in all_concepts:
+            if query in c.name.lower():
+                matching.append(c)
+            elif hasattr(c, "aliases") and c.aliases:
+                if any(query in alias.lower() for alias in c.aliases):
+                    matching.append(c)
+
+        return matching
 
     def get_formula(self, concept_name: str) -> Formula | None:
         """

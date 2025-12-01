@@ -4,6 +4,8 @@ Coverage analysis for new features.
 Identifies gaps in test coverage and creates targeted tests.
 """
 
+import os
+import platform
 from unittest.mock import MagicMock
 
 import pandas as pd
@@ -149,9 +151,17 @@ class TestEntityRelationshipEdgeCases:
         assert result
 
 
+# Skip interactive tests on Windows CI
+_skip_on_windows_ci = pytest.mark.skipif(
+    platform.system() == "Windows" and os.environ.get("CI") == "true",
+    reason="Interactive tests require console, not available on Windows CI",
+)
+
+
 class TestInteractiveCLIEdgeCases:
     """Edge case tests for interactive CLI."""
 
+    @_skip_on_windows_ci
     @pytest.mark.asyncio
     async def test_handle_permissions_without_args(self):
         """Test permissions command without arguments."""
@@ -175,6 +185,7 @@ class TestInteractiveCLIEdgeCases:
             session._handle_permissions_command("")
             session.console.print.assert_called()
 
+    @_skip_on_windows_ci
     @pytest.mark.asyncio
     async def test_handle_datafusion_not_available(self):
         """Test DataFusion command when not available."""

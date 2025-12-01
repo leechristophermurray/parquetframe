@@ -47,11 +47,16 @@ class TestEntityFramework:
         if user_meta:
             user_meta.storage_path = tmp_path / "User"
             user_meta.storage_path.mkdir(parents=True, exist_ok=True)
+            # Also update the entity store's metadata reference
+            if hasattr(User, "_entity_store"):
+                User._entity_store.metadata.storage_path = user_meta.storage_path
 
         prod_meta = registry.get("Product")
         if prod_meta:
             prod_meta.storage_path = tmp_path / "Product"
             prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
+            if hasattr(Product, "_entity_store"):
+                Product._entity_store.metadata.storage_path = prod_meta.storage_path
 
         yield
         # Cleanup handled by tmp_path fixture
@@ -70,6 +75,9 @@ class TestEntityFramework:
 
         # Verify file exists
         user_meta = registry.get("User")
+        assert (
+            user_meta is not None
+        ), "User entity not registered - ensure @entity decorator was applied"
         file_path = user_meta.storage_path / "User.parquet"
         # Note: The existing store uses delta logs, so base file might not exist immediately
         # unless compacted. But find() should work.

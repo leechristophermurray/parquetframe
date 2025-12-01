@@ -8,6 +8,8 @@ Tests the complete workflow:
 - Graph algorithms with utilities
 """
 
+import os
+import platform
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -15,12 +17,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pandas as pd
 import pytest
 
+# Skip interactive tests on Windows CI where console is not available
+skip_on_windows_ci = pytest.mark.skipif(
+    platform.system() == "Windows" and os.environ.get("CI") == "true",
+    reason="Interactive tests require console, not available on Windows CI",
+)
+
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 class TestInteractiveCLIIntegration:
     """Integration tests for complete Interactive CLI workflows."""
 
+    @skip_on_windows_ci
     async def test_magic_sql_with_permissions(self):
         """Test SQL magic command with permission checks."""
         from parquetframe.datacontext import DataContext
@@ -69,6 +78,7 @@ class TestInteractiveCLIIntegration:
                 # Verify permission was granted
                 assert not session.permission_store.is_empty()
 
+    @skip_on_windows_ci
     async def test_datafusion_with_python_variables(self):
         """Test DataFusion integration with Python variable inspection."""
         from parquetframe.datacontext import DataContext

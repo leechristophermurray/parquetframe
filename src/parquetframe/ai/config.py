@@ -36,8 +36,8 @@ class AIConfig:
     """Configuration for AI/RAG features."""
 
     # Model configuration
-    models: list[BaseLanguageModel]
-    default_generation_model: str
+    models: list[BaseLanguageModel] = field(default_factory=list)
+    default_generation_model: str | None = None
     default_intent_model: str | None = None
 
     # RAG configuration
