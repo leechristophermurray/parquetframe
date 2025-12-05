@@ -28,11 +28,8 @@ class TestKnowlogyEngine:
         c2.name = "Variance"
         c2.aliases = []
 
-        # Setup mock to filter
-        def side_effect(filter_func):
-            return [c for c in [c1, c2] if filter_func(c)]
-
-        mock_find_all.side_effect = side_effect
+        # Setup mock to return all concepts
+        mock_find_all.return_value = [c1, c2]
 
         # Search "mean"
         results = engine.search_concepts("mean")

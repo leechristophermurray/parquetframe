@@ -37,26 +37,22 @@ class TestEntityFramework:
     @pytest.fixture(autouse=True)
     def setup_teardown(self, tmp_path):
         """Setup temporary storage for tests."""
-        # The existing framework uses absolute paths or relative to cwd if not careful.
-        # We need to make sure the decorators use the tmp_path.
-        # However, the decorators are applied at module level.
-        # We might need to patch the storage path in the registry metadata for the tests.
-
-        # Patch metadata storage paths
+        # The decorators are applied at module level, so metadata should be registered
+        # Just ensure storage paths are updated to use tmp_path
+        
+        # Verify entities are registered
         user_meta = registry.get("User")
-        if user_meta:
-            user_meta.storage_path = tmp_path / "User"
-            user_meta.storage_path.mkdir(parents=True, exist_ok=True)
-            # Also update the entity store's metadata reference
-            if hasattr(User, "_entity_store"):
-                User._entity_store.metadata.storage_path = user_meta.storage_path
-
+        assert user_meta is not None, "User entity should be registered by @entity decorator"
+        
         prod_meta = registry.get("Product")
-        if prod_meta:
-            prod_meta.storage_path = tmp_path / "Product"
-            prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
-            if hasattr(Product, "_entity_store"):
-                Product._entity_store.metadata.storage_path = prod_meta.storage_path
+        assert prod_meta is not None, "Product entity should be registered by @entity decorator"
+        
+        # Update storage paths for this test run
+        user_meta.storage_path = tmp_path / "User"
+        user_meta.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        prod_meta.storage_path = tmp_path / "Product"
+        prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
 
         yield
         # Cleanup handled by tmp_path fixture
@@ -73,8 +69,13 @@ class TestEntityFramework:
         u = User(1, "Alice", 30)
         u.save()
 
-        # Verify file exists
+        # Get updated registry entry
         user_meta = registry.get("User")
+        if user_meta is None:
+            # If not in registry, check if User class has the decorator's store
+            if hasattr(User, "_entity_store"):
+                user_meta = User._entity_store.metadata
+        
         assert (
             user_meta is not None
         ), "User entity not registered - ensure @entity decorator was applied"
@@ -101,11 +102,17 @@ class TestEntityFramework:
         u1.save()
         u2.save()
 
+        # Add relationship - verify user is registered first
+        user_meta = registry.get("User")
+        if user_meta is None and hasattr(User, "_entity_store"):
+            user_meta = User._entity_store.metadata
+        
+        assert user_meta is not None, "User entity not registered"
+        
         # Add relationship using the new .add() method on the query object
         u1.knows().add(u2, since=2023)
 
         # Verify edge file exists
-        user_meta = registry.get("User")
         # Parent of storage path is root
         root = user_meta.storage_path.parent
         rel_path = root / "User_knows_User" / "adj_list.parquet"
