@@ -39,18 +39,22 @@ class TestEntityFramework:
         """Setup temporary storage for tests."""
         # The decorators are applied at module level, so metadata should be registered
         # Just ensure storage paths are updated to use tmp_path
-        
+
         # Verify entities are registered
         user_meta = registry.get("User")
-        assert user_meta is not None, "User entity should be registered by @entity decorator"
-        
+        assert (
+            user_meta is not None
+        ), "User entity should be registered by @entity decorator"
+
         prod_meta = registry.get("Product")
-        assert prod_meta is not None, "Product entity should be registered by @entity decorator"
-        
+        assert (
+            prod_meta is not None
+        ), "Product entity should be registered by @entity decorator"
+
         # Update storage paths for this test run
         user_meta.storage_path = tmp_path / "User"
         user_meta.storage_path.mkdir(parents=True, exist_ok=True)
-        
+
         prod_meta.storage_path = tmp_path / "Product"
         prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
 
@@ -75,7 +79,7 @@ class TestEntityFramework:
             # If not in registry, check if User class has the decorator's store
             if hasattr(User, "_entity_store"):
                 user_meta = User._entity_store.metadata
-        
+
         assert (
             user_meta is not None
         ), "User entity not registered - ensure @entity decorator was applied"
@@ -106,9 +110,9 @@ class TestEntityFramework:
         user_meta = registry.get("User")
         if user_meta is None and hasattr(User, "_entity_store"):
             user_meta = User._entity_store.metadata
-        
+
         assert user_meta is not None, "User entity not registered"
-        
+
         # Add relationship using the new .add() method on the query object
         u1.knows().add(u2, since=2023)
 
