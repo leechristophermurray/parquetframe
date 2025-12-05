@@ -84,6 +84,7 @@ def entity(
         )
 
         # Register entity
+
         registry.register(metadata)
 
         # Create entity store for this entity

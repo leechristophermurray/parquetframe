@@ -1,0 +1,8 @@
+name: Task
+version: 0.1.0
+format: graphar
+vertices:
+- label: Task
+  prefix: vertices/Task/
+  count: 29
+edges: []

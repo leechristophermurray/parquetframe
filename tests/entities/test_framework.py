@@ -21,26 +21,37 @@ class TestEntityFramework:
     @pytest.fixture(autouse=True)
     def setup_teardown(self, tmp_path):
         """Setup temporary storage for tests."""
-        # The decorators are applied at module level, so metadata should be registered
-        # Just ensure storage paths are updated to use tmp_path
 
-        # Verify entities are registered
-        user_meta = registry.get("User")
-        assert (
-            user_meta is not None
-        ), "User entity should be registered by @entity decorator"
+        # @entity(storage_path=tmp_path / "FrameworkUser", primary_key="id")
+        @dataclass
+        class FrameworkUser:
+            id: int
+            name: str
+            age: int
 
-        prod_meta = registry.get("Product")
-        assert (
-            prod_meta is not None
-        ), "Product entity should be registered by @entity decorator"
+            @rel("FrameworkUser", foreign_key="id", reverse=True)
+            def knows(self):
+                """Friendship relationship."""
+                pass
 
-        # Update storage paths for this test run
-        user_meta.storage_path = tmp_path / "User"
-        user_meta.storage_path.mkdir(parents=True, exist_ok=True)
+        # Manual decorator application to force execution
+        FrameworkUser = entity(
+            storage_path=tmp_path / "FrameworkUser", primary_key="id"
+        )(FrameworkUser)
+        self.FrameworkUser = FrameworkUser
 
-        prod_meta.storage_path = tmp_path / "Product"
-        prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
+        # @entity(storage_path=tmp_path / "FrameworkProduct", primary_key="id")
+        @dataclass
+        class FrameworkProduct:
+            id: int
+            name: str
+            price: float
+
+        # Manual decorator application to force execution
+        FrameworkProduct = entity(
+            storage_path=tmp_path / "FrameworkProduct", primary_key="id"
+        )(FrameworkProduct)
+        self.FrameworkProduct = FrameworkProduct
 
         yield
 
@@ -110,7 +121,7 @@ class TestEntityFramework:
         # Verify edge file exists
         # Parent of storage path is root
         root = user_meta.storage_path.parent
-        rel_path = root / "User_knows_User" / "adj_list.parquet"
+        rel_path = root / "FrameworkUser_knows_FrameworkUser" / "adj_list.parquet"
 
         assert rel_path.exists()
 
