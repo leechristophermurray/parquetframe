@@ -113,7 +113,7 @@ class TestInteractiveCLIIntegration:
 class TestGraphAlgorithmIntegration:
     """Integration tests for graph algorithms with utilities."""
 
-    @pytest.mark.xfail(reason="Backend selection implementation pending - Phase 1.2")
+    # @pytest.mark.xfail(reason="Backend selection implementation pending - Phase 1.2")
     def test_graph_backend_selection_workflow(self):
         """Test complete graph algorithm workflow with backend selection."""
         from parquetframe.graph.algo.utils import (

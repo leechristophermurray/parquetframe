@@ -28,7 +28,7 @@ class TestKnowlogyEngine:
         c2.name = "Variance"
         c2.aliases = []
 
-        # Setup mock to return all concepts
+        # Setup mock to return all concepts (filtering is done in Python)
         mock_find_all.return_value = [c1, c2]
 
         # Search "mean"

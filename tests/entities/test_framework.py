@@ -11,24 +11,8 @@ from parquetframe.entity import entity, rel
 from parquetframe.entity.metadata import registry
 from parquetframe.entity.schema import GraphArSchema
 
-
-@entity(storage_path="User", primary_key="id")
-@dataclass
-class User:
-    id: int
-    name: str
-    age: int
-
-    @rel("User", foreign_key="id")
-    def knows(self):
-        pass
-
-
-@entity(storage_path="Product", primary_key="id")
-@dataclass
-class Product:
-    id: int
-    title: str
+# Note: We define User and Product inside a fixture to avoid conflicts with
+# test_entity_basic.py's autouse clean_registry fixture that clears the global registry
 
 
 class TestEntityFramework:
@@ -59,10 +43,14 @@ class TestEntityFramework:
         prod_meta.storage_path.mkdir(parents=True, exist_ok=True)
 
         yield
-        # Cleanup handled by tmp_path fixture
+
+        # Cleanup - clear our entities from registry
+        registry._entities.pop("FrameworkUser", None)
+        registry._entities.pop("FrameworkProduct", None)
 
     def test_entity_decorator(self):
         """Test that @entity adds methods."""
+        User = self.FrameworkUser
         u = User(1, "Alice", 30)
         assert hasattr(u, "save")
         assert hasattr(u, "delete")
@@ -70,6 +58,7 @@ class TestEntityFramework:
 
     def test_save_and_find(self):
         """Test saving and finding entities."""
+        User = self.FrameworkUser
         u = User(1, "Alice", 30)
         u.save()
 
@@ -82,8 +71,8 @@ class TestEntityFramework:
 
         assert (
             user_meta is not None
-        ), "User entity not registered - ensure @entity decorator was applied"
-        file_path = user_meta.storage_path / "User.parquet"
+        ), "FrameworkUser entity not registered - ensure @entity decorator was applied"
+        file_path = user_meta.storage_path / "FrameworkUser.parquet"
         # Note: The existing store uses delta logs, so base file might not exist immediately
         # unless compacted. But find() should work.
 
@@ -96,11 +85,13 @@ class TestEntityFramework:
 
     def test_find_nonexistent(self):
         """Test finding nonexistent entity."""
+        User = self.FrameworkUser
         found = User.find(999)
         assert found is None
 
     def test_relationship(self):
         """Test adding relationships."""
+        User = self.FrameworkUser
         u1 = User(1, "Alice", 30)
         u2 = User(2, "Bob", 35)
         u1.save()
@@ -134,8 +125,9 @@ class TestEntityFramework:
 
     def test_schema_generation(self):
         """Test GraphAr schema generation."""
+        User = self.FrameworkUser
         schema_yaml = GraphArSchema.generate_entity_schema(User, primary_key="id")
-        assert "name: User" in schema_yaml
+        assert "name: FrameworkUser" in schema_yaml
         assert "type: VERTEX" in schema_yaml
         assert "name: id" in schema_yaml
         assert "data_type: INT64" in schema_yaml

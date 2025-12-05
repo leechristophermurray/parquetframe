@@ -37,13 +37,45 @@ def select_backend(
             >>> backend = select_backend(graph, 'auto', 'bfs')
             >>> print(f"Selected {backend} backend for BFS")
     """
-    # TODO: Phase 1.2 - Implement backend selection logic
     # 1. If backend explicitly specified, validate and return
-    # 2. Check algorithm capabilities (e.g., DFS not available on Dask)
-    # 3. Consider current graph data backend (vertices.islazy, edges.islazy)
-    # 4. Consider graph size and system memory
-    # 5. Return optimal backend with appropriate warnings
-    raise NotImplementedError("Backend selection implementation pending - Phase 1.2")
+    if backend in ["pandas", "dask"]:
+        return backend  # type: ignore
+
+    # 2. Check algorithm capabilities
+    # DFS is typically sequential and hard to parallelize with Dask
+    if algorithm == "dfs":
+        return "pandas"
+
+    # 3. Consider current graph data backend
+    is_dask = False
+
+    # Check vertices
+    vertices = getattr(graph, "vertices", None)
+    if vertices:
+        # Check for islazy attribute (GraphFrame standard)
+        if hasattr(vertices, "islazy") and vertices.islazy:
+            is_dask = True
+        # Check for Dask DataFrame (has compute method)
+        elif hasattr(vertices, "_df") and hasattr(vertices._df, "compute"):
+            is_dask = True
+        elif hasattr(vertices, "compute"):
+            is_dask = True
+
+    # Check edges
+    edges = getattr(graph, "edges", None)
+    if edges:
+        if hasattr(edges, "islazy") and edges.islazy:
+            is_dask = True
+        elif hasattr(edges, "_df") and hasattr(edges._df, "compute"):
+            is_dask = True
+        elif hasattr(edges, "compute"):
+            is_dask = True
+
+    if is_dask:
+        return "dask"
+
+    # Default to pandas
+    return "pandas"
 
 
 def validate_sources(
