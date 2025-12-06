@@ -2,12 +2,13 @@
 Unit tests for DataFrameProxy.
 """
 
-import pytest
-import pandas as pd
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pandas as pd
+import pytest
+
+from parquetframe.core.execution import ExecutionContext, ExecutionMode
 from parquetframe.core.proxy import DataFrameProxy
-from parquetframe.core.execution import ExecutionMode, ExecutionContext
 
 
 class TestDataFrameProxyInit:
@@ -100,19 +101,21 @@ class TestDataFrameProxyRust:
     """Test Rust-accelerated operations."""
 
     @patch("parquetframe.core.proxy.DataFrameProxy._check_rust_available")
-    @patch("parquetframe.pf_py.filter_parallel")
-    def test_filter_rust_local(self, mock_filter, mock_rust_check):
+    def test_filter_rust_local(self, mock_rust_check):
         """Test Rust filter in local mode."""
         mock_rust_check.return_value = True
-        mock_filter.return_value = pd.DataFrame({"a": [4, 5]})
+
+        mock_rustic = MagicMock()
+        mock_rustic.filter_parallel.return_value = pd.DataFrame({"a": [4, 5]})
 
         df = pd.DataFrame({"a": [1, 2, 3, 4, 5]})
         ctx = ExecutionContext(mode=ExecutionMode.LOCAL, rust_threads=4)
         proxy = DataFrameProxy(df, execution_ctx=ctx)
 
-        result = proxy.filter_rust("a > 3")
+        with patch.dict("sys.modules", {"parquetframe._rustic": mock_rustic}):
+            result = proxy.filter_rust("a > 3")
 
-        mock_filter.assert_called_once()
+        mock_rustic.filter_parallel.assert_called_once()
         assert isinstance(result, DataFrameProxy)
 
 

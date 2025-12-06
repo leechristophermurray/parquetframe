@@ -140,7 +140,7 @@ def main():
         if unfixed:
             all_unfixed.update(unfixed)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Updated {len(updated_files)} files")
 
     if all_unfixed:

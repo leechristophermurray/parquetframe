@@ -12,6 +12,15 @@ This example demonstrates:
 import numpy as np
 import pandas as pd
 
+from parquetframe._rustic import (
+    fin_cvar,
+    fin_sharpe_ratio,
+    fin_sortino_ratio,
+    fin_value_at_risk,
+)
+
+# Convert to Arrow for FIN operations (using internal _rustic module)
+
 # Sample portfolio data
 np.random.seed(42)
 dates = pd.date_range(start="2024-01-01", end="2024-12-31", freq="D")
@@ -54,13 +63,6 @@ portfolio["portfolio_return"] = (
 # Remove NaN from first row
 portfolio = portfolio.dropna()
 
-# Convert to Arrow for FIN operations (using internal _rustic module)
-from parquetframe._rustic import (
-    fin_cvar,
-    fin_sharpe_ratio,
-    fin_sortino_ratio,
-    fin_value_at_risk,
-)
 
 # Calculate portfolio metrics
 returns_array = portfolio["portfolio_return"].values

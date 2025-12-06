@@ -1,0 +1,17 @@
+vertices:
+- label: User
+  properties:
+  - name: user_id
+    type: string
+    nullable: false
+  - name: username
+    type: string
+    nullable: false
+  - name: email
+    type: string
+    nullable: false
+  - name: created_at
+    type: string
+    nullable: false
+  primary_key: user_id
+edges: []

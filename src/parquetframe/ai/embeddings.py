@@ -76,7 +76,7 @@ class TetnusEmbeddingModel(BaseEmbeddingModel):
             use_bpe: Whether to use BPE tokenizer (recommended) vs character-level
         """
         try:
-            from parquetframe.tetnus import Embedding
+            from parquetframe._rustic.tetnus import Embedding
         except ImportError as e:
             raise ImportError(
                 "tetnus module not available. Ensure pf-py is built with tetnus support."

@@ -4,7 +4,7 @@ Cloud integration module.
 Provides unified API for cloud storage operations (S3, GCS, Azure).
 """
 
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import pandas as pd
 
@@ -13,6 +13,10 @@ from .factory import CloudFactory
 from .handlers.azure import AzureHandler
 from .handlers.gcp import GCSHandler
 from .handlers.s3 import S3Handler
+
+if TYPE_CHECKING:
+    import dask.dataframe as dd
+    import polars as pl
 
 # Type alias for DataFrames
 DataFrameType = Union[pd.DataFrame, "pl.DataFrame", "pl.LazyFrame", "dd.DataFrame"]

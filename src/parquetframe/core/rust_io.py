@@ -7,7 +7,8 @@ Provides high-performance I/O using:
 - Multi-backend output
 """
 
-from typing import Union, Optional
+from typing import Union
+
 import pandas as pd
 
 try:

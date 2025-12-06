@@ -46,13 +46,13 @@ class GraphArSchema:
     def _map_type(py_type: type) -> str:
         """Map Python types to GraphAr types."""
         type_str = str(py_type)
-        if py_type == int or "int" in type_str:
+        if py_type is int or "int" in type_str:
             return "INT64"
-        elif py_type == float or "float" in type_str:
+        elif py_type is float or "float" in type_str:
             return "DOUBLE"
-        elif py_type == str or "str" in type_str:
+        elif py_type is str or "str" in type_str:
             return "STRING"
-        elif py_type == bool or "bool" in type_str:
+        elif py_type is bool or "bool" in type_str:
             return "BOOLEAN"
         else:
             return "STRING"  # Fallback

@@ -9,7 +9,6 @@ import json
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +24,8 @@ class BPETokenizer:
             vocab_size: Target vocabulary size
         """
         self.vocab_size = vocab_size
-        self.vocab: Dict[str, int] = {}
-        self.merges: List[Tuple[str, str]] = []
+        self.vocab: dict[str, int] = {}
+        self.merges: list[tuple[str, str]] = []
         self._initialized = False
 
         # Special tokens
@@ -43,7 +42,7 @@ class BPETokenizer:
             self.eos_token: 3,
         }
 
-    def train(self, texts: List[str], max_merges: int | None = None):
+    def train(self, texts: list[str], max_merges: int | None = None):
         """
         Train BPE tokenizer on corpus.
 
@@ -62,7 +61,7 @@ class BPETokenizer:
                 word_freq[" ".join(word) + " </w>"] += 1
 
         # Perform BPE merges
-        for i in range(max_merges):
+        for _i in range(max_merges):
             pairs = self._get_pair_frequencies(word_freq)
             if not pairs:
                 break
@@ -90,7 +89,7 @@ class BPETokenizer:
                 pairs[(symbols[i], symbols[i + 1])] += freq
         return pairs
 
-    def _merge_vocab(self, pair: Tuple[str, str], word_freq: Counter) -> Counter:
+    def _merge_vocab(self, pair: tuple[str, str], word_freq: Counter) -> Counter:
         """Merge a pair in the vocabulary."""
         new_word_freq: Counter = Counter()
         bigram = " ".join(pair)
@@ -102,7 +101,7 @@ class BPETokenizer:
 
         return new_word_freq
 
-    def encode(self, text: str, add_special_tokens: bool = True) -> List[int]:
+    def encode(self, text: str, add_special_tokens: bool = True) -> list[int]:
         """
         Encode text to token IDs.
 
@@ -131,7 +130,7 @@ class BPETokenizer:
 
         return tokens
 
-    def _encode_word(self, word: str) -> List[int]:
+    def _encode_word(self, word: str) -> list[int]:
         """Encode single word using BPE."""
         word_chars = " ".join(word) + " </w>"
 
@@ -148,12 +147,12 @@ class BPETokenizer:
 
         return tokens
 
-    def _encode_chars(self, text: str) -> List[int]:
+    def _encode_chars(self, text: str) -> list[int]:
         """Fall back character-level encoding."""
         char_to_idx = {chr(i): i + len(self.vocab) for i in range(256)}
         return [char_to_idx.get(c, self.vocab[self.unk_token]) for c in text.lower()]
 
-    def decode(self, token_ids: List[int]) -> str:
+    def decode(self, token_ids: list[int]) -> str:
         """
         Decode token IDs to text.
 
@@ -192,7 +191,7 @@ class BPETokenizer:
 
     def load(self, path: Path):
         """Load tokenizer from file."""
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
 
         self.vocab = data["vocab"]

@@ -5,8 +5,8 @@ Demonstrates RAG with Knowlogy integration for formula-grounded responses.
 """
 
 from parquetframe.ai import AIConfig, SimpleRagPipeline
-from parquetframe.ai.models import OllamaModel
 from parquetframe.ai.grounding import ground_response
+from parquetframe.ai.models import OllamaModel
 
 
 def main():
@@ -76,7 +76,7 @@ def main():
         verification = grounding_result["formula_verification"]
 
         if verification["num_formulas"] > 0:
-            print(f"\n🔬 Formula Verification:")
+            print("\n🔬 Formula Verification:")
             print(f"  Found {verification['num_formulas']} formula(s)")
             for formula in verification["formulas_found"]:
                 print(f"  - {formula}")

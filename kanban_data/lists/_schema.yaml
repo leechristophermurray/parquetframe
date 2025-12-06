@@ -1,0 +1,23 @@
+vertices:
+- label: TaskList
+  properties:
+  - name: list_id
+    type: string
+    nullable: false
+  - name: name
+    type: string
+    nullable: false
+  - name: board_id
+    type: string
+    nullable: false
+  - name: position
+    type: int64
+    nullable: false
+  - name: created_at
+    type: string
+    nullable: false
+  - name: updated_at
+    type: string
+    nullable: false
+  primary_key: list_id
+edges: []

@@ -7,8 +7,6 @@ This module provides basic testing for the CLI, focusing on:
 - Dependency handling
 """
 
-from unittest.mock import patch
-
 from click.testing import CliRunner
 
 
@@ -56,13 +54,9 @@ class TestCLIBasicFunctionality:
         # This is expected during testing with src layout
         assert result.exit_code in [0, 1]
 
-    @patch("src.parquetframe.cli.Path.exists")
-    def test_run_command_exists(self, mock_exists):
+    def test_run_command_exists(self):
         """Test that run command exists and can be invoked."""
         from src.parquetframe.cli import main
-
-        # Mock file existence
-        mock_exists.return_value = True
 
         result = self.runner.invoke(main, ["run", "--help"])
 

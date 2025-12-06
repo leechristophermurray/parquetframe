@@ -2,9 +2,10 @@ import numpy as np
 import pytest
 
 try:
-    from parquetframe._rustic import Tensor
     import parquetframe.tetnus.nn as nn
     import parquetframe.tetnus.optim as optim
+    from parquetframe._rustic import Tensor
+
     HAS_TENSOR = True
 except (ImportError, AttributeError):
     HAS_TENSOR = False
@@ -12,7 +13,9 @@ except (ImportError, AttributeError):
     optim = None
     Tensor = None
 
-pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
+pytestmark = pytest.mark.skipif(
+    not HAS_TENSOR, reason="Tensor not available in Rust module"
+)
 
 
 def test_sgd_step():

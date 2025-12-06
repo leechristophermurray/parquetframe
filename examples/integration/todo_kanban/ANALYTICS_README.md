@@ -11,7 +11,7 @@ from parquetframe.sql import sql
 
 # Analyze completion rates by priority
 completion_by_priority = sql("""
-    SELECT 
+    SELECT
         priority,
         COUNT(*) as total_tasks,
         SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) as completed,
@@ -88,7 +88,7 @@ The demo shows:
 ```python
 # Complex multi-table analysis
 result = sql("""
-    SELECT 
+    SELECT
         u.username,
         COUNT(DISTINCT t.task_id) as tasks_completed,
         AVG(DATEDIFF(day, t.created_at, t.updated_at)) as avg_completion_time

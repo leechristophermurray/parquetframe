@@ -42,7 +42,9 @@ def distributed_filter(
     try:
         Client.current()
     except ValueError:
-        raise RuntimeError("Dask client not initialized. Create a Client first") from None
+        raise RuntimeError(
+            "Dask client not initialized. Create a Client first"
+        ) from None
 
     # Convert to Dask DataFrame with partitions
     ddf = dd.from_pandas(data, npartitions=num_workers)

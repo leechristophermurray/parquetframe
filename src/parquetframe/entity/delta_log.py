@@ -26,8 +26,11 @@ Mathematical Justification:
 import json
 import os
 import time
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 try:
     import fcntl
@@ -45,7 +48,13 @@ except ImportError:
 
     if os.name == "nt":
         fcntl = FcntlMock()
-import pandas as pd
+
+
+def json_serializer(obj):
+    """Custom JSON serializer for datetime objects."""
+    if isinstance(obj, datetime | date):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} is not JSON serializable")
 
 
 class DeltaLog:
@@ -135,7 +144,7 @@ class DeltaLog:
 
                 # Append to WAL
                 with open(self.wal_path, "a") as wal:
-                    wal.write(json.dumps(record) + "\n")
+                    wal.write(json.dumps(record, default=json_serializer) + "\n")
                     wal.flush()
                     os.fsync(wal.fileno())  # Ensure durability
 
@@ -185,9 +194,17 @@ class DeltaLog:
             if op == "UPSERT":
                 # Remove existing row if present
                 result_df = result_df[result_df[self.primary_key] != pk_value]
-                # Append new row
-                new_row = pd.DataFrame([data])
-                result_df = pd.concat([result_df, new_row], ignore_index=True)
+                # Append new row without triggering concat warnings on empty frames
+                if result_df.empty:
+                    # Create a new frame with the same columns
+                    # Ensure all expected columns exist in the row
+                    row_dict = {col: data.get(col, pd.NA) for col in result_df.columns}
+                    result_df = pd.DataFrame([row_dict])
+                else:
+                    new_row = pd.DataFrame([data])
+                    # Align columns to existing frame to avoid dtype inference issues
+                    new_row = new_row.reindex(columns=result_df.columns)
+                    result_df = pd.concat([result_df, new_row], ignore_index=True)
 
             elif op == "DELETE":
                 # Remove row
@@ -302,6 +319,23 @@ class DeltaLog:
             stats["wal_size_mb"] = self.wal_path.stat().st_size / (1024 * 1024)
 
         return stats
+
+    def clear(self) -> None:
+        """
+        Clear the delta log (WAL).
+
+        This removes all pending operations without compacting them.
+        Use with caution as it discards uncommitted changes.
+        """
+        with open(self.lock_path, "w") as lock_file:
+            try:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                # Clear WAL if it exists
+                if self.wal_path.exists():
+                    with open(self.wal_path, "w") as _:
+                        pass  # Truncate to empty
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 __all__ = ["DeltaLog"]

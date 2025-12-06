@@ -110,7 +110,8 @@ ParquetFrame combines:
 
 ## 📄 License
 
-Apache License 2.0
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
+International Public License
 
 ## 🙏 Acknowledgments
 

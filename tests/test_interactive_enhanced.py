@@ -1,3 +1,5 @@
+import os
+import platform
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -6,12 +8,21 @@ from parquetframe.datacontext import DataContext
 from parquetframe.interactive import InteractiveSession
 from parquetframe.permissions.core import RelationTuple
 
+# Skip all interactive tests on Windows CI where console is not available
+skip_on_windows_ci = pytest.mark.skipif(
+    platform.system() == "Windows" and os.environ.get("CI") == "true",
+    reason="Interactive tests require console, not available on Windows CI",
+)
+
 
 @pytest.fixture
 def mock_data_context():
     dc = MagicMock(spec=DataContext)
     dc.source_location = "/tmp/test"
-    dc.source_type.value = "parquet"
+    # Mock the source_type enum
+    mock_enum = MagicMock()
+    mock_enum.value = "parquet"
+    dc.source_type = mock_enum
     dc.get_table_names.return_value = ["table1"]
     return dc
 
@@ -25,6 +36,7 @@ def session(mock_data_context):
         return session
 
 
+@skip_on_windows_ci
 @pytest.mark.asyncio
 async def test_magic_permissions(session):
     # Test grant
@@ -49,6 +61,7 @@ async def test_magic_permissions(session):
     assert "DENIED" in str(args[0])
 
 
+@skip_on_windows_ci
 @pytest.mark.asyncio
 async def test_magic_datafusion(session):
     # Mock DataFusion context
@@ -65,6 +78,7 @@ async def test_magic_datafusion(session):
     mock_df.to_pandas.assert_called_once()
 
 
+@skip_on_windows_ci
 @pytest.mark.asyncio
 async def test_magic_rag(session):
     # Test %rag magic

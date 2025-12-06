@@ -57,7 +57,7 @@ def main():
             updated_files.append(md_file)
             print(f"✓ Updated: {md_file.relative_to(docs_dir)}")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Updated {len(updated_files)} files")
 
     if updated_files:

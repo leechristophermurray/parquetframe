@@ -13,8 +13,14 @@ from .relationship import Relationship, RelationshipManager
 try:
     from .visualization import (
         entities_to_networkx as entities_to_networkx,
+    )
+    from .visualization import (
         export_to_graphviz as export_to_graphviz,
+    )
+    from .visualization import (
         is_visualization_available as is_visualization_available,
+    )
+    from .visualization import (
         visualize_with_pyvis as visualize_with_pyvis,
     )
 

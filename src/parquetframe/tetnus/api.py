@@ -4,7 +4,6 @@ High-level API for Tetnus ML framework.
 Provides simple interfaces for model training and inference.
 """
 
-from typing import List, Optional
 import numpy as np
 
 
@@ -23,7 +22,7 @@ class Model:
         >>> predictions = model.predict(X_test)
     """
 
-    def __init__(self, layers: List):
+    def __init__(self, layers: list):
         """
         Initialize model with layers.
 
@@ -41,7 +40,7 @@ class Model:
         y,
         epochs: int = 10,
         lr: float = 0.01,
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
         verbose: bool = True,
     ):
         """
@@ -56,8 +55,8 @@ class Model:
             verbose: Print training progress
         """
         from parquetframe.tetnus import Tensor
-        from parquetframe.tetnus.optim import Adam
         from parquetframe.tetnus.nn import MSELoss
+        from parquetframe.tetnus.optim import Adam
 
         # Convert to tensors if needed
         if isinstance(X, np.ndarray):

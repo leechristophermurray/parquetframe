@@ -5,7 +5,8 @@ Demonstrates simple SQL operations on DataFrames.
 """
 
 import pandas as pd
-from parquetframe.sql import sql, SQLContext
+
+from parquetframe.sql import SQLContext, sql
 
 
 def basic_select():
@@ -53,7 +54,7 @@ def aggregations():
     # GROUP BY with aggregation
     result = sql(
         """
-        SELECT 
+        SELECT
             product,
             COUNT(*) as total_sales,
             SUM(amount) as total_amount,
@@ -95,7 +96,7 @@ def joins():
     # INNER JOIN
     result = sql(
         """
-        SELECT 
+        SELECT
             c.name,
             o.order_id,
             o.amount
@@ -143,7 +144,7 @@ def persistent_context():
 
     result2 = ctx.query(
         """
-        SELECT 
+        SELECT
             p.name,
             p.price,
             i.quantity,

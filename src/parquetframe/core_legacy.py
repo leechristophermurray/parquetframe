@@ -1047,6 +1047,17 @@ class ParquetFrame:
 
         return QueryContext(**hints)
 
+    def sql_builder(self) -> "SQLBuilder":
+        """
+        Create a SQLBuilder for fluent query construction.
+
+        Returns:
+            SQLBuilder instance
+        """
+        from .sql import SQLBuilder
+
+        return SQLBuilder(self)
+
     def select(self, *columns: str) -> "SQLBuilder":
         """
         Start building a fluent SQL query with SELECT.

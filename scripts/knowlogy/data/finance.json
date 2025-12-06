@@ -1,112 +1,112 @@
 {
-    "library": "finance",
-    "version": "1.0",
-    "description": "Financial analysis concepts, metrics, and valuation formulas",
-    "concepts": [
-        {
-            "id": "pf:fin:npv",
-            "name": "Net Present Value",
-            "description": "The difference between the present value of cash inflows and outflows over time.",
-            "domain": "Finance",
-            "aliases": [
-                "NPV"
-            ]
-        },
-        {
-            "id": "pf:fin:roi",
-            "name": "Return on Investment",
-            "description": "A performance measure used to evaluate the efficiency of an investment.",
-            "domain": "Finance",
-            "aliases": [
-                "ROI"
-            ]
-        },
-        {
-            "id": "pf:fin:sharpe",
-            "name": "Sharpe Ratio",
-            "description": "Measures risk-adjusted return of an investment.",
-            "domain": "Finance",
-            "aliases": [
-                "Sharpe",
-                "Risk-Adjusted Return"
-            ]
-        },
-        {
-            "id": "pf:fin:capm",
-            "name": "Capital Asset Pricing Model",
-            "description": "Describes the relationship between systematic risk and expected return.",
-            "domain": "Finance",
-            "aliases": [
-                "CAPM"
-            ]
-        },
-        {
-            "id": "pf:fin:black_scholes",
-            "name": "Black-Scholes Model",
-            "description": "Mathematical model for pricing European options.",
-            "domain": "Finance",
-            "aliases": [
-                "Black-Scholes",
-                "Options Pricing"
-            ]
-        }
-    ],
-    "formulas": [
-        {
-            "id": "pf:formula:npv",
-            "name": "Net Present Value",
-            "latex": "NPV = \\sum_{t=0}^{n} \\frac{C_t}{(1+r)^t}",
-            "symbolic": "NPV = sum(C_t / (1 + r)^t for t in range(n))",
-            "concept_id": "pf:fin:npv",
-            "variables": [
-                "C",
-                "r",
-                "t",
-                "n"
-            ]
-        },
-        {
-            "id": "pf:formula:roi",
-            "name": "Return on Investment",
-            "latex": "ROI = \\frac{\\text{Gain} - \\text{Cost}}{\\text{Cost}} \\times 100\\%",
-            "symbolic": "ROI = ((gain - cost) / cost) * 100",
-            "concept_id": "pf:fin:roi",
-            "variables": [
-                "gain",
-                "cost"
-            ]
-        },
-        {
-            "id": "pf:formula:sharpe",
-            "name": "Sharpe Ratio",
-            "latex": "S = \\frac{R_p - R_f}{\\sigma_p}",
-            "symbolic": "sharpe = (return_portfolio - risk_free) / std_portfolio",
-            "concept_id": "pf:fin:sharpe",
-            "variables": [
-                "R_p",
-                "R_f",
-                "\\sigma_p"
-            ]
-        },
-        {
-            "id": "pf:formula:capm",
-            "name": "CAPM Formula",
-            "latex": "E(R_i) = R_f + \\beta_i(E(R_m) - R_f)",
-            "symbolic": "expected_return = risk_free + beta * (market_return - risk_free)",
-            "concept_id": "pf:fin:capm",
-            "variables": [
-                "R_f",
-                "\\beta",
-                "R_m"
-            ]
-        }
-    ],
-    "applications": [
-        {
-            "id": "pf:app:portfolio_mgmt",
-            "name": "Portfolio Management",
-            "description": "Managing investment portfolios and risk",
-            "concept_id": "pf:fin:sharpe"
-        }
-    ]
+  "applications": [
+    {
+      "concept_id": "pf:fin:sharpe",
+      "description": "Managing investment portfolios and risk",
+      "id": "pf:app:portfolio_mgmt",
+      "name": "Portfolio Management"
+    }
+  ],
+  "concepts": [
+    {
+      "aliases": [
+        "NPV"
+      ],
+      "description": "The difference between the present value of cash inflows and outflows over time.",
+      "domain": "Finance",
+      "id": "pf:fin:npv",
+      "name": "Net Present Value"
+    },
+    {
+      "aliases": [
+        "ROI"
+      ],
+      "description": "A performance measure used to evaluate the efficiency of an investment.",
+      "domain": "Finance",
+      "id": "pf:fin:roi",
+      "name": "Return on Investment"
+    },
+    {
+      "aliases": [
+        "Sharpe",
+        "Risk-Adjusted Return"
+      ],
+      "description": "Measures risk-adjusted return of an investment.",
+      "domain": "Finance",
+      "id": "pf:fin:sharpe",
+      "name": "Sharpe Ratio"
+    },
+    {
+      "aliases": [
+        "CAPM"
+      ],
+      "description": "Describes the relationship between systematic risk and expected return.",
+      "domain": "Finance",
+      "id": "pf:fin:capm",
+      "name": "Capital Asset Pricing Model"
+    },
+    {
+      "aliases": [
+        "Black-Scholes",
+        "Options Pricing"
+      ],
+      "description": "Mathematical model for pricing European options.",
+      "domain": "Finance",
+      "id": "pf:fin:black_scholes",
+      "name": "Black-Scholes Model"
+    }
+  ],
+  "description": "Financial analysis concepts, metrics, and valuation formulas",
+  "formulas": [
+    {
+      "concept_id": "pf:fin:npv",
+      "id": "pf:formula:npv",
+      "latex": "NPV = \\sum_{t=0}^{n} \\frac{C_t}{(1+r)^t}",
+      "name": "Net Present Value",
+      "symbolic": "NPV = sum(C_t / (1 + r)^t for t in range(n))",
+      "variables": [
+        "C",
+        "r",
+        "t",
+        "n"
+      ]
+    },
+    {
+      "concept_id": "pf:fin:roi",
+      "id": "pf:formula:roi",
+      "latex": "ROI = \\frac{\\text{Gain} - \\text{Cost}}{\\text{Cost}} \\times 100\\%",
+      "name": "Return on Investment",
+      "symbolic": "ROI = ((gain - cost) / cost) * 100",
+      "variables": [
+        "gain",
+        "cost"
+      ]
+    },
+    {
+      "concept_id": "pf:fin:sharpe",
+      "id": "pf:formula:sharpe",
+      "latex": "S = \\frac{R_p - R_f}{\\sigma_p}",
+      "name": "Sharpe Ratio",
+      "symbolic": "sharpe = (return_portfolio - risk_free) / std_portfolio",
+      "variables": [
+        "R_p",
+        "R_f",
+        "\\sigma_p"
+      ]
+    },
+    {
+      "concept_id": "pf:fin:capm",
+      "id": "pf:formula:capm",
+      "latex": "E(R_i) = R_f + \\beta_i(E(R_m) - R_f)",
+      "name": "CAPM Formula",
+      "symbolic": "expected_return = risk_free + beta * (market_return - risk_free)",
+      "variables": [
+        "R_f",
+        "\\beta",
+        "R_m"
+      ]
+    }
+  ],
+  "library": "finance",
+  "version": "1.0"
 }

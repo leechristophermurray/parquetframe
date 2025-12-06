@@ -3,7 +3,8 @@ End-to-end tests for Knowlogy libraries.
 """
 
 import pytest
-from parquetframe.knowlogy import search, get_formula, get_context, load_library
+
+from parquetframe.knowlogy import get_context
 
 
 class TestKnowlogyE2E:

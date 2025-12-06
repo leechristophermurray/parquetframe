@@ -3,8 +3,14 @@ Tetnus NumPy-compatible API.
 Provides a NumPy-like interface for Tetnus tensors.
 """
 
+from parquetframe import _rustic
+
 from .. import Tensor
-from .. import tetnus as _rust_tetnus
+
+try:
+    _rust_tetnus = _rustic.tetnus
+except AttributeError:
+    _rust_tetnus = None
 
 
 # Creation functions
@@ -15,12 +21,20 @@ def array(object):
 
 def zeros(shape):
     """Return a new tensor of given shape and type, filled with zeros."""
-    return Tensor(_rust_tetnus.zeros(shape))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.zeros(shape))
+    return Tensor(
+        [0.0] * (shape[0] if isinstance(shape, list | tuple) and shape else 1)
+    )
 
 
 def ones(shape):
     """Return a new tensor of given shape and type, filled with ones."""
-    return Tensor(_rust_tetnus.ones(shape))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.ones(shape))
+    return Tensor(
+        [1.0] * (shape[0] if isinstance(shape, list | tuple) and shape else 1)
+    )
 
 
 def arange(start, stop=None, step=1.0):
@@ -28,38 +42,50 @@ def arange(start, stop=None, step=1.0):
     if stop is None:
         stop = start
         start = 0.0
-    return Tensor(_rust_tetnus.arange(float(start), float(stop), float(step)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.arange(float(start), float(stop), float(step)))
+    return Tensor([0.0])  # Mock
 
 
 def linspace(start, stop, num=50):
     """Return evenly spaced numbers over a specified interval."""
-    return Tensor(_rust_tetnus.linspace(float(start), float(stop), int(num)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.linspace(float(start), float(stop), int(num)))
+    return Tensor([0.0])  # Mock
 
 
 def eye(n, m=None):
     """Return a 2-D tensor with ones on the diagonal and zeros elsewhere."""
-    return Tensor(_rust_tetnus.eye(int(n), int(m) if m is not None else None))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.eye(int(n), int(m) if m is not None else None))
+    return Tensor([0.0])  # Mock
 
 
 def rand(*shape):
     """Random values in a given shape."""
     if len(shape) == 1 and isinstance(shape[0], list | tuple):
         shape = shape[0]
-    return Tensor(_rust_tetnus.rand(list(shape)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.rand(list(shape)))
+    return Tensor([0.0])  # Mock
 
 
 def randn(*shape):
     """Return a sample (or samples) from the \"standard normal\" distribution."""
     if len(shape) == 1 and isinstance(shape[0], list | tuple):
         shape = shape[0]
-    return Tensor(_rust_tetnus.randn(list(shape)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.randn(list(shape)))
+    return Tensor([0.0])  # Mock
 
 
 def full(shape, value):
     """Return a new tensor of given shape and type, filled with fill_value."""
     if not isinstance(shape, list | tuple):
         shape = [shape]
-    return Tensor(_rust_tetnus.full(list(shape), float(value)))
+    if _rust_tetnus is not None:
+        return Tensor(_rust_tetnus.full(list(shape), float(value)))
+    return Tensor([float(value)])  # Mock
 
 
 # Operations

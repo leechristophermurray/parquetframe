@@ -1,4 +1,9 @@
-from . import tetnus as _rust_tetnus
+from parquetframe import _rustic
+
+try:
+    _rust_tetnus = _rustic.tetnus
+except AttributeError:
+    _rust_tetnus = None
 
 
 class SGD:

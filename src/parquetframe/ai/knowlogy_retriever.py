@@ -5,8 +5,8 @@ Retrieves concepts, formulas, and definitions from the Knowlogy knowledge graph
 to ground LLM responses with verifiable, formal knowledge.
 """
 
-from typing import List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Document:
     """A retrieved document with content and metadata."""
 
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     score: float = 1.0
 
 
@@ -33,7 +33,7 @@ class KnowlogyRetriever:
         """Initialize Knowlogy retriever."""
         pass
 
-    def retrieve(self, query: str, top_k: int = 5) -> List[Document]:
+    def retrieve(self, query: str, top_k: int = 5) -> list[Document]:
         """
         Retrieve relevant knowledge from graph.
 
@@ -80,7 +80,7 @@ class KnowlogyRetriever:
 
 {concept.description}
 
-Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
+Aliases: {", ".join(concept.aliases) if concept.aliases else "None"}
 """
 
     def _format_concept_with_formula(self, concept, formula) -> str:
@@ -94,9 +94,9 @@ Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
 
 **Symbolic:** {formula.symbolic}
 
-**Variables:** {', '.join(formula.variables) if formula.variables else 'None'}
+**Variables:** {", ".join(formula.variables) if formula.variables else "None"}
 
-Aliases: {', '.join(concept.aliases) if concept.aliases else 'None'}
+Aliases: {", ".join(concept.aliases) if concept.aliases else "None"}
 """
 
 

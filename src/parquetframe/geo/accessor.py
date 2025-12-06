@@ -4,6 +4,8 @@ GeoSpatial Accessor for ParquetFrame.
 Provides .geo accessor for geospatial operations on GeoDataFrames.
 """
 
+import importlib.util
+
 import pandas as pd
 
 
@@ -159,8 +161,10 @@ class GeoAccessor:
 
 
 # Register accessor with geopandas
-try:
-    import geopandas as gpd
+
+
+if importlib.util.find_spec("geopandas"):
+    import geopandas as gpd  # noqa: F401
     import pandas as pd
 
     @pd.api.extensions.register_dataframe_accessor("geo")
@@ -169,7 +173,7 @@ try:
 
         pass
 
-except ImportError:
+else:
     # GeoPandas not installed, skip registration
     pass
 

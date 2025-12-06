@@ -5,10 +5,10 @@ Validates LLM responses against Knowlogy formulas to ensure accuracy.
 """
 
 import re
-from typing import Dict, List, Any
+from typing import Any
 
 
-def extract_formulas(text: str) -> List[str]:
+def extract_formulas(text: str) -> list[str]:
     """
     Extract LaTeX formulas from text.
 
@@ -27,7 +27,7 @@ def extract_formulas(text: str) -> List[str]:
     return inline + display
 
 
-def verify_formula(response: str) -> Dict[str, Any]:
+def verify_formula(response: str) -> dict[str, Any]:
     """
     Extract and verify formulas in LLM response.
 
@@ -37,7 +37,6 @@ def verify_formula(response: str) -> Dict[str, Any]:
     Returns:
         Dictionary with verification results
     """
-    from parquetframe import knowlogy
 
     formulas_found = extract_formulas(response)
     verified = []
@@ -62,7 +61,7 @@ def verify_formula(response: str) -> Dict[str, Any]:
     }
 
 
-def ground_response(query: str, response: str) -> Dict[str, Any]:
+def ground_response(query: str, response: str) -> dict[str, Any]:
     """
      Ground LLM response with Knowlogy knowledge.
 

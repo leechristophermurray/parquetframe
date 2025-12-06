@@ -24,6 +24,11 @@ class RelationshipManager:
 
     def __init__(self):
         self._relationships: dict[str, list[Relationship]] = {}
+        self._entity_store = None
+
+    def set_entity_store(self, store: Any) -> None:
+        """Set the entity store for validation."""
+        self._entity_store = store
 
     def register(self, relationship: Relationship) -> None:
         """Register a relationship."""
@@ -40,5 +45,27 @@ class RelationshipManager:
         self, source_entity: str, target_entity: str, foreign_key_value: Any
     ) -> bool:
         """Validate that a foreign key value exists in the target entity."""
-        # TODO: Implement foreign key validation
-        return True
+        if self._entity_store is None:
+            # Cannot validate without entity store, fail open
+            return True
+
+        try:
+            target_df = self._entity_store.get_entity(target_entity)
+
+            if target_df is None or len(target_df) == 0:
+                # Empty target entity - foreign key is invalid
+                return False
+
+            # Check if value exists in 'id' column first, then any column
+            if "id" in target_df.columns:
+                return foreign_key_value in target_df["id"].values
+
+            # Fall back to checking all columns
+            for col in target_df.columns:
+                if foreign_key_value in target_df[col].values:
+                    return True
+
+            return False
+        except Exception:
+            # On errors, fail open for compatibility
+            return True

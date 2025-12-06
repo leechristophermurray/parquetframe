@@ -37,13 +37,45 @@ def select_backend(
             >>> backend = select_backend(graph, 'auto', 'bfs')
             >>> print(f"Selected {backend} backend for BFS")
     """
-    # TODO: Phase 1.2 - Implement backend selection logic
     # 1. If backend explicitly specified, validate and return
-    # 2. Check algorithm capabilities (e.g., DFS not available on Dask)
-    # 3. Consider current graph data backend (vertices.islazy, edges.islazy)
-    # 4. Consider graph size and system memory
-    # 5. Return optimal backend with appropriate warnings
-    raise NotImplementedError("Backend selection implementation pending - Phase 1.2")
+    if backend in ["pandas", "dask"]:
+        return backend  # type: ignore
+
+    # 2. Check algorithm capabilities
+    # DFS is typically sequential and hard to parallelize with Dask
+    if algorithm == "dfs":
+        return "pandas"
+
+    # 3. Consider current graph data backend
+    is_dask = False
+
+    # Check vertices
+    vertices = getattr(graph, "vertices", None)
+    if vertices:
+        # Check for islazy attribute (GraphFrame standard)
+        if hasattr(vertices, "islazy") and vertices.islazy:
+            is_dask = True
+        # Check for Dask DataFrame (has compute method)
+        elif hasattr(vertices, "_df") and hasattr(vertices._df, "compute"):
+            is_dask = True
+        elif hasattr(vertices, "compute"):
+            is_dask = True
+
+    # Check edges
+    edges = getattr(graph, "edges", None)
+    if edges:
+        if hasattr(edges, "islazy") and edges.islazy:
+            is_dask = True
+        elif hasattr(edges, "_df") and hasattr(edges._df, "compute"):
+            is_dask = True
+        elif hasattr(edges, "compute"):
+            is_dask = True
+
+    if is_dask:
+        return "dask"
+
+    # Default to pandas
+    return "pandas"
 
 
 def validate_sources(
@@ -75,13 +107,45 @@ def validate_sources(
             >>> sources = validate_sources(graph, [1, 10, 100])
             >>> print(f"Validated {len(sources)} source vertices")
     """
-    # TODO: Phase 1.2 - Implement source validation
-    # 1. Handle None case (default to vertex 0 or first available)
-    # 2. Convert single int to list
-    # 3. Validate all source IDs exist in graph
-    # 4. Remove duplicates while preserving order
-    # 5. Ensure at least one valid source
-    raise NotImplementedError("Source validation implementation pending - Phase 1.2")
+    # Get vertices DataFrame
+    vertices_df = (
+        graph.vertices._df if hasattr(graph.vertices, "_df") else graph.vertices
+    )
+
+    # Handle Dask DataFrame
+    if hasattr(vertices_df, "compute"):
+        vertices_df = vertices_df.compute()
+
+    # Check for empty graph
+    if len(vertices_df) == 0:
+        raise ValueError("Graph has no vertices")
+
+    # Get vertex IDs column
+    id_col = "id" if "id" in vertices_df.columns else vertices_df.columns[0]
+    valid_ids = set(vertices_df[id_col].tolist())
+
+    # Handle None case - default to first vertex
+    if sources is None:
+        return [vertices_df[id_col].iloc[0]]
+
+    # Convert single int to list
+    if isinstance(sources, int):
+        sources = [sources]
+
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_sources = []
+    for s in sources:
+        if s not in seen:
+            seen.add(s)
+            unique_sources.append(s)
+
+    # Validate all source IDs exist
+    invalid = [s for s in unique_sources if s not in valid_ids]
+    if invalid:
+        raise ValueError(f"Invalid source vertex IDs: {invalid}")
+
+    return unique_sources
 
 
 def create_result_dataframe(
@@ -111,15 +175,24 @@ def create_result_dataframe(
             ... }
             >>> result = create_result_dataframe(data, ['vertex', 'distance', 'predecessor'])
     """
-    # TODO: Phase 1.2 - Implement result DataFrame creation
-    # 1. Create DataFrame from data dict
-    # 2. Reorder columns according to expected order
-    # 3. Apply proper dtypes (int64, float64, nullable types)
-    # 4. Handle None/nullable columns appropriately
-    # 5. Validate result consistency
-    raise NotImplementedError(
-        "Result DataFrame creation implementation pending - Phase 1.2"
-    )
+    # Create DataFrame from data dict
+    df = pd.DataFrame(data)
+
+    # Reorder columns according to expected order
+    ordered_cols = [c for c in columns if c in df.columns]
+    df = df[ordered_cols]
+
+    # Apply proper dtypes if specified
+    if dtypes:
+        for col, dtype in dtypes.items():
+            if col in df.columns:
+                try:
+                    df[col] = df[col].astype(dtype)
+                except (ValueError, TypeError):
+                    # If conversion fails, try nullable version
+                    pass
+
+    return df
 
 
 def symmetrize_edges(
@@ -145,14 +218,39 @@ def symmetrize_edges(
             >>> print(f"Original: {len(graph.edges)} edges")
             >>> print(f"Symmetrized: {len(undirected_edges)} edges")
     """
-    # TODO: Phase 1.2 - Implement edge symmetrization
-    # 1. Check if symmetrization is needed
-    # 2. Get original edges DataFrame
-    # 3. Create reverse edges (swap src/dst columns)
-    # 4. Concatenate original and reverse edges
-    # 5. Remove duplicate edges if any
-    # 6. Return new EdgeSet with symmetrized data
-    raise NotImplementedError("Edge symmetrization implementation pending - Phase 1.2")
+    # Check if symmetrization is needed
+    is_directed = (
+        directed if directed is not None else getattr(graph, "is_directed", True)
+    )
+
+    # If already undirected, return edges unchanged
+    if not is_directed:
+        return graph.edges
+
+    # Get original edges
+    edges = graph.edges
+    if hasattr(edges, "_df"):
+        edges_df = edges._df
+    else:
+        edges_df = edges
+
+    # Handle Dask DataFrame
+    if hasattr(edges_df, "compute"):
+        edges_df = edges_df.compute()
+
+    # Find src/dst columns
+    src_col = "src" if "src" in edges_df.columns else edges_df.columns[0]
+    dst_col = "dst" if "dst" in edges_df.columns else edges_df.columns[1]
+
+    # Create reverse edges
+    reverse_df = edges_df.copy()
+    reverse_df[[src_col, dst_col]] = edges_df[[dst_col, src_col]].values
+
+    # Concatenate and remove duplicates
+    symmetrized = pd.concat([edges_df, reverse_df], ignore_index=True)
+    symmetrized = symmetrized.drop_duplicates(subset=[src_col, dst_col])
+
+    return symmetrized
 
 
 def check_convergence(
@@ -182,9 +280,36 @@ def check_convergence(
             >>> if converged:
             ...     print("Algorithm converged!")
     """
-    # TODO: Phase 1.2 - Implement convergence checking
-    # 1. Handle pandas vs Dask Series appropriately
-    # 2. Compute difference based on specified metric
-    # 3. Return boolean convergence status
-    # 4. Handle edge cases (empty series, NaN values)
-    raise NotImplementedError("Convergence checking implementation pending - Phase 1.2")
+    import numpy as np
+
+    # Handle Dask Series
+    if hasattr(old_values, "compute"):
+        old_values = old_values.compute()
+    if hasattr(new_values, "compute"):
+        new_values = new_values.compute()
+
+    # Handle empty series
+    if len(old_values) == 0 or len(new_values) == 0:
+        return False
+
+    # Drop NaN values for comparison
+    old_clean = old_values.dropna()
+    new_clean = new_values.dropna()
+
+    # If all values are NaN, return False
+    if len(old_clean) == 0 or len(new_clean) == 0:
+        return False
+
+    # Compute difference based on metric
+    diff = (old_clean - new_clean).abs()
+
+    if metric == "l1":
+        distance = diff.sum()
+    elif metric == "l2":
+        distance = np.sqrt((diff**2).sum())
+    elif metric == "max":
+        distance = diff.max()
+    else:
+        raise ValueError(f"Unknown metric: {metric}. Use 'l1', 'l2', or 'max'.")
+
+    return bool(distance < tol)

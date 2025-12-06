@@ -14,9 +14,15 @@ import pytest
 
 def test_schema_inference_basic():
     """Test basic schema inference for common data types."""
-    try:
-        from parquetframe.io_new.avro import AvroReader, AvroWriter, infer_avro_schema
-    except ImportError:
+    import importlib.util
+
+    if importlib.util.find_spec("parquetframe.io_new.avro"):
+        from parquetframe.io_new.avro import (  # noqa: F401
+            AvroReader,
+            AvroWriter,
+            infer_avro_schema,
+        )
+    else:
         pytest.skip("Avro module not available")
 
     # Create test DataFrame with various types

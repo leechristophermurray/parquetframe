@@ -7,7 +7,7 @@ import pandas as pd
 # Mock s3fs if not present
 sys.modules["s3fs"] = MagicMock()
 
-from parquetframe.cloud import read_parquet_s3, write_parquet_s3
+from parquetframe.cloud import read_parquet_s3, write_parquet_s3  # noqa: E402
 
 
 class TestCloudS3(unittest.TestCase):

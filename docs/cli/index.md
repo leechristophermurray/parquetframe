@@ -137,7 +137,7 @@ start_repl()
 - **Recommended**:
   - `rich` - Syntax highlighting and formatting
   - `ipython` - Enhanced REPL features
-  
+
 Install with:
 ```bash
 pip install rich ipython

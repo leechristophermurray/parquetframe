@@ -1,0 +1,8 @@
+name: TaskList
+version: 0.1.0
+format: graphar
+vertices:
+- label: TaskList
+  prefix: vertices/TaskList/
+  count: 84
+edges: []

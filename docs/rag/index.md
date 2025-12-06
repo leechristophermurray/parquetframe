@@ -117,7 +117,7 @@ class OpenAIModel(BaseLanguageModel):
     def __init__(self, model_name="gpt-4"):
         self.client = OpenAI()
         self.model = model_name
-    
+
     def generate(self, messages):
         response = self.client.chat.completions.create(
             model=self.model,

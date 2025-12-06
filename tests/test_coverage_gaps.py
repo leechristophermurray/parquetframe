@@ -4,9 +4,12 @@ Coverage analysis for new features.
 Identifies gaps in test coverage and creates targeted tests.
 """
 
-import pytest
-import pandas as pd
+import os
+import platform
 from unittest.mock import MagicMock
+
+import pandas as pd
+import pytest
 
 
 class TestGraphUtilsEdgeCases:
@@ -63,7 +66,7 @@ class TestGraphUtilsEdgeCases:
         new = pd.Series([])
 
         result = check_convergence(old, new, tol=0.01)
-        assert result == False  # Empty series should not converge
+        assert not result  # Empty series should not converge
 
     def test_check_convergence_with_nan(self):
         """Test convergence check with NaN values."""
@@ -112,7 +115,7 @@ class TestEntityRelationshipEdgeCases:
         manager.set_entity_store(entity_store)
 
         result = manager.validate_foreign_key("Task", "User", 1)
-        assert result == False  # Empty target = invalid
+        assert not result  # Empty target = invalid
 
     def test_validate_foreign_key_no_id_column(self):
         """Test foreign key validation without 'id' column."""
@@ -131,7 +134,7 @@ class TestEntityRelationshipEdgeCases:
 
         # Should fall back to checking all columns
         result = manager.validate_foreign_key("Task", "User", 2)
-        assert result == True  # Found in user_id column
+        assert result  # Found in user_id column
 
     def test_validate_foreign_key_store_error(self):
         """Test foreign key validation with store errors."""
@@ -145,23 +148,35 @@ class TestEntityRelationshipEdgeCases:
 
         # Should fail open on errors
         result = manager.validate_foreign_key("Task", "User", 1)
-        assert result == True
+        assert result
+
+
+# Skip interactive tests on Windows CI
+_skip_on_windows_ci = pytest.mark.skipif(
+    platform.system() == "Windows" and os.environ.get("CI") == "true",
+    reason="Interactive tests require console, not available on Windows CI",
+)
 
 
 class TestInteractiveCLIEdgeCases:
     """Edge case tests for interactive CLI."""
 
+    @_skip_on_windows_ci
     @pytest.mark.asyncio
     async def test_handle_permissions_without_args(self):
         """Test permissions command without arguments."""
-        from parquetframe.interactive import InteractiveSession
-        from parquetframe.datacontext import DataContext
         from unittest.mock import patch
+
+        from parquetframe.datacontext import DataContext
+        from parquetframe.interactive import InteractiveSession
 
         with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
             data_context = MagicMock(spec=DataContext)
             data_context.source_location = "/tmp"
-            data_context.source_type.value = "test"
+            # Use MagicMock for source_type to support .value attribute
+            source_type_mock = MagicMock()
+            source_type_mock.value = "test"
+            data_context.source_type = source_type_mock
 
             session = InteractiveSession(data_context, enable_ai=False)
             session.console = MagicMock()
@@ -170,17 +185,22 @@ class TestInteractiveCLIEdgeCases:
             session._handle_permissions_command("")
             session.console.print.assert_called()
 
+    @_skip_on_windows_ci
     @pytest.mark.asyncio
     async def test_handle_datafusion_not_available(self):
         """Test DataFusion command when not available."""
-        from parquetframe.interactive import InteractiveSession
-        from parquetframe.datacontext import DataContext
         from unittest.mock import patch
+
+        from parquetframe.datacontext import DataContext
+        from parquetframe.interactive import InteractiveSession
 
         with patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True):
             data_context = MagicMock(spec=DataContext)
             data_context.source_location = "/tmp"
-            data_context.source_type.value = "test"
+            # Use MagicMock for source_type to support .value attribute
+            source_type_mock = MagicMock()
+            source_type_mock.value = "test"
+            data_context.source_type = source_type_mock
 
             session = InteractiveSession(data_context, enable_ai=False)
             session.console = MagicMock()

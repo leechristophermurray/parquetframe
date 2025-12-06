@@ -2,10 +2,9 @@
 Unit tests for backend selection logic.
 """
 
-import os
+from unittest.mock import patch
+
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from parquetframe.core.backend import BackendSelector
 
@@ -15,12 +14,14 @@ class TestBackendSelector:
 
     def test_check_rust_available_true(self):
         """Test Rust availability check when available."""
-        with patch("parquetframe.core.backend.parquetframe.pf_py"):
+        with patch("importlib.util.find_spec") as mock_find:
+            mock_find.return_value = True
             assert BackendSelector.check_rust_available() is True
 
     def test_check_rust_available_false(self):
         """Test Rust availability check when not available."""
-        with patch("parquetframe.core.backend.parquetframe", side_effect=ImportError):
+        with patch("importlib.util.find_spec") as mock_find:
+            mock_find.return_value = None
             assert BackendSelector.check_rust_available() is False
 
     def test_estimate_size_file(self, tmp_path):

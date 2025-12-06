@@ -4,9 +4,8 @@ Financial Accessor for ParquetFrame.
 Provides .fin accessor for financial and technical analysis operations.
 """
 
-import pandas as pd
 import numpy as np
-from typing import Optional, Union
+import pandas as pd
 
 
 class FinanceAccessor:
@@ -31,7 +30,7 @@ class FinanceAccessor:
         """Initialize accessor with DataFrame."""
         self._obj = pandas_obj
 
-    def sma(self, column: Optional[str] = None, window: int = 20) -> pd.Series:
+    def sma(self, column: str | None = None, window: int = 20) -> pd.Series:
         """
         Simple Moving Average.
 
@@ -46,7 +45,7 @@ class FinanceAccessor:
             column = self._obj.select_dtypes(include=[np.number]).columns[0]
         return self._obj[column].rolling(window=window).mean()
 
-    def ema(self, column: Optional[str] = None, span: int = 20) -> pd.Series:
+    def ema(self, column: str | None = None, span: int = 20) -> pd.Series:
         """
         Exponential Moving Average.
 
@@ -61,7 +60,7 @@ class FinanceAccessor:
             column = self._obj.select_dtypes(include=[np.number]).columns[0]
         return self._obj[column].ewm(span=span, adjust=False).mean()
 
-    def rsi(self, column: Optional[str] = None, period: int = 14) -> pd.Series:
+    def rsi(self, column: str | None = None, period: int = 14) -> pd.Series:
         """
         Relative Strength Index.
 
@@ -85,7 +84,7 @@ class FinanceAccessor:
 
     def macd(
         self,
-        column: Optional[str] = None,
+        column: str | None = None,
         fast: int = 12,
         slow: int = 26,
         signal: int = 9,
@@ -117,7 +116,7 @@ class FinanceAccessor:
         )
 
     def bollinger_bands(
-        self, column: Optional[str] = None, window: int = 20, num_std: float = 2.0
+        self, column: str | None = None, window: int = 20, num_std: float = 2.0
     ) -> pd.DataFrame:
         """
         Bollinger Bands.
@@ -169,7 +168,7 @@ class FinanceAccessor:
 
         return atr
 
-    def returns(self, column: Optional[str] = None, periods: int = 1) -> pd.Series:
+    def returns(self, column: str | None = None, periods: int = 1) -> pd.Series:
         """
         Calculate returns.
 
@@ -184,7 +183,7 @@ class FinanceAccessor:
             column = self._obj.select_dtypes(include=[np.number]).columns[0]
         return self._obj[column].pct_change(periods=periods)
 
-    def cumulative_returns(self, column: Optional[str] = None) -> pd.Series:
+    def cumulative_returns(self, column: str | None = None) -> pd.Series:
         """
         Calculate cumulative returns.
 
@@ -199,7 +198,7 @@ class FinanceAccessor:
         return (1 + self.returns(column)).cumprod() - 1
 
     def volatility(
-        self, column: Optional[str] = None, window: int = 20, annualize: bool = True
+        self, column: str | None = None, window: int = 20, annualize: bool = True
     ) -> pd.Series:
         """
         Calculate rolling volatility.

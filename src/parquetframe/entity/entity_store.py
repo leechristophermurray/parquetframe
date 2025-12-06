@@ -169,6 +169,15 @@ class EntityStore:
         # Trigger compaction if needed (background-worthy)
         if self.delta_log.should_compact():
             self._compact()
+        else:
+            # Still write metadata even without compaction
+            # Load current dataframe state and write metadata
+            df = self._load_dataframe()
+            self._write_graphar_metadata(df)
+            # Ensure legacy storage file exists for compatibility (e.g., Document.parquet)
+            storage_file = self.metadata.storage_file
+            if not storage_file.exists():
+                self._save_dataframe(df)
 
     def _compact(self) -> None:
         """Compact delta log into base parquet file."""
@@ -282,6 +291,36 @@ class EntityStore:
         """
         df = self._load_dataframe()
         return len(df)
+
+    def delete_all(self) -> int:
+        """
+        Delete all entities.
+
+        Returns:
+            Number of entities deleted
+        """
+        df = self._load_dataframe()
+        count = len(df)
+
+        # Clear delta log
+        self.delta_log.clear()
+
+        # Remove all files in storage path
+        storage_path = self.metadata.storage_path
+        if storage_path.exists():
+            for file in storage_path.iterdir():
+                if file.is_file():
+                    file.unlink()
+
+        # Recreate empty base file - get unique columns from dataclass fields
+        # (primary_key is already a field, so we don't need to add it separately)
+        field_names = [f.name for f in self.metadata.cls.__dataclass_fields__.values()]
+        # Remove duplicates while preserving order
+        unique_columns = list(dict.fromkeys(field_names))
+        empty_df = pd.DataFrame(columns=unique_columns)
+        self._save_dataframe(empty_df)
+
+        return count
 
     def add_relationship(
         self,

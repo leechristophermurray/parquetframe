@@ -181,6 +181,33 @@ def query_dataframes(
         for name, df in other_dfs.items():
             engine.register_dataframe(name, df)
 
+    # Warn if Dask DataFrames are used
+    has_dask = False
+    if (
+        hasattr(main_df, "compute")
+        or isinstance(main_df, pd.DataFrame | pd.Series) is False
+    ):
+        # Crude check for Dask-like if imports are not available, but we import dask inside usually.
+        # Let's check for 'dask.dataframe.core.DataFrame' in mro or check for compute method
+        if hasattr(main_df, "compute"):
+            has_dask = True
+
+    if not has_dask and other_dfs:
+        for df in other_dfs.values():
+            if hasattr(df, "compute"):
+                has_dask = True
+                break
+
+    if has_dask:
+        import warnings
+
+        warnings.warn(
+            "SQL queries on Dask DataFrames will trigger computation and convert to pandas. "
+            "This may consume significant memory for large datasets.",
+            UserWarning,
+            stacklevel=3,
+        )
+
     # Apply context hints if provided
     if context:
         import warnings

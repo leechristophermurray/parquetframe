@@ -9,7 +9,6 @@ Chooses optimal backend based on:
 
 import os
 from pathlib import Path
-from typing import Optional, Tuple
 
 import pandas as pd
 
@@ -48,12 +47,9 @@ class BackendSelector:
     @staticmethod
     def check_rust_available() -> bool:
         """Check if Rust backend is compiled and available."""
-        try:
-            import parquetframe.pf_py
+        import importlib.util
 
-            return True
-        except ImportError:
-            return False
+        return importlib.util.find_spec("parquetframe._rustic") is not None
 
     @staticmethod
     def estimate_size(path: str) -> int:
@@ -92,14 +88,14 @@ class BackendSelector:
             metadata = pq.read_metadata(path)
             # Estimate uncompressed size
             return metadata.num_rows * metadata.num_columns * 8  # Conservative
-        except:
+        except Exception:
             # Fallback to file size
             return Path(path).stat().st_size
 
     @staticmethod
     def select_backend(
-        path: str, user_preference: Optional[str] = None, rust_io: bool = True
-    ) -> Tuple[str, bool]:
+        path: str, user_preference: str | None = None, rust_io: bool = True
+    ) -> tuple[str, bool]:
         """
         Select optimal backend for reading data.
 
@@ -147,7 +143,7 @@ class BackendSelector:
         """Select backend for existing DataFrame."""
         if isinstance(df, pd.DataFrame):
             return "pandas"
-        elif POLARS_AVAILABLE and isinstance(df, (pl.DataFrame, pl.LazyFrame)):
+        elif POLARS_AVAILABLE and isinstance(df, pl.DataFrame | pl.LazyFrame):
             return "polars"
         elif DASK_AVAILABLE and isinstance(df, dd.DataFrame):
             return "dask"

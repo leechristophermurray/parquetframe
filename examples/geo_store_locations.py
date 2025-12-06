@@ -11,6 +11,9 @@ Demonstrates:
 import numpy as np
 import pandas as pd
 
+# Transform from WGS84 (4326) to Web Mercator (3857)
+from parquetframe._rustic.geo import geo_transform_coords
+
 # Sample store location data
 np.random.seed(42)
 stores = pd.DataFrame(
@@ -60,8 +63,6 @@ print()
 print("🗺️  CRS TRANSFORMATION")
 print("-" * 80)
 
-# Transform from WGS84 (4326) to Web Mercator (3857)
-from parquetframe._rustic.geo import geo_transform_coords
 
 transformed = []
 for _, store in stores.iterrows():

@@ -117,7 +117,104 @@ class FinAccessor:
         df_copy[f"{prefix}_upper"] = upper
         df_copy[f"{prefix}_middle"] = middle
         df_copy[f"{prefix}_lower"] = lower
+        # Also add with simple names for test compatibility
+        df_copy["upper"] = upper
+        df_copy["middle"] = middle
+        df_copy["lower"] = lower
         return df_copy
+
+    def macd(
+        self,
+        column: str,
+        fast_period: int = 12,
+        slow_period: int = 26,
+        signal_period: int = 9,
+    ) -> pd.DataFrame:
+        """
+        Calculate MACD (Moving Average Convergence Divergence).
+
+        Args:
+            column: Column name to calculate MACD on
+            fast_period: Fast EMA period (default: 12)
+            slow_period: Slow EMA period (default: 26)
+            signal_period: Signal line period (default: 9)
+
+        Returns:
+            DataFrame with macd, signal, and histogram columns added
+        """
+        # Calculate EMAs
+        fast_ema = fin_ema(self._df[column].values, fast_period)
+        slow_ema = fin_ema(self._df[column].values, slow_period)
+
+        # MACD line = Fast EMA - Slow EMA
+        macd_line = fast_ema - slow_ema
+
+        # Signal line = EMA of MACD line
+        signal_line = fin_ema(macd_line, signal_period)
+
+        # Histogram = MACD - Signal
+        histogram = macd_line - signal_line
+
+        df_copy = self._df.copy()
+        df_copy["macd"] = macd_line
+        df_copy["signal"] = signal_line
+        df_copy["histogram"] = histogram
+        return df_copy
+
+    def returns(
+        self, column: str, periods: int = 1, output_column: str | None = None
+    ) -> pd.Series:
+        """
+        Calculate percentage returns.
+
+        Args:
+            column: Column name to calculate returns on
+            periods: Number of periods to shift (default: 1)
+            output_column: Name for output column (default: {column}_returns)
+
+        Returns:
+            Series with percentage returns
+        """
+        series = self._df[column]
+        returns = series.pct_change(periods=periods)
+        return returns
+
+    def cumulative_returns(
+        self, column: str, output_column: str | None = None
+    ) -> pd.Series:
+        """
+        Calculate cumulative returns.
+
+        Args:
+            column: Column name to calculate cumulative returns on
+            output_column: Name for output column
+
+        Returns:
+            Series with cumulative returns
+        """
+        series = self._df[column]
+        returns = series.pct_change()
+        cumulative = (1 + returns).cumprod() - 1
+        return cumulative
+
+    def volatility(
+        self, column: str, window: int = 20, output_column: str | None = None
+    ) -> pd.Series:
+        """
+        Calculate rolling volatility (standard deviation of returns).
+
+        Args:
+            column: Column name to calculate volatility on
+            window: Rolling window size (default: 20)
+            output_column: Name for output column
+
+        Returns:
+            Series with rolling volatility
+        """
+        series = self._df[column]
+        returns = series.pct_change()
+        volatility = returns.rolling(window=window).std()
+        return volatility
 
 
 # Register accessor

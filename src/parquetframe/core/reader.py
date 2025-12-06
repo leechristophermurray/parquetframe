@@ -23,7 +23,7 @@ try:
 except Exception:  # noqa: BLE001 - broadened intentionally for optional dep
     _try_get_row_count_fast = None  # type: ignore[assignment]
 
-from .frame import DataFrameProxy
+from .proxy import DataFrameProxy
 from .registry import EngineRegistry
 
 try:
@@ -97,7 +97,7 @@ class DataReader:
         # Read using selected engine
         native_df = selected_engine.read_parquet(path, **kwargs)
 
-        return DataFrameProxy(data=native_df, engine=selected_engine)
+        return DataFrameProxy(data=native_df, engine=selected_engine.name)
 
     def read_csv(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
@@ -142,7 +142,7 @@ class DataReader:
         # Read using selected engine
         native_df = selected_engine.read_csv(path, **kwargs)
 
-        return DataFrameProxy(data=native_df, engine=selected_engine)
+        return DataFrameProxy(data=native_df, engine=selected_engine.name)
 
     def read_avro(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
@@ -189,7 +189,7 @@ class DataReader:
         reader = AvroReader()
         native_df = reader.read(path, engine=selected_engine.name)
 
-        return DataFrameProxy(data=native_df, engine=selected_engine)
+        return DataFrameProxy(data=native_df, engine=selected_engine.name)
 
     def read_json(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
@@ -242,7 +242,7 @@ class DataReader:
         if selected_engine.name != "pandas":
             native_df = selected_engine.from_pandas(native_df)  # type: ignore[attr-defined]
 
-        return DataFrameProxy(data=native_df, engine=selected_engine)
+        return DataFrameProxy(data=native_df, engine=selected_engine.name)
 
     def read_orc(
         self, path: str | Path, engine: str | None = None, **kwargs: Any
@@ -294,7 +294,7 @@ class DataReader:
         if selected_engine.name != "pandas":
             native_df = selected_engine.from_pandas(native_df)  # type: ignore[attr-defined]
 
-        return DataFrameProxy(data=native_df, engine=selected_engine)
+        return DataFrameProxy(data=native_df, engine=selected_engine.name)
 
     def read(
         self, path: str | Path, engine: str | None = None, **kwargs: Any

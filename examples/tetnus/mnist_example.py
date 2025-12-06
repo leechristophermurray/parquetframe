@@ -5,6 +5,7 @@ Demonstrates using Tetnus for image classification on the MNIST dataset.
 """
 
 import numpy as np
+
 from parquetframe.tetnus import Model, nn
 
 

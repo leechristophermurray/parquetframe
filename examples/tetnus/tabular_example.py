@@ -6,6 +6,7 @@ Demonstrates using Tetnus for regression on tabular data with DataFrames.
 
 import numpy as np
 import pandas as pd
+
 from parquetframe.tetnus import Model, dataframe_to_tensor, nn
 
 

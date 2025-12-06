@@ -4,7 +4,7 @@ Tests for enhanced SQL functionality with multi-format support and optimization 
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -243,10 +243,9 @@ class TestQueryOptimizationHints:
         )  # Bob, Charlie, Diana, Eve are > 25 (Alice is exactly 25)
         assert isinstance(result, pqf.ParquetFrame)
 
-    @patch("parquetframe.sql.duckdb")
-    def test_pragma_application(self, mock_duckdb, sample_data):
+    def test_pragma_application(self, sample_data):
         """Test that optimization hints are properly applied as PRAGMAs."""
-        # Create mock connection
+        mock_duckdb = MagicMock()
         mock_conn = mock_duckdb.connect.return_value
         mock_conn.execute.return_value.fetchdf.return_value = sample_data["users"]
 
@@ -257,8 +256,9 @@ class TestQueryOptimizationHints:
             custom_pragmas={"enable_optimizer": True},
         )
 
-        # Execute query with context
-        result = pf.sql("SELECT * FROM df", context=ctx)
+        with patch.dict("sys.modules", {"duckdb": mock_duckdb}):
+            # Execute query with context
+            result = pf.sql("SELECT * FROM df", context=ctx)
 
         # Verify PRAGMA statements were executed
         pragma_calls = [
@@ -280,7 +280,8 @@ class TestSQLBuilder:
         pf = pqf.ParquetFrame(sample_data["users"])
 
         result = (
-            pf.select("name", "age", "salary")
+            pf.sql_builder()
+            .select("name", "age", "salary")
             .where("age > 25")
             .hint(memory_limit="1GB", enable_parallel=False)
             .order_by("salary DESC")
@@ -296,7 +297,8 @@ class TestSQLBuilder:
         pf = pqf.ParquetFrame(sample_data["users"])
 
         result = (
-            pf.select("city", "COUNT(*) as user_count", "AVG(salary) as avg_salary")
+            pf.sql_builder()
+            .select("city", "COUNT(*) as user_count", "AVG(salary) as avg_salary")
             .group_by("city")
             .having("user_count >= 1")
             .order_by("avg_salary DESC")
@@ -361,14 +363,26 @@ class TestSQLErrorHandling:
             pf.sql("INVALID SQL QUERY")
 
     def test_pragma_warning_on_failure(self, sample_data):
-        """Test that invalid PRAGMAs generate warnings but don't fail."""
+        """Test that a warning is issued when a PRAGMA fails."""
         pf = pqf.ParquetFrame(sample_data["users"])
+        ctx = QueryContext(custom_pragmas={"invalid_pragma": True})
 
-        ctx = QueryContext(custom_pragmas={"invalid_pragma": "invalid_value"})
+        # Force DuckDB usage by patching SQLEngine
+        with patch("parquetframe.sql.engine.SQLEngine") as MockEngine:
+            engine_instance = MockEngine.return_value
+            engine_instance._datafusion_available = False
 
-        # Should generate warning but not fail
-        with pytest.warns(UserWarning, match="Failed to apply optimization hint"):
-            result = pf.sql("SELECT COUNT(*) FROM df", context=ctx)
+            # Mock query to raise exception for PRAGMA
+            def side_effect(sql):
+                if "PRAGMA" in sql:
+                    raise ValueError("Syntax Error")
+                return pd.DataFrame()
+
+            engine_instance.query.side_effect = side_effect
+            engine_instance.register_dataframe = MagicMock()
+
+            with pytest.warns(UserWarning, match="Failed to apply PRAGMA"):
+                result = pf.sql("SELECT * FROM df", context=ctx)
             assert isinstance(result, pqf.ParquetFrame)
 
 

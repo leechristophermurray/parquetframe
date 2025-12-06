@@ -33,7 +33,7 @@ class TestSQLUtilities:
     def test_parameterize_query_missing_param(self):
         """Test error handling for missing parameters."""
         query = "SELECT * FROM df WHERE age > {min_age}"
-        with pytest.raises(ValueError, match="Missing required parameter: min_age"):
+        with pytest.raises(ValueError, match="Missing required parameter: 'min_age'"):
             parameterize_query(query)
 
     def test_build_join_query_simple(self):
@@ -162,7 +162,8 @@ class TestSQLBuilderJoinMethods:
         main_pf, dept_pf = sample_data
 
         result = (
-            main_pf.select("df.name", "depts.dept_name")
+            main_pf.sql_builder()
+            .select("df.name", "depts.dept_name")
             .left_join(dept_pf, "df.dept_id = depts.id", "depts")
             .order_by("df.name")
             .execute()
@@ -183,7 +184,8 @@ class TestSQLBuilderJoinMethods:
         main_pf, dept_pf = sample_data
 
         result = (
-            main_pf.select("df.name", "depts.dept_name")
+            main_pf.sql_builder()
+            .select("df.name", "depts.dept_name")
             .inner_join(dept_pf, "df.dept_id = depts.id", "depts")
             .where("depts.dept_name = 'Engineering'")
             .execute()
@@ -200,7 +202,8 @@ class TestSQLBuilderJoinMethods:
         main_pf, dept_pf = sample_data
 
         result = (
-            main_pf.select("df.name", "depts.dept_name")
+            main_pf.sql_builder()
+            .select("df.name", "depts.dept_name")
             .right_join(dept_pf, "df.dept_id = depts.id", "depts")
             .order_by("depts.dept_name")
             .execute()
@@ -238,7 +241,8 @@ class TestSQLBuilderJoinMethods:
         project_pf = ParquetFrame(project_data)
 
         result = (
-            main_pf.select("df.name", "depts.dept_name", "projects.project_name")
+            main_pf.sql_builder()
+            .select("df.name", "depts.dept_name", "projects.project_name")
             .left_join(dept_pf, "df.dept_id = depts.id", "depts")
             .left_join(project_pf, "depts.id = projects.dept_id", "projects")
             .where("projects.project_name IS NOT NULL")

@@ -292,7 +292,7 @@ df.save("output.pqt")     # Saves as "output.pqt"
 ## 📋 Requirements
 
 ### Phase 2 (Recommended)
-- Python 3.10+
+- Python 3.11+
 - pandas >= 2.0.0
 - dask[dataframe] >= 2023.1.0 (optional)
 - polars >= 0.19.0 (optional)

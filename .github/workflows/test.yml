@@ -16,16 +16,20 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         exclude:
           # Reduce matrix size by excluding some combinations
-          - os: macos-latest
-            python-version: "3.10"
           - os: windows-latest
             python-version: "3.13"
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -338,7 +342,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'  # Test minimum supported version
+        python-version: '3.11'  # Test minimum supported version
     - name: Install uv
       uses: astral-sh/setup-uv@v2
     - name: Install minimum requirements
@@ -348,7 +352,7 @@ jobs:
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
         # Install minimum versions specified in pyproject.toml
-        uv pip install "pandas>=2.0.0,<2.1" "dask[dataframe]>=2023.1.0,<2024" "pyarrow>=10.0.0,<11" "numpy>=1.21.0,<1.25"
+        uv pip install "pandas>=2.0.0,<2.1" "dask[dataframe]>=2024.1.0,<2025" "pyarrow>=14.0.1,<15" "numpy>=1.24.0,<1.25"
         uv pip install "pytest>=7.0" "pytest-cov>=4.0"
         uv pip install -e . --no-deps
     - name: Test with minimum requirements

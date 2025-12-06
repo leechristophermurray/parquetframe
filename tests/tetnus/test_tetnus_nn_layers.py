@@ -1,16 +1,25 @@
+import importlib.util
+
 import pytest
 
-try:
-    from parquetframe._rustic import Tensor
-    import parquetframe.tetnus as tt
-    from parquetframe.tetnus import nn
+if importlib.util.find_spec("parquetframe.tetnus") and importlib.util.find_spec(
+    "parquetframe._rustic"
+):
+    import parquetframe.tetnus as tt  # noqa: F401
+    from parquetframe.tetnus import (
+        Tensor,  # noqa: F401
+        nn,
+    )
+
     HAS_TENSOR = True
-except (ImportError, AttributeError):
+else:
     HAS_TENSOR = False
     tt = None
     nn = None
 
-pytestmark = pytest.mark.skipif(not HAS_TENSOR, reason="Tensor not available in Rust module")
+pytestmark = pytest.mark.skipif(
+    not HAS_TENSOR, reason="Tensor not available in Rust module"
+)
 
 
 def test_embedding():

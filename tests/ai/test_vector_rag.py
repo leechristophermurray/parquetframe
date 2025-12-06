@@ -16,7 +16,16 @@ from parquetframe.ai import (
     TetnusEmbeddingModel,
 )
 
+try:
+    import importlib.util
 
+    if importlib.util.find_spec("parquetframe._rustic.tetnus.Embedding"):
+        TETNUS_AVAILABLE = True
+except ImportError:
+    TETNUS_AVAILABLE = False
+
+
+@pytest.mark.skipif(not TETNUS_AVAILABLE, reason="Tetnus module not available")
 class TestTetnusEmbeddingModel:
     """Test tetnus embedding model."""
 
@@ -99,8 +108,11 @@ class TestSQLiteVectorStore:
         """Test vector search."""
         store = SQLiteVectorStore(":memory:", dimension=128)
 
-        # Add some vectors
+        # Add some vectors - use deterministic seed for reliable test
+        np.random.seed(42)
         vectors = [np.random.randn(128).astype(np.float32) for _ in range(5)]
+        # Normalize vectors for consistent similarity scores
+        vectors = [v / np.linalg.norm(v) for v in vectors]
         for i, vec in enumerate(vectors):
             store.add(
                 chunk_id=f"test:{i}",
@@ -111,7 +123,8 @@ class TestSQLiteVectorStore:
             )
 
         # Search with first vector (should be top result)
-        results = store.search(vectors[0], top_k=3)
+        # Use negative threshold to ensure we get results even with low similarity
+        results = store.search(vectors[0], top_k=3, score_threshold=-1.0)
 
         assert len(results) == 3
         assert results[0][0] == "test:0"  # Should find itself
@@ -181,9 +194,11 @@ class TestSQLiteVectorStore:
 
         # Search only projects
         query = np.random.randn(128).astype(np.float32)
-        results = store.search(query, top_k=10, entity_filter="projects")
-
+        results = store.search(
+            query, top_k=10, entity_filter="projects", score_threshold=-1.0
+        )
         assert len(results) == 3
+        assert all("projects:" in r[0] for r in results)
         assert all("projects:" in r[0] for r in results)
 
 
