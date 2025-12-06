@@ -11,7 +11,7 @@ authors = [
 description = "A universal data processing framework with multi-engine support (pandas, Polars, Dask) and multi-format I/O (CSV, JSON, Parquet, ORC, Avro) with intelligent backend selection"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -19,10 +19,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Database",
@@ -137,7 +137,7 @@ exclude = ["CONTEXT_*"]
 
 # Tool configurations
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 88
 
 [tool.ruff.lint]
@@ -161,7 +161,7 @@ ignore = [
 "tests/*" = ["B011", "F841", "B017"]
 
 [tool.black]
-target-version = ['py310']
+target-version = ['py311']
 line-length = 88
 include = '\.pyi?$'
 extend-exclude = '''
@@ -179,7 +179,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false  # Relaxed for now - TODO: re-enable incrementally

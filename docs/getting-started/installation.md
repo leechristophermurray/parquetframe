@@ -67,7 +67,7 @@ print("✅ ParquetFrame is working correctly!")
 ## Requirements
 
 ### Python Version
-- **Python 3.10** or higher
+- **Python 3.11** or higher
 
 ### Core Dependencies
 - **pandas >= 2.0.0**: DataFrame operations
