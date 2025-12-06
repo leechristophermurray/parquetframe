@@ -352,7 +352,7 @@ jobs:
         echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
         source .venv/bin/activate
         # Install minimum versions specified in pyproject.toml
-        uv pip install "pandas>=2.0.0,<2.1" "dask[dataframe]>=2023.1.0,<2024" "pyarrow>=10.0.0,<11" "numpy>=1.21.0,<1.25"
+        uv pip install "pandas>=2.0.0,<2.1" "dask[dataframe]>=2024.1.0,<2025" "pyarrow>=14.0.1,<15" "numpy>=1.24.0,<1.25"
         uv pip install "pytest>=7.0" "pytest-cov>=4.0"
         uv pip install -e . --no-deps
     - name: Test with minimum requirements
