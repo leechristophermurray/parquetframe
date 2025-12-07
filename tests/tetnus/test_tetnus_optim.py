@@ -3,6 +3,7 @@ import pytest
 
 try:
     from parquetframe._rustic import Tensor
+
     import parquetframe.tetnus.nn as nn
     import parquetframe.tetnus.optim as optim
 

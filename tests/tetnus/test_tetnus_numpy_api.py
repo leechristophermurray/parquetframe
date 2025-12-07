@@ -4,6 +4,7 @@ import pytest
 
 try:
     from parquetframe._rustic import Tensor
+
     import parquetframe.tetnus.numpy as pfn
 
     HAS_TENSOR = True
