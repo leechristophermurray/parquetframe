@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 try:
+    from parquetframe._rustic import Tensor
     import parquetframe.tetnus.nn as nn
     import parquetframe.tetnus.optim as optim
-    from parquetframe._rustic import Tensor
 
     HAS_TENSOR = True
 except (ImportError, AttributeError):

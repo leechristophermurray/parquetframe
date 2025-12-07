@@ -3,8 +3,8 @@ import unittest
 import pytest
 
 try:
-    import parquetframe.tetnus.nn as nn
     from parquetframe._rustic import Tensor
+    import parquetframe.tetnus.nn as nn
 
     HAS_TENSOR = True
 except (ImportError, AttributeError):
