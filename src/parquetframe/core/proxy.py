@@ -603,9 +603,7 @@ class DataFrameProxy:
         except Exception:
             shape_str = "shape unknown"
 
-        return (
-            f"DataFrameProxy(\n" f"  backend={self._backend},\n" f"  {shape_str}\n" f")"
-        )
+        return f"DataFrameProxy(\n  backend={self._backend},\n  {shape_str}\n)"
 
     def __getitem__(self, key):
         """Support indexing."""
