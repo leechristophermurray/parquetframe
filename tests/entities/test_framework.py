@@ -80,9 +80,9 @@ class TestEntityFramework:
             if hasattr(User, "_entity_store"):
                 user_meta = User._entity_store.metadata
 
-        assert (
-            user_meta is not None
-        ), "FrameworkUser entity not registered - ensure @entity decorator was applied"
+        assert user_meta is not None, (
+            "FrameworkUser entity not registered - ensure @entity decorator was applied"
+        )
         file_path = user_meta.storage_path / "FrameworkUser.parquet"
         # Note: The existing store uses delta logs, so base file might not exist immediately
         # unless compacted. But find() should work.

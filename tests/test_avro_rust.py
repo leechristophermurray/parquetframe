@@ -48,9 +48,9 @@ def test_rust_avro_available():
     try:
         from parquetframe import _rustic
 
-        assert hasattr(
-            _rustic, "read_avro_fast"
-        ), "read_avro_fast not exposed to Python"
+        assert hasattr(_rustic, "read_avro_fast"), (
+            "read_avro_fast not exposed to Python"
+        )
     except ImportError:
         pytest.skip("Rust backend not available")
 

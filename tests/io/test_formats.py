@@ -89,9 +89,9 @@ class TestDataTypePreservation:
             elif original_dtype.kind == "f" and read_dtype.kind == "f":
                 continue  # Float types may change precision
             else:
-                assert (
-                    original_dtype == read_dtype
-                ), f"Type mismatch for {col}: {original_dtype} vs {read_dtype}"
+                assert original_dtype == read_dtype, (
+                    f"Type mismatch for {col}: {original_dtype} vs {read_dtype}"
+                )
 
     def test_datetime_preservation(self, temp_dir):
         """Test that datetime columns are preserved correctly."""
