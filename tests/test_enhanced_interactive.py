@@ -30,6 +30,9 @@ def interactive_session(mock_data_context):
     with (
         patch("parquetframe.interactive.PromptSession"),
         patch("parquetframe.interactive.Console"),
+        patch("parquetframe.interactive.Panel"),
+        patch("parquetframe.interactive.Table"),
+        patch("parquetframe.interactive.HTML"),
         patch("parquetframe.interactive.InMemoryHistory"),
         patch("parquetframe.interactive.WordCompleter"),
         patch("parquetframe.interactive.INTERACTIVE_AVAILABLE", True),
