@@ -18,7 +18,7 @@ ParquetFrame is a unified data platform combining SQL, time series, geospatial, 
 - **Interactive CLI**: Rich REPL with syntax highlighting
 
 ## 🚀 Quick Start
-
+ 
 ```bash
 pip install parquetframe
 ```
